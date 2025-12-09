@@ -1,19 +1,19 @@
 <div>
-    <div class="flex items-center gap-2 justify-center p-6" id="buttons-action" wire:ignore>
-        <div class="flex flex-col sm:flex-row justify-center mx-4 mb-4 p-4 mt-5">
-            <button type="button" id="Init-add" class=" no-blur w-40 rounded-lg px-6 py-3.5 text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-black-300 font-medium text-sm px-5 py-2.5 text-center me-2 mb-2"
+    <div class="flex flex-col sm:flex-row items-center gap-1 justify-center p-6" id="buttons-action" wire:ignore>
+        <div class="flex flex-col sm:flex-row justify-center mx-4 mb-4 p-4">
+            <button type="button" id="Init-add" class=" rounded-lg no-blur w-40 rounded-lg px-6 py-3.5 text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-black-300 font-medium text-sm px-5 py-2.5 text-center me-2 mb-2"
                 wire:click="setAction('Add')" >Add</button>
         </div>
-        <div class="flex flex-col sm:flex-row justify-center mx-4 mb-4 p-4 mt-5">
-            <button type="button" id="Init-update" class=" no-blur w-40 rounded-lg px-6 py-3.5 text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-black-300 font-medium text-sm px-5 py-2.5 text-center me-2 mb-2"
+        <div class="flex flex-col sm:flex-row justify-center mx-4 mb-4 p-4">
+            <button type="button" id="Init-update" class=" rounded-lg no-blur w-40 rounded-lg px-6 py-3.5 text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-black-300 font-medium text-sm px-5 py-2.5 text-center me-2 mb-2"
                 wire:click="setAction('Edit')">Edit</button>
         </div>
-        <div class="flex flex-col sm:flex-row justify-center mx-4 mb-4 p-4 mt-5">
-            <button type="button" id="Init-delete" class=" no-blur w-40 rounded-lg px-6 py-3.5 text-white bg-red-700 hover:bg-red-800 focus:outline-none focus:ring-4 focus:ring-black-300 font-medium text-sm px-5 py-2.5 text-center me-2 mb-2"
+        <div class="flex flex-col sm:flex-row justify-center mx-4 mb-4 p-4">
+            <button type="button" id="Init-delete" class=" rounded-lg no-blur w-40 rounded-lg px-6 py-3.5 text-white bg-red-700 hover:bg-red-800 focus:outline-none focus:ring-4 focus:ring-black-300 font-medium text-sm px-5 py-2.5 text-center me-2 mb-2"
                 wire:click="setAction('Delete')">Delete</button>
         </div>
-        <div class="flex flex-col sm:flex-row justify-center mx-4 mb-4 p-4 mt-5">
-            <button type="button" id="Init-inquire" class=" no-blur w-40 rounded-lg px-6 py-3.5 text-white bg-yellow-700 hover:bg-yellow-800 focus:outline-none focus:ring-4 focus:ring-black-300 font-medium text-sm px-5 py-2.5 text-center me-2 mb-2"
+        <div class="flex flex-col sm:flex-row justify-center mx-4 mb-4 p-4">
+            <button type="button" id="Init-inquire" class=" rounded-lg no-blur w-40 rounded-lg px-6 py-3.5 text-white bg-yellow-700 hover:bg-yellow-800 focus:outline-none focus:ring-4 focus:ring-black-300 font-medium text-sm px-5 py-2.5 text-center me-2 mb-2"
                 wire:click="setAction('View')">Inquire</button>
         </div>
     </div>
