@@ -30,7 +30,7 @@
 
                             <div class="flex gap-3">
                                 <button
-                                @if($locked) disabled @endif
+                                    @if($locked) disabled @endif
                                     @click="openSmall = true"
                                     wire:click="startEdit('{{ $reworks['type'] }}')"
                                     class="text-white bg-green-700 px-4 py-2 rounded">
@@ -39,11 +39,14 @@
 
                                 <!-- DELETE BUTTON -->
                                 <button
-                                @if($locked) disabled @endif
+                                    @if($locked) disabled @endif
                                     class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded"
                                     @click.prevent="
             if (confirm('Are you sure you want to delete this record?')) {
-                $wire.deleteRework(@js($reworks['type']));
+                 $wire.deleteRework(
+            @js($reworks['hfno']),
+            @js($reworks['type'])
+        );
             }
         ">
                                     Delete
@@ -77,7 +80,7 @@
                                             </h3>
 
                                             <button
-                                            @if($locked) disabled @endif
+                                                @if($locked) disabled @endif
                                                 type="button"
                                                 @click="openSmall = false"
                                                 wire:click="$set('newQuan', ''); $set('totalInsp', '')"
@@ -122,7 +125,7 @@
 
                                             <div class="w-full flex flex-col items-center mb-5">
                                                 <button
-                                                @if($locked) disabled @endif
+                                                    @if($locked) disabled @endif
                                                     wire:click="updateRework"
                                                     @click="$nextTick(() => openSmall = false)"
                                                     type="button"
@@ -177,7 +180,7 @@
                         Add Rework
                     </h3>
                     <button type="button"
-                    @if($locked) disabled @endif
+                        @if($locked) disabled @endif
                         class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center"
                         data-modal-hide="static-modal-rework" id="rework-id-close">
                         <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
@@ -213,8 +216,8 @@
                         <label for="defectType" class="block text-sm font-medium text-black">Rework Defect</label>
 
                         <select id="defectType" wire:model="newRework" class="my-2 block w-full border border-black rounded-md px-2 py-1">
-                            <option > -- Select Rework --</option>
-                              @foreach ($rework as $reworks)
+                            <option> -- Select Rework --</option>
+                            @foreach ($rework as $reworks)
                             <option value="{{ $reworks->DefectType }}">{{ $reworks->DefectType }}</option>
                             @endforeach
                         </select>

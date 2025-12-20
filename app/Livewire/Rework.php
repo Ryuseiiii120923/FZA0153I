@@ -41,7 +41,8 @@ class Rework extends Component
         'newQuan.required' => 'Please enter a quantity.',
     ];
 
-       public function locked($data){
+    public function locked($data)
+    {
         $this->locked = $data;
     }
     public function render()
@@ -51,7 +52,8 @@ class Rework extends Component
             'rework' => $rework,
         ]);
     }
-    public function ClearForm(){
+    public function ClearForm()
+    {
         $this->reworkss = [];
         $this->totalngrework = null;
     }
@@ -62,71 +64,163 @@ class Rework extends Component
         $this->totalngrework = collect($this->reworkss)
             ->sum(fn($x) => (int) $x['quan']);
     }
-    public function addRework()
-    {
-        $this->validate();
+    // public function addRework()
+    // {
+    //     $this->validate();
 
-        $normalizedNewDefect = strtoLower(trim($this->newRework));
-        $this->reworkcheck = ModelsRework::query()
+    //     $normalizedNewDefect = strtoLower(trim($this->newRework));
+    //     $this->reworkcheck = ModelsRework::query()
+    //         ->select('DefectType')
+    //         ->distinct()
+    //         ->whereNotNull('DefectType')
+    //         ->orderBy('DefectType', 'ASC')
+    //         ->get();
+
+    //     $existsInMaster = $this->reworkcheck
+    //         ->pluck('DefectType')
+    //         ->map(fn($d) => strtolower(trim($d))) // normalize
+    //         ->contains($normalizedNewDefect);
+
+    //     if (!$existsInMaster) {
+    //         $this->addError('newRework', 'This rework defect does not exist in the master list');
+    //         return;
+    //     }
+
+    //     $existing = collect($this->reworkss)->contains(function ($reworkss) use ($normalizedNewDefect) {
+    //         return $reworkss['hfno'] === $this->hfno and strtolower(trim($reworkss['type'])) === $normalizedNewDefect;
+    //     });
+
+    //     $uniquehf = collect($this->reworkss)
+    //         ->pluck('hfno')
+    //         ->unique()
+    //         ->count();
+
+    //     $isnewHf = !collect($this->reworkss)->pluck('hfno')->contains($this->hfno);
+    //     if ($isnewHf && $uniquehf >= 5) {
+    //         $this->addError('hfno', 'You can only add up to 5 HF Number');
+    //         return;
+    //     }
+
+    //     if ($existing) {
+    //         $this->addError('newRework', 'This rework is already existing');
+    //         return;
+    //     }
+    //     $this->reworkss[] = [
+    //         'hfno' => $this->hfno,
+    //         'totalinsp' => $this->totalInsp,
+    //         'type' => trim($this->newRework),
+    //         'quan' => $this->newQuan
+    //     ];
+    //     $reworksData = [
+    //         'newhfno'   => $this->hfno,
+    //         'newtype'   => strtoupper(trim($this->newRework)),
+    //         'newquan'   => $this->newQuan,
+    //         'totalinsp' => $this->totalInsp,
+    //         'action'    => 'add',
+    //     ];
+    //     $this->UpdatedNGRework();
+    //     $this->dispatch('FromReworks', reworksData: $reworksData);
+
+    //     $this->dispatch('FromReworksData', [
+    //         'totalngrework' => $this->totalngrework
+    //     ]);
+    //     $this->hfno = '';
+    //     $this->totalInsp = '';
+    //     $this->newRework = '';
+    //     $this->newQuan = '';
+    // }
+
+    public function addRework()
+{
+    // Validate your Livewire inputs
+    $this->validate();
+
+    // Normalize the new defect type
+    $normalizedNewDefect = strtolower(trim($this->newRework));
+
+    // Fetch distinct master reworks
+    $this->reworkcheck = ModelsRework::query()
         ->select('DefectType')
         ->distinct()
         ->whereNotNull('DefectType')
         ->orderBy('DefectType', 'ASC')
         ->get();
 
-        $existsInMaster = $this->reworkcheck
+    // Check if defect exists in master
+    $existsInMaster = $this->reworkcheck
         ->pluck('DefectType')
-        ->map(fn($d) => strtolower(trim($d))) // normalize
+        ->map(fn($d) => strtolower(trim($d)))
         ->contains($normalizedNewDefect);
 
-        if (!$existsInMaster) {
-            $this->addError('newRework', 'This rework defect does not exist in the master list');
-            return;
-        }
+    if (!$existsInMaster) {
+        $this->addError('newRework', 'This rework defect does not exist in the master list');
+        return;
+    }
 
-        $existing = collect($this->reworkss)->contains(function ($reworkss) use ($normalizedNewDefect) {
+    // // Check for duplicate: same HFNo AND same type
+    // $duplicate = collect($this->reworkss)->contains(fn($r) =>
+    //     $r['hfno'] === $this->hfno &&
+    //     strtolower(trim($r['type'])) === $normalizedNewDefect
+    // );
+
+    // if ($duplicate) {
+    //     $this->addError('newRework', 'This rework already exists for this HF Number');
+    //     return;
+    // }
+
+    $existing = collect($this->reworkss)->contains(function ($reworkss) use ($normalizedNewDefect) {
             return $reworkss['hfno'] === $this->hfno and strtolower(trim($reworkss['type'])) === $normalizedNewDefect;
         });
+    // Limit to max 5 unique HF numbers
+    $uniquehf = collect($this->reworkss)
+        ->pluck('hfno')
+        ->unique()
+        ->count();
 
-        $uniquehf = collect($this->reworkss)
-            ->pluck('hfno')
-            ->unique()
-            ->count();
+    $isNewHf = !collect($this->reworkss)->pluck('hfno')->contains($this->hfno);
+    if ($isNewHf && $uniquehf >= 5) {
+        $this->addError('hfno', 'You can only add up to 5 HF Number');
+        return;
+    }
 
-        $isnewHf = !collect($this->reworkss)->pluck('hfno')->contains($this->hfno);
-        if ($isnewHf && $uniquehf >= 5) {
-            $this->addError('hfno', 'You can only add up to 5 HF Number');
-            return;
-        }
-
-        if ($existing) {
+    if ($existing) {
             $this->addError('newRework', 'This rework is already existing');
             return;
         }
-        $this->reworkss[] = [
-            'hfno' => $this->hfno,
-            'totalinsp' => $this->totalInsp,
-            'type' => trim($this->newRework),
-            'quan' => $this->newQuan
-        ];
-        $reworksData = [
-            'newhfno' => $this->hfno,
-            'newtype' => $this->newRework,
-            'newquan' => $this->newQuan,
-            'totalinsp' => $this->totalInsp,
 
-        ];
-        $this->UpdatedNGRework();
-        $this->dispatch('FromReworks', reworksData: $reworksData);
+    // Add the new rework to the component array
+    $this->reworkss[] = [
+        'hfno'       => $this->hfno,
+        'totalinsp'  => $this->totalInsp,
+        'type'       => trim($this->newRework),
+        'quan'       => $this->newQuan,
+    ];
 
-        $this->dispatch('FromReworksData', [
+    // Prepare normalized event payload for the Reworks listener
+    $reworksData = [
+        'newhfno'   => $this->hfno,
+        'newtype'   => $this->newRework, // normalized to uppercase
+        'newquan'   => $this->newQuan,
+        'totalinsp' => $this->totalInsp,
+        'action'    => 'add',
+    ];
+
+    // Update total NG Rework
+    $this->UpdatedNGRework();
+
+    // Dispatch events to the Reworks listener (Livewire 3 style)
+    $this->dispatch('FromReworks', reworksData: $reworksData);
+    $this->dispatch('FromReworksData', [
             'totalngrework' => $this->totalngrework
         ]);
-        $this->hfno = '';
-        $this->totalInsp = '';
-        $this->newRework = '';
-        $this->newQuan = '';
-    }
+    //dd($reworksData);
+    // Clear input fields
+    $this->hfno       = '';
+    $this->totalInsp  = '';
+    $this->newRework  = '';
+    $this->newQuan    = '';
+}
+
 
     public function CheckHf()
     {
@@ -146,15 +240,34 @@ class Rework extends Component
         }
     }
 
-    public function deleteRework($type)
+    public function deleteRework($hfno,$type)
     {
-        $this->reworkss = collect($this->reworkss)
-            ->reject(fn($reworks) => $reworks['type'] === $type)
-            ->values()
-            ->toArray();
+         $hfno = trim($hfno);
+    $type = trim(strtoupper($type));
+        
+           $this->reworkss = collect($this->reworkss)
+        ->reject(fn ($rework) =>
+            trim($rework['hfno'] ?? $rework['newhfno'] ?? '') === $hfno &&
+            trim(strtoupper($rework['type'] ?? $rework['newtype'] ?? '')) === $type
+        )
+        ->values()
+        ->toArray();
 
+        $reworksData = [
+        'action' => 'delete',
+        'hfno'   => $hfno,
+        'type'   => $type,
+    ];
         $this->UpdatedNgRework();
+
+        // Send to the other component
+        $this->dispatch('FromReworks', reworksData: $reworksData);
+
+        $this->dispatch('FromReworksData', [
+            'totalngrework' => $this->totalngrework
+        ]);
     }
+
 
     public function UpdatedNgRework()
     {
@@ -167,13 +280,14 @@ class Rework extends Component
         foreach ($this->reworkss as &$rework) {
             if ($rework['type'] === $this->editingType) {
                 $rework['quan'] = $this->newQuan;
+                $rework['hfno'] = $this->hfno;
                 $rework['totalinsp'] = $this->totalInsp;
                 break;
             }
         }
         $this->UpdatedNGRework();
 
-         $reworksData = [
+        $reworksData = [
             'newhfno' => $this->hfno,
             'newtype' => $this->editingType,
             'newquan' => $this->newQuan,
@@ -181,7 +295,7 @@ class Rework extends Component
             'action' => 'update'
 
         ];
-        
+
         $this->dispatch('FromReworks', reworksData: $reworksData);
 
         $this->dispatch('FromReworksData', [
@@ -201,6 +315,7 @@ class Rework extends Component
         $rework = collect($this->reworkss)->firstWhere('type', $type);
 
         if ($rework) {
+            $this->hfno = $rework['hfno'];
             $this->newQuan = $rework['quan'];
             $this->totalInsp = $rework['totalinsp'];
         }

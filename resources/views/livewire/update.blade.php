@@ -372,8 +372,8 @@
                                         @error('totalInsp') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
                                     </div>
                                     <div class="flex-col w-11/12 sm:w-1/3 mx-5 sm:mx-2 ">
-                                        <label for="defectType" class="block text-sm font-medium text-black">Rework Defect</label>
-                                        <input type="text" id="defectType" class="my-2 block w-full border border-black rounded-md px-2 py-1"
+                                        <label for="defectTypeUpdate" class="block text-sm font-medium text-black">Rework Defect</label>
+                                        <input type="text" id="defectTypeUpdate" class="my-2 block w-full border border-black rounded-md px-2 py-1"
                                             placeholder=" " list="data-list-rework" required wire:model="newRework">
                                         <datalist id="data-list-rework">
                                             @foreach ($reworkOption as $reworksOption)

@@ -54,7 +54,8 @@ class Defects extends Component
         $this->locked = $data;
     }
 
-    public function ClearForm(){
+    public function ClearForm()
+    {
         $this->defects = [];
         $this->smallDefects = [];
         $this->TotalNg = 0;
@@ -101,7 +102,7 @@ class Defects extends Component
                         return [
                             'LargeDefect' => $large,
                             'type'        => $item['type'] ?? null,
-                            'qty'         => $item['qty'] ?? 0,
+                            'qty'         => $item['qty'] ?? '',
                         ];
                     })->toArray()
                 ];
@@ -215,6 +216,7 @@ class Defects extends Component
 
             $this->TotalNg = collect($this->defects)->sum('qty');
         }
+        $this->dispatch('TriggerGoodNg');
     }
 
 
@@ -262,13 +264,36 @@ class Defects extends Component
         $this->dispatch('sendNg', $this->TotalNg);
     }
 
-    public function deleteDefectArray($type)
-    {
-        $this->defects = collect($this->defects)
-            ->reject(fn($defects) => $defects['type'] === $type)
-            ->values()
-            ->toArray();
+ public function deleteDefectArray($type)
+{
+    // Remove the defect from the main defects array
+    $this->defects = collect($this->defects)
+        ->reject(fn($defects) => $defects['type'] === $type)
+        ->values()
+        ->toArray();
+
+    // Remove any associated small defects
+    if (isset($this->smallDefects[$type])) { 
+        unset($this->smallDefects[$type]);
     }
+
+    // Update totals
+    $this->TotalNg = collect($this->defects)->sum('qty');
+    $this->TotalSmallQuan = collect($this->smallDefects)->flatten(1)->sum('qty');
+
+    // Send updated defects array to frontend
+    $this->sendDefect();
+
+    // Dispatch the updated defects array like in addDefect
+      $this->defectData = [
+            'newDefect' => $type,
+            'action'    => 'delete',
+        ];
+        $this->dispatch('FromDefects', $this->defectData);
+
+    // Trigger recalculation of good / ng quantities
+    $this->dispatch('TriggerGoodNg');
+}
 
     public function deleteDefectSmall($type)
     {
@@ -319,7 +344,7 @@ class Defects extends Component
 
         $currentSmallTotal = collect($this->smallDefects[$this->selectedLargeDefect] ?? [])->sum('qty');
 
-        $largeDefectQty = collect($this->defects)->firstWhere('type', $this->selectedLargeDefect)['qty'] ?? 0;
+        $largeDefectQty = collect($this->defects)->firstWhere('type', $this->selectedLargeDefect)['qty'] ?? '';
 
         if (($currentSmallTotal + $this->newSmallQuan) > $largeDefectQty) {
             $this->addError('newSmallQuan', 'Total small defect quantity cannot exceed large defect quantity.');

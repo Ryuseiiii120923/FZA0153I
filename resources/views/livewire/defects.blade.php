@@ -20,7 +20,7 @@
                 @forelse ( $defects as $defect )
                 <tr wire:key="defect-{{ $defect['type'] }}">
                     <td class="px-4 py-2">{{ $defect['type'] }}</td>
-                    <td class="px-4 py-2">{{ (int)$defect['qty'] }}</td>
+                    <td class="px-4 py-2">{{ $defect['qty'] > 0 ? $defect['qty'] : '' }}</td>
                     <td class="px-4 py-2 flex justify-center gap-2">
 
                         <div x-data="{ openSmall: false, openEdit: false }">

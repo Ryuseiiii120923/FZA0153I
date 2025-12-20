@@ -7337,6 +7337,27 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("SubmitBtn").classList.add("bg-green-700", "hover:bg-green-800", "focus:outline-none", "focus:ring-4", "focus:ring-green-300");
     document.getElementById("Init-add").classList.add("bg-green-900", "scale-95", "shadow-inner", "transition-all", "border-2", "border-double", "border-green-400");
   });
+  document.addEventListener('haserror', function (event) {
+    var _event$detail$, _event$detail$2, _event$detail;
+    var message = null;
+
+    // Livewire 3 can wrap the data in __livewire or send directly
+    if ((_event$detail$ = event.detail[0]) !== null && _event$detail$ !== void 0 && (_event$detail$ = _event$detail$.__livewire) !== null && _event$detail$ !== void 0 && (_event$detail$ = _event$detail$.params) !== null && _event$detail$ !== void 0 && (_event$detail$ = _event$detail$[0]) !== null && _event$detail$ !== void 0 && _event$detail$.message) {
+      // wrapped version
+      message = event.detail[0].__livewire.params[0].message;
+    } else if ((_event$detail$2 = event.detail[0]) !== null && _event$detail$2 !== void 0 && _event$detail$2.message) {
+      // direct version
+      message = event.detail[0].message;
+    } else if ((_event$detail = event.detail) !== null && _event$detail !== void 0 && _event$detail.message) {
+      // sometimes detail itself is the object
+      message = event.detail.message;
+    }
+    if (message) {
+      alert(message);
+    } else {
+      console.error('Livewire event did not contain a message:', event);
+    }
+  });
   window.addEventListener("editbutton", function () {
     resetActionButtons();
     document.getElementById("SubmitBtn").textContent = "Edit";
@@ -7521,16 +7542,8 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
   }
-  document.querySelectorAll("input[type='number']").forEach(function (input) {
-    input.addEventListener("focus", function () {
-      setTimeout(function () {
-        input.scrollIntoView({
-          behavior: "smooth",
-          block: "center"
-        });
-        input.select();
-      }, 300);
-    });
+  document.addEventListener("livewire:load", function () {
+    initGoodNgInputs();
   });
   adddef.addEventListener("click", function () {
     closedef.click();

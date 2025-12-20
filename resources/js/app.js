@@ -247,6 +247,28 @@ document.addEventListener("DOMContentLoaded", () => {
                 "border-green-400"
             );
     });
+    document.addEventListener('haserror', event => {
+    let message = null;
+
+    // Livewire 3 can wrap the data in __livewire or send directly
+    if (event.detail[0]?.__livewire?.params?.[0]?.message) {
+        // wrapped version
+        message = event.detail[0].__livewire.params[0].message;
+    } else if (event.detail[0]?.message) {
+        // direct version
+        message = event.detail[0].message;
+    } else if (event.detail?.message) {
+        // sometimes detail itself is the object
+        message = event.detail.message;
+    }
+
+    if (message) {
+        alert(message);
+    } else {
+        console.error('Livewire event did not contain a message:', event);
+    }
+});
+
     window.addEventListener("editbutton", () => {
         resetActionButtons();
         document.getElementById("SubmitBtn").textContent = "Edit";
@@ -459,18 +481,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     document.getElementById("excss").addEventListener("focus", function () {
-    this.select();
+        this.select();
     });
     document.getElementById("lack").addEventListener("focus", function () {
-    this.select();
+        this.select();
     });
     document.getElementById("rework").addEventListener("focus", function () {
-    this.select();
+        this.select();
     });
     document.getElementById("sample").addEventListener("focus", function () {
-    this.select();
+        this.select();
     });
-
 
     function initGoodNgInputs() {
         document
@@ -539,14 +560,10 @@ document.addEventListener("DOMContentLoaded", () => {
             });
     }
 
-    document.querySelectorAll("input[type='number']").forEach(input => {
-    input.addEventListener("focus", () => {
-        setTimeout(() => {
-            input.scrollIntoView({ behavior: "smooth", block: "center" });
-            input.select();
-        }, 300);
+    document.addEventListener("livewire:load", () => {
+        initGoodNgInputs();
     });
-});
+
     adddef.addEventListener("click", function () {
         closedef.click();
     });

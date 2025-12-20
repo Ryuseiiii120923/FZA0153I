@@ -10,10 +10,10 @@ class Goodng extends Component
 {
     public $expct = 0;
     public $TotalNg = 0;
-    public $excssqty = '';
-    public $lackqty = '';
-    public $reworkqty = '';
-    public $sampleqty = '';
+    public $excssqty = 0;
+    public $lackqty = 0;
+    public $reworkqty = 0;
+    public $sampleqty = 0;
     public $goodqty = 0;
     public $ngratioqty = 0;
     public $locked = false;
@@ -27,8 +27,16 @@ class Goodng extends Component
         'FromUpdate' => 'FetchngRework',
         'locked' => 'locked',
         'TriggerGoodNg' => 'GoodNg',
-        'ClearForm' => 'ClearForm'
+        'ClearForm' => 'ClearForm',
+        'GoodNg' => 'GoodNg'
     ];
+    public function mount()
+    {
+        $this->excssqty = 0;
+        $this->lackqty = 0;
+        $this->reworkqty = 0;
+        $this->sampleqty = 0;
+    }
 
     public function locked($data)
     {
@@ -46,6 +54,30 @@ class Goodng extends Component
         $this->goodqty = 0;
         $this->ngratioqty = 0;
     }
+
+    public function onExcessBlur()
+    {
+        $this->GoodNg();
+        $this->dispatchBrowserEvent('focus', ['id' => 'lack']);
+    }
+
+    public function onLackingBlur()
+    {
+        $this->GoodNg();
+        $this->dispatchBrowserEvent('focus', ['id' => 'rework']);
+    }
+    public function onReworkBlur()
+    {
+        $this->GoodNg();
+        $this->dispatchBrowserEvent('focus', ['id' => 'sample']);
+    }
+
+    public function onSampleBlur()
+    {
+        $this->GoodNg();
+        // Sample is the last input, so no next focus needed
+    }
+
 
     public function Fetch($data)
     {
@@ -129,26 +161,25 @@ class Goodng extends Component
 
     public function GoodNg()
     {
-    
-        if($this->excssqty === ""){
+
+        if ($this->excssqty === "") {
             $this->excssqty = 0;
         }
-        if($this-> lackqty === ""){
+        if ($this->lackqty === "") {
             $this->lackqty = 0;
         }
-        if($this->reworkqty === ""){
+        if ($this->reworkqty === "") {
             $this->reworkqty = 0;
         }
-        if($this->sampleqty === ""){
+        if ($this->sampleqty === "") {
             $this->sampleqty = 0;
         }
 
-        if ($this->excssqty <> 0){
+        if ($this->excssqty <> 0) {
             $this->locklack = true;
             $this->lackqty = 0;
-        }else{
+        } else {
             $this->locklack = false;
-            
         }
         $this->validate();
         $this->goodqty = (float)$this->expct
@@ -162,7 +193,7 @@ class Goodng extends Component
 
         $denominator = $this->goodqty + $this->TotalNg;
 
-        if ($denominator === 0) {
+        if ((float) $denominator == 0) {
             $this->ngratioqty = 0;
         } else {
             $this->ngratioqty = number_format(($this->TotalNg / $denominator) * 100, 2);

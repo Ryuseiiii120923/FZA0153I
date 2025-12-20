@@ -174,6 +174,7 @@ class Checkppf extends Component
             $ppfexisting = AddDefect::where('PPFNo', $this->ppf)->first();
             $check = ModelsCheckPPF::where('流動NO', $this->ppf)->first();
             $hf = CheckHF::where('流動NO', $this->ppf)->first();
+            $this->dispatch('GoodNg');
 
             if (!$check) {
                 $this->errorexisting = 'PPF No does not encoded on Molding Result!';
