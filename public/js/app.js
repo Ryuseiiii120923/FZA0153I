@@ -23,79 +23,124 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+/**
+ * Known adapters mapping.
+ * Provides environment-specific adapters for Axios:
+ * - `http` for Node.js
+ * - `xhr` for browsers
+ * - `fetch` for fetch API-based requests
+ * 
+ * @type {Object<string, Function|Object>}
+ */
 const knownAdapters = {
   http: _http_js__WEBPACK_IMPORTED_MODULE_1__["default"],
   xhr: _xhr_js__WEBPACK_IMPORTED_MODULE_2__["default"],
   fetch: {
     get: _fetch_js__WEBPACK_IMPORTED_MODULE_3__.getFetch,
   }
-}
+};
 
+// Assign adapter names for easier debugging and identification
 _utils_js__WEBPACK_IMPORTED_MODULE_0__["default"].forEach(knownAdapters, (fn, value) => {
   if (fn) {
     try {
-      Object.defineProperty(fn, 'name', {value});
+      Object.defineProperty(fn, 'name', { value });
     } catch (e) {
       // eslint-disable-next-line no-empty
     }
-    Object.defineProperty(fn, 'adapterName', {value});
+    Object.defineProperty(fn, 'adapterName', { value });
   }
 });
 
+/**
+ * Render a rejection reason string for unknown or unsupported adapters
+ * 
+ * @param {string} reason
+ * @returns {string}
+ */
 const renderReason = (reason) => `- ${reason}`;
 
+/**
+ * Check if the adapter is resolved (function, null, or false)
+ * 
+ * @param {Function|null|false} adapter
+ * @returns {boolean}
+ */
 const isResolvedHandle = (adapter) => _utils_js__WEBPACK_IMPORTED_MODULE_0__["default"].isFunction(adapter) || adapter === null || adapter === false;
 
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
-  getAdapter: (adapters, config) => {
-    adapters = _utils_js__WEBPACK_IMPORTED_MODULE_0__["default"].isArray(adapters) ? adapters : [adapters];
+/**
+ * Get the first suitable adapter from the provided list.
+ * Tries each adapter in order until a supported one is found.
+ * Throws an AxiosError if no adapter is suitable.
+ * 
+ * @param {Array<string|Function>|string|Function} adapters - Adapter(s) by name or function.
+ * @param {Object} config - Axios request configuration
+ * @throws {AxiosError} If no suitable adapter is available
+ * @returns {Function} The resolved adapter function
+ */
+function getAdapter(adapters, config) {
+  adapters = _utils_js__WEBPACK_IMPORTED_MODULE_0__["default"].isArray(adapters) ? adapters : [adapters];
 
-    const {length} = adapters;
-    let nameOrAdapter;
-    let adapter;
+  const { length } = adapters;
+  let nameOrAdapter;
+  let adapter;
 
-    const rejectedReasons = {};
+  const rejectedReasons = {};
 
-    for (let i = 0; i < length; i++) {
-      nameOrAdapter = adapters[i];
-      let id;
+  for (let i = 0; i < length; i++) {
+    nameOrAdapter = adapters[i];
+    let id;
 
-      adapter = nameOrAdapter;
+    adapter = nameOrAdapter;
 
-      if (!isResolvedHandle(nameOrAdapter)) {
-        adapter = knownAdapters[(id = String(nameOrAdapter)).toLowerCase()];
+    if (!isResolvedHandle(nameOrAdapter)) {
+      adapter = knownAdapters[(id = String(nameOrAdapter)).toLowerCase()];
 
-        if (adapter === undefined) {
-          throw new _core_AxiosError_js__WEBPACK_IMPORTED_MODULE_4__["default"](`Unknown adapter '${id}'`);
-        }
+      if (adapter === undefined) {
+        throw new _core_AxiosError_js__WEBPACK_IMPORTED_MODULE_4__["default"](`Unknown adapter '${id}'`);
       }
-
-      if (adapter && (_utils_js__WEBPACK_IMPORTED_MODULE_0__["default"].isFunction(adapter) || (adapter = adapter.get(config)))) {
-        break;
-      }
-
-      rejectedReasons[id || '#' + i] = adapter;
     }
 
-    if (!adapter) {
+    if (adapter && (_utils_js__WEBPACK_IMPORTED_MODULE_0__["default"].isFunction(adapter) || (adapter = adapter.get(config)))) {
+      break;
+    }
 
-      const reasons = Object.entries(rejectedReasons)
-        .map(([id, state]) => `adapter ${id} ` +
-          (state === false ? 'is not supported by the environment' : 'is not available in the build')
-        );
+    rejectedReasons[id || '#' + i] = adapter;
+  }
 
-      let s = length ?
-        (reasons.length > 1 ? 'since :\n' + reasons.map(renderReason).join('\n') : ' ' + renderReason(reasons[0])) :
-        'as no adapter specified';
-
-      throw new _core_AxiosError_js__WEBPACK_IMPORTED_MODULE_4__["default"](
-        `There is no suitable adapter to dispatch the request ` + s,
-        'ERR_NOT_SUPPORT'
+  if (!adapter) {
+    const reasons = Object.entries(rejectedReasons)
+      .map(([id, state]) => `adapter ${id} ` +
+        (state === false ? 'is not supported by the environment' : 'is not available in the build')
       );
-    }
 
-    return adapter;
-  },
+    let s = length ?
+      (reasons.length > 1 ? 'since :\n' + reasons.map(renderReason).join('\n') : ' ' + renderReason(reasons[0])) :
+      'as no adapter specified';
+
+    throw new _core_AxiosError_js__WEBPACK_IMPORTED_MODULE_4__["default"](
+      `There is no suitable adapter to dispatch the request ` + s,
+      'ERR_NOT_SUPPORT'
+    );
+  }
+
+  return adapter;
+}
+
+/**
+ * Exports Axios adapters and utility to resolve an adapter
+ */
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  /**
+   * Resolve an adapter from a list of adapter names or functions.
+   * @type {Function}
+   */
+  getAdapter,
+
+  /**
+   * Exposes all known adapters
+   * @type {Object<string, Function|Object>}
+   */
   adapters: knownAdapters
 });
 
@@ -387,7 +432,7 @@ const factory = (env) => {
 const seedCache = new Map();
 
 const getFetch = (config) => {
-  let env = config ? config.env : {};
+  let env = (config && config.env) || {};
   const {fetch, Request, Response} = env;
   const seeds = [
     Request, Response, fetch
@@ -1738,7 +1783,7 @@ class InterceptorManager {
    *
    * @param {Number} id The ID that was returned by `use`
    *
-   * @returns {Boolean} `true` if the interceptor was removed, `false` otherwise
+   * @returns {void}
    */
   eject(id) {
     if (this.handlers[id]) {
@@ -1968,11 +2013,11 @@ function mergeConfig(config1, config2) {
   }
 
   // eslint-disable-next-line consistent-return
-  function mergeDeepProperties(a, b, prop , caseless) {
+  function mergeDeepProperties(a, b, prop, caseless) {
     if (!_utils_js__WEBPACK_IMPORTED_MODULE_0__["default"].isUndefined(b)) {
-      return getMergedValue(a, b, prop , caseless);
+      return getMergedValue(a, b, prop, caseless);
     } else if (!_utils_js__WEBPACK_IMPORTED_MODULE_0__["default"].isUndefined(a)) {
-      return getMergedValue(undefined, a, prop , caseless);
+      return getMergedValue(undefined, a, prop, caseless);
     }
   }
 
@@ -2030,7 +2075,7 @@ function mergeConfig(config1, config2) {
     socketPath: defaultToConfig2,
     responseEncoding: defaultToConfig2,
     validateStatus: mergeDirectKeys,
-    headers: (a, b , prop) => mergeDeepProperties(headersToObject(a), headersToObject(b),prop, true)
+    headers: (a, b, prop) => mergeDeepProperties(headersToObject(a), headersToObject(b), prop, true)
   };
 
   _utils_js__WEBPACK_IMPORTED_MODULE_0__["default"].forEach(Object.keys({...config1, ...config2}), function computeConfigValue(prop) {
@@ -2350,7 +2395,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   VERSION: () => (/* binding */ VERSION)
 /* harmony export */ });
-const VERSION = "1.12.2";
+const VERSION = "1.13.2";
 
 /***/ }),
 
@@ -2503,6 +2548,12 @@ const HttpStatusCode = {
   LoopDetected: 508,
   NotExtended: 510,
   NetworkAuthenticationRequired: 511,
+  WebServerIsDown: 521,
+  ConnectionTimedOut: 522,
+  OriginIsUnreachable: 523,
+  TimeoutOccurred: 524,
+  SslHandshakeFailed: 525,
+  InvalidSslCertificate: 526,
 };
 
 Object.entries(HttpStatusCode).forEach(([key, value]) => {
@@ -2527,6 +2578,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 
 
+/**
+ * Create a bound version of a function with a specified `this` context
+ *
+ * @param {Function} fn - The function to bind
+ * @param {*} thisArg - The value to be passed as the `this` parameter
+ * @returns {Function} A new function that will call the original function with the specified `this` context
+ */
 function bind(fn, thisArg) {
   return function wrap() {
     return fn.apply(thisArg, arguments);
@@ -2736,27 +2794,38 @@ __webpack_require__.r(__webpack_exports__);
 
   // Standard browser envs support document.cookie
   {
-    write(name, value, expires, path, domain, secure) {
-      const cookie = [name + '=' + encodeURIComponent(value)];
+    write(name, value, expires, path, domain, secure, sameSite) {
+      if (typeof document === 'undefined') return;
 
-      _utils_js__WEBPACK_IMPORTED_MODULE_0__["default"].isNumber(expires) && cookie.push('expires=' + new Date(expires).toGMTString());
+      const cookie = [`${name}=${encodeURIComponent(value)}`];
 
-      _utils_js__WEBPACK_IMPORTED_MODULE_0__["default"].isString(path) && cookie.push('path=' + path);
-
-      _utils_js__WEBPACK_IMPORTED_MODULE_0__["default"].isString(domain) && cookie.push('domain=' + domain);
-
-      secure === true && cookie.push('secure');
+      if (_utils_js__WEBPACK_IMPORTED_MODULE_0__["default"].isNumber(expires)) {
+        cookie.push(`expires=${new Date(expires).toUTCString()}`);
+      }
+      if (_utils_js__WEBPACK_IMPORTED_MODULE_0__["default"].isString(path)) {
+        cookie.push(`path=${path}`);
+      }
+      if (_utils_js__WEBPACK_IMPORTED_MODULE_0__["default"].isString(domain)) {
+        cookie.push(`domain=${domain}`);
+      }
+      if (secure === true) {
+        cookie.push('secure');
+      }
+      if (_utils_js__WEBPACK_IMPORTED_MODULE_0__["default"].isString(sameSite)) {
+        cookie.push(`SameSite=${sameSite}`);
+      }
 
       document.cookie = cookie.join('; ');
     },
 
     read(name) {
-      const match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
-      return (match ? decodeURIComponent(match[3]) : null);
+      if (typeof document === 'undefined') return null;
+      const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+      return match ? decodeURIComponent(match[1]) : null;
     },
 
     remove(name) {
-      this.write(name, '', Date.now() - 86400000);
+      this.write(name, '', Date.now() - 86400000, '/');
     }
   }
 
@@ -7169,6 +7238,7 @@ __webpack_require__.r(__webpack_exports__);
 document.addEventListener("DOMContentLoaded", function () {
   var codeReader = new ZXing.BrowserMultiFormatReader();
   var scanppf = document.getElementById("scan-ppf");
+  var scanbtn = document.getElementById("scan-btn");
   var scanning = false;
   var closedef = document.getElementById("defect-id-close");
   var adddef = document.getElementById("addDefect");
@@ -7177,7 +7247,7 @@ document.addEventListener("DOMContentLoaded", function () {
   var ppf = document.getElementById("PPF");
   var inspectorInputs = document.querySelectorAll("#inspectors input");
   lockFormFields();
-  lockbuttons();
+  // lockbuttons();
   // const alreadyReloaded = localStorage.getItem("alreadyReloaded");
 
   // if (savedBtn && !alreadyReloaded) {
@@ -7225,9 +7295,57 @@ document.addEventListener("DOMContentLoaded", function () {
       })["catch"](function (err) {
         console.error("Permission or device error:", err);
       });
-      var selectedDeviceId = videoInputDevices[1].deviceId;
+      var selectedDeviceId = videoInputDevices[0].deviceId;
       scanning = true;
       codeReader.decodeFromVideoDevice(selectedDeviceId, "video", function (result, err) {
+        if (result) {
+          var qrcode = document.getElementById("PPF");
+          var scannedPPF = result.getText().trim();
+          qrcode.value = scannedPPF;
+          qrcode.dispatchEvent(new Event("input"));
+          Livewire.dispatch("post-ppf", {
+            ppf: scannedPPF
+          });
+          qrcode.focus();
+          codeReader.reset();
+          scanning = false;
+          document.getElementById("scanner-id-close").click();
+          return;
+        }
+        if (err && !(err instanceof ZXing.NotFoundException)) {
+          console.error(err);
+        }
+      });
+    })["catch"](function (err) {
+      console.error("error", err);
+      scanning = false;
+    });
+  });
+  scanbtn.addEventListener("click", function () {
+    if (scanning == true) {
+      return;
+    }
+    navigator.mediaDevices.enumerateDevices().then(function (devices) {
+      var videoInputDevices = devices.filter(function (device) {
+        return device.kind === "videoinput";
+      });
+      if (videoInputDevices.length === 0) {
+        alert("No Camera found.");
+        scanning = false;
+        return;
+      }
+      navigator.mediaDevices.getUserMedia({
+        video: true
+      }).then(function () {
+        return navigator.mediaDevices.enumerateDevices();
+      }).then(function (devices) {
+        console.log(devices);
+      })["catch"](function (err) {
+        console.error("Permission or device error:", err);
+      });
+      var selectedDeviceId = videoInputDevices[0].deviceId;
+      scanning = true;
+      codeReader.decodeFromVideoDevice(selectedDeviceId, "videologin", function (result, err) {
         if (result) {
           var qrcode = document.getElementById("PPF");
           var scannedPPF = result.getText().trim();
@@ -7334,7 +7452,17 @@ document.addEventListener("DOMContentLoaded", function () {
     resetActionButtons();
     document.getElementById("SubmitBtn").textContent = "Add";
     document.getElementById("SubmitBtn").hidden = false;
+    document.getElementById("title").textContent = "VI Defect (Add)";
     document.getElementById("SubmitBtn").classList.add("bg-green-700", "hover:bg-green-800", "focus:outline-none", "focus:ring-4", "focus:ring-green-300");
+    document.getElementById("Init-add").classList.add("bg-green-900", "scale-95", "shadow-inner", "transition-all", "border-2", "border-double", "border-green-400");
+  });
+  Livewire.on('process', function () {
+    lockFormFields();
+    resetActionButtons();
+    var submitBtn = document.getElementById("SubmitBtns");
+    submitBtn.textContent = "Add";
+    submitBtn.hidden = false;
+    submitBtn.classList.add("bg-green-700", "hover:bg-green-800", "focus:outline-none", "focus:ring-4", "focus:ring-green-300");
     document.getElementById("Init-add").classList.add("bg-green-900", "scale-95", "shadow-inner", "transition-all", "border-2", "border-double", "border-green-400");
   });
   document.addEventListener('haserror', function (event) {
@@ -7362,6 +7490,7 @@ document.addEventListener("DOMContentLoaded", function () {
     resetActionButtons();
     document.getElementById("SubmitBtn").textContent = "Edit";
     document.getElementById("SubmitBtn").hidden = false;
+    document.getElementById("title").textContent = "VI Defect (Edit)";
     document.getElementById("SubmitBtn").classList.add("bg-blue-700", "hover:bg-blue-800", "focus:outline-none", "focus:ring-4", "focus:ring-blue-300");
     document.getElementById("Init-update").classList.add("bg-blue-900", "scale-95", "shadow-inner", "transition-all", "border-2", "border-double", "border-blue-400");
   });
@@ -7369,11 +7498,13 @@ document.addEventListener("DOMContentLoaded", function () {
     resetActionButtons();
     document.getElementById("SubmitBtn").textContent = "Delete";
     document.getElementById("SubmitBtn").hidden = false;
+    document.getElementById("title").textContent = "VI Defect (Delete)";
     document.getElementById("SubmitBtn").classList.add("bg-red-700", "hover:bg-red-800", "focus:outline-none", "focus:ring-4", "focus:ring-red-300");
     document.getElementById("Init-delete").classList.add("bg-red-900", "scale-95", "shadow-inner", "transition-all", "border-2", "border-double", "border-red-400");
   });
   window.addEventListener("viewbutton", function () {
     resetActionButtons();
+    document.getElementById("title").textContent = "VI Defect (Inquire)";
     document.getElementById("Init-inquire").classList.add("bg-yellow-900", "scale-95", "shadow-inner", "transition-all", "border-2", "border-double", "border-yellow-400");
   });
   function enableButtons() {
@@ -7542,6 +7673,27 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
   }
+  var submitbtn = document.getElementById("SubmitBtn");
+  //    ppf.addEventListener("blur", () => {
+  //     const value = ppf.value.trim();
+  //     if (value === '' || !/^\d+$/.test(value)) {
+  //         submitbtn.disabled = true; // keep disabled if invalid
+  //     } else {
+  //         submitbtn.disabled = false; // enable if valid
+  //     }
+  // });
+  // ppf.addEventListener("input", validatePPF);
+
+  function validatePPF() {
+    var value = ppf.value.trim();
+
+    // Disable button if empty or not integer
+    submitbtn.disabled = value === '' || !/^\d+$/.test(value);
+  }
+
+  // Validate on input (as user types)
+  ppf.addEventListener("input", validatePPF);
+  validatePPF();
   document.addEventListener("livewire:load", function () {
     initGoodNgInputs();
   });

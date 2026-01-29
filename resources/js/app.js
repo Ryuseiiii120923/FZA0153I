@@ -3,6 +3,7 @@ import "./bootstrap.js";
 document.addEventListener("DOMContentLoaded", () => {
     const codeReader = new ZXing.BrowserMultiFormatReader();
     const scanppf = document.getElementById("scan-ppf");
+    const scanbtn = document.getElementById("scan-btn")
     let scanning = false;
     let closedef = document.getElementById("defect-id-close");
     let adddef = document.getElementById("addDefect");
@@ -12,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const inspectorInputs = document.querySelectorAll("#inspectors input");
 
     lockFormFields();
-    lockbuttons();
+    // lockbuttons();
     // const alreadyReloaded = localStorage.getItem("alreadyReloaded");
 
     // if (savedBtn && !alreadyReloaded) {
@@ -66,7 +67,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         console.error("Permission or device error:", err);
                     });
 
-                const selectedDeviceId = videoInputDevices[1].deviceId;
+                const selectedDeviceId = videoInputDevices[0].deviceId;
                 scanning = true;
                 codeReader.decodeFromVideoDevice(
                     selectedDeviceId,
@@ -78,7 +79,6 @@ document.addEventListener("DOMContentLoaded", () => {
                             qrcode.value = scannedPPF;
                             qrcode.dispatchEvent(new Event("input"));
                             Livewire.dispatch("post-ppf", { ppf: scannedPPF });
-
                             qrcode.focus();
                             codeReader.reset();
                             scanning = false;
@@ -98,6 +98,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
     });
 
+    
     window.hasError = false;
 
     window.addEventListener("ppf-error", () => {
@@ -226,6 +227,7 @@ document.addEventListener("DOMContentLoaded", () => {
         resetActionButtons();
         document.getElementById("SubmitBtn").textContent = "Add";
         document.getElementById("SubmitBtn").hidden = false;
+        document.getElementById("title").textContent = "VI Defect (Add)"
         document
             .getElementById("SubmitBtn")
             .classList.add(
@@ -247,6 +249,31 @@ document.addEventListener("DOMContentLoaded", () => {
                 "border-green-400"
             );
     });
+
+    Livewire.on('process', () => {
+    lockFormFields();
+    resetActionButtons();
+    const submitBtn = document.getElementById("SubmitBtns");
+    submitBtn.textContent = "Add";
+    submitBtn.hidden = false;
+    submitBtn.classList.add(
+        "bg-green-700",
+        "hover:bg-green-800",
+        "focus:outline-none",
+        "focus:ring-4",
+        "focus:ring-green-300"
+    );
+
+    document.getElementById("Init-add").classList.add(
+        "bg-green-900",
+        "scale-95",
+        "shadow-inner",
+        "transition-all",
+        "border-2",
+        "border-double",
+        "border-green-400"
+    );
+});
     document.addEventListener('haserror', event => {
     let message = null;
 
@@ -273,6 +300,7 @@ document.addEventListener("DOMContentLoaded", () => {
         resetActionButtons();
         document.getElementById("SubmitBtn").textContent = "Edit";
         document.getElementById("SubmitBtn").hidden = false;
+        document.getElementById("title").textContent = "VI Defect (Edit)"
         document
             .getElementById("SubmitBtn")
             .classList.add(
@@ -299,6 +327,7 @@ document.addEventListener("DOMContentLoaded", () => {
         resetActionButtons();
         document.getElementById("SubmitBtn").textContent = "Delete";
         document.getElementById("SubmitBtn").hidden = false;
+        document.getElementById("title").textContent = "VI Defect (Delete)"
         document
             .getElementById("SubmitBtn")
             .classList.add(
@@ -322,6 +351,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     window.addEventListener("viewbutton", () => {
         resetActionButtons();
+        document.getElementById("title").textContent = "VI Defect (Inquire)"
         document
             .getElementById("Init-inquire")
             .classList.add(
@@ -350,6 +380,8 @@ document.addEventListener("DOMContentLoaded", () => {
             .getElementById("OuterPanel")
             .classList.remove("pointer-events-none");
     }
+
+
 
     // function persistAction(action, buttonId) {
     //     sessionStorage.setItem("lastAction", action);
@@ -560,6 +592,29 @@ document.addEventListener("DOMContentLoaded", () => {
             });
     }
 
+    const submitbtn = document.getElementById("SubmitBtn");
+//    ppf.addEventListener("blur", () => {
+//     const value = ppf.value.trim();
+//     if (value === '' || !/^\d+$/.test(value)) {
+//         submitbtn.disabled = true; // keep disabled if invalid
+//     } else {
+//         submitbtn.disabled = false; // enable if valid
+//     }
+// });
+// ppf.addEventListener("input", validatePPF);
+
+function validatePPF() {
+    const value = ppf.value.trim();
+
+    // Disable button if empty or not integer
+    submitbtn.disabled = value === '' || !/^\d+$/.test(value);
+}
+
+// Validate on input (as user types)
+ppf.addEventListener("input", validatePPF);
+validatePPF();
+
+
     document.addEventListener("livewire:load", () => {
         initGoodNgInputs();
     });
@@ -571,3 +626,4 @@ document.addEventListener("DOMContentLoaded", () => {
         closere.click();
     });
 });
+    
