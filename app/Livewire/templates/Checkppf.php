@@ -314,7 +314,8 @@ class Checkppf extends Component
     $this->systemname = $systemname;
     $this->ppf = $ppf;
     $this->actiondash = $actiondash;
-    $this->encoder = UserAuth::user()->社員CD;
+    $userencoder = UserAuth::user()->社員CD;
+    $this->encoder = (int)$userencoder;
 }
 
     public function EditActions($data)

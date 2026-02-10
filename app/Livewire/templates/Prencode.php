@@ -172,7 +172,7 @@ class Prencode extends Component
     #[On('LoadDefectsPren')]
     public function LoadDefectsPren($ppf)
     {
-        $defect = DefectInsp::select('Defect', 'Quantity')->where('PPFNo', $ppf)->where('InspectorID', $this->encoder)->get();
+        $defect = DefectInsp::select('Defect', 'Quantity')->where('PPFNo', $ppf)->where('InspectorID', (int)$this->encoder)->get();
 
         if ($defect) {
             // Main defect list
@@ -220,7 +220,7 @@ class Prencode extends Component
     #[On('LoadReworksPren')]
     public function LoadReworksPren($ppf)
     {
-        $reworkss = ReworkInsp::select('HFNo', 'TotalInspQty', 'Defect', 'Quantity')->where('PPFNo', $ppf)->where('InspectorID', $this->encoder)->get();
+        $reworkss = ReworkInsp::select('HFNo', 'TotalInspQty', 'Defect', 'Quantity')->where('PPFNo', $ppf)->where('InspectorID', (int)$this->encoder)->get();
 
         if ($reworkss) {
             $this->rework = $reworkss->map(function ($item) {
@@ -308,9 +308,15 @@ class Prencode extends Component
     public function mount()
     {
         $this->dispatch('removelock');
-        $this->encoder = UserAuth::user()->社員CD;
-        $UserName = WorkerName::select('名前 ')->Where('社員CD', $this->encoder)->first();
-        $this->username = $UserName->名前 ?? '';
+
+        $user = UserAuth::user(); // default guard (GL)
+        $worker = UserAuth::guard('worker')->user(); // worker guard
+
+        $this->encoder = $user?->社員CD ?? $worker?->社員CD ?? null;
+
+        $this->username = $user?->employeeName?->名前
+            ?? $worker?->employee?->名前
+            ?? 'User';
     }
 
     #[On('DeletePPFPren')]
@@ -323,23 +329,24 @@ class Prencode extends Component
     #[On('deletePrencode')]
     public function deletePrencode()
     {
-        DefectInsp::where('InspectorID', $this->encoder)->where('PPFNo', $this->ppf)->delete();
-        ReworkInsp::where('InspectorID', $this->encoder)->where('PPFNo', $this->ppf)->delete();
-        SmallInsp::where('InspectorID', $this->encoder)->where('PPFNo', $this->ppf)->delete();
-        PRInsp::where('InspectorID', $this->encoder)->where('PPFNo', $this->ppf)->delete();
+        DefectInsp::where('InspectorID', (int)$this->encoder)->where('PPFNo', $this->ppf)->delete();
+        ReworkInsp::where('InspectorID', (int)$this->encoder)->where('PPFNo', $this->ppf)->delete();
+        SmallInsp::where('InspectorID', (int)$this->encoder)->where('PPFNo', $this->ppf)->delete();
+        PRInsp::where('InspectorID', (int)$this->encoder)->where('PPFNo', $this->ppf)->delete();
         session()->flash('success', 'Delete successfully!');
     }
     public function editPrencode()
     {
-        DefectInsp::where('InspectorID', $this->encoder)->where('PPFNo', $this->ppf)->delete();
-        ReworkInsp::where('InspectorID', $this->encoder)->where('PPFNo', $this->ppf)->delete();
-        SmallInsp::where('InspectorID', $this->encoder)->where('PPFNo', $this->ppf)->delete();
-        PrInsp::where('InspectorID', $this->encoder)->where('PPFNo', $this->ppf)->delete();
+        DefectInsp::where('InspectorID', (int)$this->encoder)->where('PPFNo', $this->ppf)->delete();
+        ReworkInsp::where('InspectorID', (int)$this->encoder)->where('PPFNo', $this->ppf)->delete();
+        SmallInsp::where('InspectorID', (int)$this->encoder)->where('PPFNo', $this->ppf)->delete();
+        PrInsp::where('InspectorID', (int)$this->encoder)->where('PPFNo', $this->ppf)->delete();
         $this->submitPrencode();
     }
 
     #[On('fetchTotalInspection')]
-    public function fetchTotalInspection($data){
+    public function fetchTotalInspection($data)
+    {
         $this->totalInspection = $data;
     }
 
@@ -354,11 +361,11 @@ class Prencode extends Component
             return;
         }
 
-        if(!empty($this->ppf)){
+        if (!empty($this->ppf)) {
             PRInsp::Create([
-                'InspectorID' => $this->encoder,
+                'InspectorID' => (int)$this->encoder,
                 'PPFNo' => $this->ppf,
-                'total_inspect' =>$this->totalInspection,
+                'total_inspect' => $this->totalInspection,
                 'DateEncode' => Carbon::now()->format('Y-m-d h:i:s A')
             ]);
         }
@@ -380,7 +387,7 @@ class Prencode extends Component
                     $this->hfno3 => $hfno[2] ?? '',
                     $this->hfno4 => $hfno[3] ?? '',
                     $this->hfno5 => $hfno[4] ?? '',
-                    'InspectorID' => $this->encoder,
+                    'InspectorID' => (int)$this->encoder,
                     'PPFNo' => $this->ppf,
                     'Defect' => $type ?? null,
                     'Quantity' => $qty ?? null,
@@ -435,7 +442,7 @@ class Prencode extends Component
             foreach ($this->smalldefects as $largeDefect => $smalls) {
                 foreach ($smalls as $small) {
                     SmallInsp::create([
-                        'InspectorID' => $this->encoder,
+                        'InspectorID' => (int)$this->encoder,
                         'PPFNo'       => $this->ppf,
                         'LargeDefect' => $largeDefect, // <-- the name, not the array
                         'SmallDefect' => $small['newSmallDefect'] ?? $small['type'],

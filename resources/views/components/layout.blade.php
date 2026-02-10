@@ -28,33 +28,37 @@
     </nav>
 
     <header class="relative bg-blue-500 after:pointer-events-none after:absolute after:inset-x-0 after:inset-y-0 after:border-y after:border-white/10">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex items-center justify-between">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex items-center justify-between">
 
-        <!-- Placeholder for spacing / optional icon -->
-        <div class="flex-shrink-0 w-12 sm:w-16"></div>
+            <!-- Placeholder for spacing / optional icon -->
+            <div class="flex-shrink-0 w-12 sm:w-16"></div>
 
-        <!-- Title -->
-        <h1 id="title" class="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white text-center flex-1">
-            VI Defect
-        </h1>
+            <!-- Title -->
+            <h1 id="title" class="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white text-center flex-1">
+                VI Defect
+            </h1>
 
-        <!-- Logout Button -->
-        <div class="flex-shrink-0">
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit"
-                    class="text-white hover:bg-blue-700 bg-[#0F3C89] font-medium rounded-lg text-sm sm:text-base px-4 sm:px-5 py-2 sm:py-2.5">
-                    Logout
-                </button>
-            </form>
+            <!-- Logout Button -->
+            <div class="flex-shrink-0">
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit"
+                        class="text-white hover:bg-blue-700 bg-[#0F3C89] font-medium rounded-lg text-sm sm:text-base px-4 sm:px-5 py-2 sm:py-2.5">
+                        Logout
+                    </button>
+                </form>
+            </div>
         </div>
-    </div>
-</header>
+    </header>
 
     <main>
         <div class="mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 text-gray-800 text-center sm:text-left">
-                Welcome, {{ Auth::user()->employeeName->名前 }}!
+                Welcome, {{
+    Auth::user()?->employeeName?->名前
+    ?? Auth::guard('worker')->user()?->employee?->名前
+    ?? 'User'
+}}!
             </h1>
 
             @include('components.modals')

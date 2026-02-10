@@ -26,8 +26,20 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [HomeController::class, 'operatordash'])->name('operator.dashboard');
 
     Route::get('/gldash', [HomeController::class, 'gldash'])->name('gl.dashboard');
-    Route::get('/ppfdash',[HomeController::class, 'ppfdash'])->name('gl.ppfdashboard');
+    Route::get('/ppfdash', [HomeController::class, 'ppfdash'])->name('gl.ppfdashboard');
 
     // Example Livewire update route if you need dynamic params
     // Route::get('/update/{ppf}', [HomeController::class, 'update'])->name('post.update');
+});
+
+Route::middleware('auth:worker')->group(function () {
+    Route::get('/home', [HomeController::class, 'index'])->name('home.index');
+
+    Route::get('/prencode', [HomeController::class, 'prencode'])->name('prencode');
+
+    Route::get('/selector', [HomeController::class, 'selector'])->name('selector');
+
+    Route::get('/main', [HomeController::class, 'Main'])->name('main');
+
+    Route::get('/dashboard', [HomeController::class, 'operatordash'])->name('operator.dashboard');
 });

@@ -457,7 +457,8 @@ class Add extends Component
     {
         //->employeeName->名前 ?? '';
         $this->InspectDates = Carbon::now()->format('Y-m-d');
-        $this->encoder = UserAuth::user()->社員CD;
+        $userencoder= UserAuth::user()->社員CD;
+        $this->encoder = (int)$userencoder;
         $UserName = WorkerName::select('名前 ')->Where('社員CD', $this->encoder)->first();
         $this->username = $UserName->名前 ?? '';
     }

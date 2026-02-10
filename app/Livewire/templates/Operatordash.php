@@ -22,7 +22,8 @@ class Operatordash extends Component
 
     public function mount()
     {
-        $this->encoder = UserAuth::user()->社員CD;
+        $userencoder = UserAuth::user()->社員CD;
+        $this->encoder = (int)$userencoder;
     }
 
     public function render()
