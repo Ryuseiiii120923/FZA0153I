@@ -3,6 +3,7 @@
 namespace App\Livewire\Templates;
 
 use App\Models\DefectInsp;
+use App\Models\PRInsp;
 use App\Models\ReworkInsp;
 use App\Models\SmallInsp;
 use App\Models\WorkerName;
@@ -21,6 +22,7 @@ class Prencode extends Component
     public $encoder, $username;
     public $lastdef;
     public $lastqty;
+    public $totalInspection;
 
     public $actiondash;
 
@@ -29,7 +31,7 @@ class Prencode extends Component
     public $rework = [];
 
     public $totalngrework;
-     public $hfno1, $hfno2, $hfno3, $hfno4, $hfno5;
+    public $hfno1, $hfno2, $hfno3, $hfno4, $hfno5;
 
 
     public $listeners = [
@@ -215,8 +217,8 @@ class Prencode extends Component
 
 
     //To Fetch Rework
-     #[On('LoadReworksPren')]
-     public function LoadReworksPren($ppf)
+    #[On('LoadReworksPren')]
+    public function LoadReworksPren($ppf)
     {
         $reworkss = ReworkInsp::select('HFNo', 'TotalInspQty', 'Defect', 'Quantity')->where('PPFNo', $ppf)->where('InspectorID', $this->encoder)->get();
 
@@ -236,7 +238,7 @@ class Prencode extends Component
                 ]);
             }
         }
-        
+
 
         $this->totalngrework = collect($this->rework)
             ->sum(fn($x) => (int) $x['quan']);
@@ -299,25 +301,48 @@ class Prencode extends Component
 
     public function render()
     {
+
         return view('livewire.templates.prencode');
     }
 
     public function mount()
     {
+        $this->dispatch('removelock');
         $this->encoder = UserAuth::user()->社員CD;
         $UserName = WorkerName::select('名前 ')->Where('社員CD', $this->encoder)->first();
         $this->username = $UserName->名前 ?? '';
     }
 
+    #[On('DeletePPFPren')]
+    public function fetchdeleteppf($data)
+    {
+        $this->ppf = $data['ppf'];
+        $this->dispatch('confirm-deletePren');
+    }
+
+    #[On('deletePrencode')]
+    public function deletePrencode()
+    {
+        DefectInsp::where('InspectorID', $this->encoder)->where('PPFNo', $this->ppf)->delete();
+        ReworkInsp::where('InspectorID', $this->encoder)->where('PPFNo', $this->ppf)->delete();
+        SmallInsp::where('InspectorID', $this->encoder)->where('PPFNo', $this->ppf)->delete();
+        PRInsp::where('InspectorID', $this->encoder)->where('PPFNo', $this->ppf)->delete();
+        session()->flash('success', 'Delete successfully!');
+    }
     public function editPrencode()
     {
         DefectInsp::where('InspectorID', $this->encoder)->where('PPFNo', $this->ppf)->delete();
         ReworkInsp::where('InspectorID', $this->encoder)->where('PPFNo', $this->ppf)->delete();
         SmallInsp::where('InspectorID', $this->encoder)->where('PPFNo', $this->ppf)->delete();
+        PrInsp::where('InspectorID', $this->encoder)->where('PPFNo', $this->ppf)->delete();
         $this->submitPrencode();
     }
 
-    public function deletePrencode() {}
+    #[On('fetchTotalInspection')]
+    public function fetchTotalInspection($data){
+        $this->totalInspection = $data;
+    }
+
     public function submitPrencode()
     {
         if (empty($this->ppf)) {
@@ -327,6 +352,15 @@ class Prencode extends Component
         if ($this->ppf === "0") {
             session()->flash('failed', 'Please Enter PPF!');
             return;
+        }
+
+        if(!empty($this->ppf)){
+            PRInsp::Create([
+                'InspectorID' => $this->encoder,
+                'PPFNo' => $this->ppf,
+                'total_inspect' =>$this->totalInspection,
+                'DateEncode' => Carbon::now()->format('Y-m-d h:i:s A')
+            ]);
         }
 
         if (!empty($this->rework)) {
@@ -350,20 +384,20 @@ class Prencode extends Component
                     'PPFNo' => $this->ppf,
                     'Defect' => $type ?? null,
                     'Quantity' => $qty ?? null,
-                    'DateEncode' => Carbon::now()->format('Y-m-d'),
+                    'DateEncode' => Carbon::now()->format('Y-m-d h:i:s A'),
                     'TotalInspQty' => $reworks['totalinsp'] ?? null,
                 ]);
             }
-        }else{
+        } else {
             ReworkInsp::create([
-                    'HFNo' => null,
-                    'InspectorID' => (int)$this->encoder,
-                    'PPFNo' => $this->ppf,
-                    'Defect' => null,
-                    'Quantity' => null,
-                    'DateEncode' => Carbon::now()->format('Y-m-d'),
-                    'TotalInspQty' =>null,
-                ]);
+                'HFNo' => null,
+                'InspectorID' => (int)$this->encoder,
+                'PPFNo' => $this->ppf,
+                'Defect' => null,
+                'Quantity' => null,
+                'DateEncode' => Carbon::now()->format('Y-m-d h:i:s A'),
+                'TotalInspQty' => null,
+            ]);
         }
 
         if (empty($this->defects) || count($this->defects) === 0) {
@@ -373,7 +407,7 @@ class Prencode extends Component
                 'PPFNo' => (float) $this->ppf,
                 'Defect' => '',
                 'Quantity' => null,
-                'DateEncode' => Carbon::now()->format('Y-m-d'),
+                'DateEncode' => Carbon::now()->format('Y-m-d h:i:s A'),
                 'InspectorID' => (int)$this->encoder,
             ]);
         } else {
@@ -387,7 +421,7 @@ class Prencode extends Component
                     'PPFNo' => (float) $this->ppf,
                     'Defect' => $type,
                     'Quantity' => $qty,
-                    'DateEncode' => Carbon::now()->format('Y-m-d'),
+                    'DateEncode' => Carbon::now()->format('Y-m-d h:i:s A'),
                     'InspectorID' => (int)$this->encoder,
                 ]);
             }
@@ -411,6 +445,8 @@ class Prencode extends Component
             }
         }
 
-        session()->flash('success', 'Data inserted successfully!');
+
+
+        session()->flash('successAdd', 'Data inserted successfully!');
     }
 }

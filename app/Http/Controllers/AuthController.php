@@ -26,7 +26,7 @@ public function login(Request $request)
 
                 // Role-based redirect
                 if ($qrData['role'] === 'GL') {
-                    return redirect()->route('gl.dashboard'); 
+                    return redirect()->route('gl.dashboard', ['systemname' => 'GLDashboard']); 
                 } else {
                     return redirect()->route('selector');
                 }

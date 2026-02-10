@@ -54,4 +54,9 @@ class Operatordash extends Component
             'encoder' => $this->encoder
             ]);
     }
+
+     public function deletePPF($ppf){
+       $this->dispatch('DeletePPFPren', [ 'ppf' => $ppf]);
+
+    }
 }

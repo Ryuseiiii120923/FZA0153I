@@ -9,11 +9,6 @@ class Pcomponent extends Component
     public $wireAction;
     public $submitMethod = null;
     public $currentAction = null;
-    protected $listeners = [
-        'FromCheckppf' => 'receivePPFData',
-    ];
-
-
 
     public function ClearForm(){
         $this->dispatch('ClearForm');

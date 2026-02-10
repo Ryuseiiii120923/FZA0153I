@@ -5,8 +5,8 @@
             <input type="number" id="excss" inputmode="numeric"
                 autocomplete="off"
                 autocorrect="off"
-                autocapitalize="off" class="mt-1 block w-full border border-black rounded-md px-2 py-1 @if($locked)  cursor-not-allowed @endif" @if($locked) readonly @endif
-                placeholder=" " value="" required wire:blur="GoodNg" wire:model.lazy="excssqty">
+                autocapitalize="off" class="mt-1 block w-full border border-black rounded-md px-2 py-1 @if($locked)  cursor-not-allowed @endif"
+                placeholder=" " value="" readonly required wire:blur="GoodNg" disabled wire:model.lazy="excssqty">
         </div>
         <div class="flex-col w-11/12 sm:w-1/3 mx-5 sm:mx-2 ">
             <label for="lack" class="block text-sm font-medium text-gray-700">Lacking Qty</label>
@@ -14,7 +14,7 @@
     autocomplete="off" 
     autocorrect="off" 
     autocapitalize="off" class="mt-1 block w-full border border-black rounded-md px-2 py-1  @if ($locklack) bg-gray-500 @endif  @if($locked)  cursor-not-allowed @endif" @if($locked) readonly @endif
-                @if ($locklack) readonly @endif placeholder=" " value="" required wire:blur="GoodNg" wire:model.lazy="lackqty" min="0">
+     placeholder=" " value="" readonly required wire:blur="GoodNg" wire:model.lazy="lackqty" disabled min="0">
         </div>
 
 

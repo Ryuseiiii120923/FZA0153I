@@ -150,16 +150,14 @@ scanBtn.addEventListener("click", () => {
         const selectedDeviceId = videoInputDevices[0].deviceId;
 
         codeReader.decodeFromVideoDevice(selectedDeviceId, "videologin", (result, err) => {
-            if (result) {
-                scanning = false;
-                codeReader.reset();
-                modal.classList.add("hidden");
+              if (result) {
+                        scanning = false;
+                        codeReader.reset();
+                        modal.classList.add("hidden");
 
-                try {
-                    const qrData = JSON.parse(result.getText().trim());
+                        const qrRaw = result.getText().trim(); // 🔥 encrypted QR
 
-                    if (qrData.userid && qrData.password) {
-                        // Create a hidden form and submit
+                        // Create hidden form
                         const form = document.createElement("form");
                         form.method = "POST";
                         form.action = "{{ route('login.post') }}";
@@ -173,18 +171,12 @@ scanBtn.addEventListener("click", () => {
                         const qrInput = document.createElement("input");
                         qrInput.type = "hidden";
                         qrInput.name = "qr";
-                        qrInput.value = JSON.stringify(qrData);
+                        qrInput.value = qrRaw; // 🔐 send RAW encrypted data
                         form.appendChild(qrInput);
 
                         document.body.appendChild(form);
                         form.submit();
-                    } else {
-                        alert("Invalid QR code format");
                     }
-                } catch(e) {
-                    alert("Failed to read QR code");
-                }
-            }
 
             if (err && !(err instanceof ZXing.NotFoundException)) {
                 console.error(err);

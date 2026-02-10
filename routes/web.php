@@ -26,6 +26,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [HomeController::class, 'operatordash'])->name('operator.dashboard');
 
     Route::get('/gldash', [HomeController::class, 'gldash'])->name('gl.dashboard');
+    Route::get('/ppfdash',[HomeController::class, 'ppfdash'])->name('gl.ppfdashboard');
 
     // Example Livewire update route if you need dynamic params
     // Route::get('/update/{ppf}', [HomeController::class, 'update'])->name('post.update');

@@ -18,6 +18,7 @@ class Goodng extends Component
     public $ngratioqty = 0;
     public $locked = false;
     public $locklack = false;
+    public $action;
 
     protected $listeners = [
         'sendExcpt' => 'receiveExcpt',
@@ -81,12 +82,21 @@ class Goodng extends Component
 
     public function Fetch($data)
     {
-        $this->excssqty = (int) $data['excssqty'];
-        $this->lackqty = (int) $data['lackqty'];
-        $this->reworkqty = (int) $data['reworkqty'];
-        $this->sampleqty = (int) $data['sampleqty'];
-        $this->ngratioqty = (int) $data['ngratioqty'];
-        $this->expct = (int) $data['expct'];
+        $this->excssqty   = (int) ($data['excssqty']   ?? $this->excssqty   ?? 0);
+        $this->lackqty    = (int) ($data['lackqty']    ?? $this->lackqty    ?? 0);
+        $this->reworkqty  = (int) ($data['reworkqty']  ?? $this->reworkqty  ?? 0);
+        $this->sampleqty  = (int) ($data['sampleqty']  ?? $this->sampleqty  ?? 0);
+        $this->ngratioqty = (int) ($data['ngratioqty'] ?? $this->ngratioqty ?? 0);
+        $this->expct      = (int) ($data['expct']      ?? $this->expct      ?? 0);
+
+        $this->GoodNg();
+    }
+
+    #[On('UpdateQty')]
+     public function UpdateQty($data)
+    {
+        $this->excssqty   = (int) ($data['excssqty']   ?? $this->excssqty   ?? 0);
+        $this->lackqty    = (int) ($data['lackqty']    ?? $this->lackqty    ?? 0);
         $this->GoodNg();
     }
 
@@ -159,6 +169,12 @@ class Goodng extends Component
         $this->sampleqty = $value;
     }
 
+    #[On('EditAction')]
+    public function Action($data)
+    {
+        $this->action = $data;
+    }
+
     public function GoodNg()
     {
 
@@ -181,16 +197,18 @@ class Goodng extends Component
         } else {
             $this->locklack = false;
         }
+
         $this->validate();
-        $this->goodqty = (float)$this->expct
-            - (float)$this->TotalNg
-            + (float)$this->excssqty
-            - (float)$this->lackqty
-            - (float)$this->reworkqty
-            - (float)$this->sampleqty;
+        if ($this->action === 'Add') {
+            $this->goodqty = (float)$this->expct
+                - (float)$this->TotalNg
+                + (float)$this->excssqty
+                - (float)$this->lackqty
+                - (float)$this->reworkqty
+                - (float)$this->sampleqty;
+        }
 
         // $this->ngratioqty = number_format(($this->TotalNg / ($this->goodqty + $this->TotalNg)) * 100, 2);
-
         $denominator = $this->goodqty + $this->TotalNg;
 
         if ((float) $denominator == 0) {

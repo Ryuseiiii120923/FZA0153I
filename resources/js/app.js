@@ -3,17 +3,12 @@ import "./bootstrap.js";
 document.addEventListener("DOMContentLoaded", () => {
     const codeReader = new ZXing.BrowserMultiFormatReader();
     const scanppf = document.getElementById("scan-ppf");
-    const scanbtn = document.getElementById("scan-btn")
     let scanning = false;
-    let closedef = document.getElementById("defect-id-close");
-    let adddef = document.getElementById("addDefect");
-    let addrew = document.getElementById("addRework");
-    let closere = document.getElementById("rework-id-close");
     const ppf = document.getElementById("PPF");
     const inspectorInputs = document.querySelectorAll("#inspectors input");
 
     lockFormFields();
-    // lockbuttons();
+    lockbuttons();
     // const alreadyReloaded = localStorage.getItem("alreadyReloaded");
 
     // if (savedBtn && !alreadyReloaded) {
@@ -98,13 +93,13 @@ document.addEventListener("DOMContentLoaded", () => {
             });
     });
 
-    
     window.hasError = false;
 
     window.addEventListener("ppf-error", () => {
         window.hasError = true;
         lockFormFields();
     });
+
 
     window.addEventListener("ppf-valid", () => {
         if (window.hasError) {
@@ -135,6 +130,33 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    window.addEventListener("confirm-deletePren", () => {
+        if (confirm("Are you sure you want to delete this?")) {
+            Livewire.dispatch("deletePrencode");
+        }
+    });
+
+        window.addEventListener("ppfcheck", () => {
+        document.getElementById('Init-add').click;
+    });
+
+
+    window.addEventListener("confirm-accept", () => {
+        if (confirm("Are you sure you want to accept this?")) {
+            Livewire.dispatch("AcceptTotal");
+        }
+    });
+
+    window.addEventListener("redirect-to-login", (event) => {
+        // Optional: you can also show a toast or alert here
+        alert("Data inserted successfully!");
+
+        // Redirect after a short delay (2 seconds)
+        setTimeout(() => {
+            window.location.href = event.detail.url;
+        }, 2000); // 2000ms = 2 seconds
+    });
+
     window.addEventListener("confirm-delete", () => {
         if (confirm("Are you sure you want to delete this?")) {
             Livewire.dispatch("DeleteToDb");
@@ -156,16 +178,33 @@ document.addEventListener("DOMContentLoaded", () => {
     // window.addEventListener("enable-buttons", enableButtons);
 
     function lockbuttons() {
-        document.getElementById("add-rework").disabled = true;
-        document.getElementById("add-defect").disabled = true;
         document.getElementById("scan-ppf").disabled = true;
         document.getElementById("PPF").readOnly = true;
         document.getElementById("PPF").classList.add("bg-gray-500");
+
         document.getElementById("OuterPanel").classList.add("blur-sm");
         document
             .getElementById("OuterPanel")
             .classList.add("pointer-events-none");
     }
+
+    window.addEventListener("removelock", () => {
+        removelockbuttonsPren();
+    });
+
+    function removelockbuttonsPren() {
+        document.getElementById("scan-ppf").disabled = false;
+        document.getElementById("title").textContent = "Process Record";
+        document.getElementById("PPF").readOnly = false;
+        document.getElementById("PPF").classList.remove("bg-gray-500");
+
+        document.getElementById("OuterPanel").classList.remove("blur-sm");
+        document
+            .getElementById("OuterPanel")
+            .classList.remove("pointer-events-none");
+        ppf.focus();
+    }
+
     function resetActionButtons() {
         const buttons = [
             "Init-add",
@@ -225,9 +264,11 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("addbutton", () => {
         lockFormFields();
         resetActionButtons();
-        document.getElementById("SubmitBtn").textContent = "Add";
+        enableButtons();
+        document.getElementById("SubmitBtn").textContent = "Confirm";
         document.getElementById("SubmitBtn").hidden = false;
-        document.getElementById("title").textContent = "VI Defect (Add)"
+        document.getElementById("SubmitBtn").disabled = false;
+        document.getElementById("title").textContent = "VI Defect (Add)";
         document
             .getElementById("SubmitBtn")
             .classList.add(
@@ -250,57 +291,59 @@ document.addEventListener("DOMContentLoaded", () => {
             );
     });
 
-    Livewire.on('process', () => {
-    lockFormFields();
-    resetActionButtons();
-    const submitBtn = document.getElementById("SubmitBtns");
-    submitBtn.textContent = "Add";
-    submitBtn.hidden = false;
-    submitBtn.classList.add(
-        "bg-green-700",
-        "hover:bg-green-800",
-        "focus:outline-none",
-        "focus:ring-4",
-        "focus:ring-green-300"
-    );
+    Livewire.on("process", () => {
+        lockFormFields();
+        resetActionButtons();
+        const submitBtn = document.getElementById("SubmitBtn");
+        submitBtn.textContent = "Add";
+        submitBtn.hidden = false;
+        submitBtn.classList.add(
+            "bg-green-700",
+            "hover:bg-green-800",
+            "focus:outline-none",
+            "focus:ring-4",
+            "focus:ring-green-300"
+        );
 
-    document.getElementById("Init-add").classList.add(
-        "bg-green-900",
-        "scale-95",
-        "shadow-inner",
-        "transition-all",
-        "border-2",
-        "border-double",
-        "border-green-400"
-    );
-});
-    document.addEventListener('haserror', event => {
-    let message = null;
+        document
+            .getElementById("Init-add")
+            .classList.add(
+                "bg-green-900",
+                "scale-95",
+                "shadow-inner",
+                "transition-all",
+                "border-2",
+                "border-double",
+                "border-green-400"
+            );
+    });
+    document.addEventListener("haserror", (event) => {
+        let message = null;
 
-    // Livewire 3 can wrap the data in __livewire or send directly
-    if (event.detail[0]?.__livewire?.params?.[0]?.message) {
-        // wrapped version
-        message = event.detail[0].__livewire.params[0].message;
-    } else if (event.detail[0]?.message) {
-        // direct version
-        message = event.detail[0].message;
-    } else if (event.detail?.message) {
-        // sometimes detail itself is the object
-        message = event.detail.message;
-    }
+        // Livewire 3 can wrap the data in __livewire or send directly
+        if (event.detail[0]?.__livewire?.params?.[0]?.message) {
+            // wrapped version
+            message = event.detail[0].__livewire.params[0].message;
+        } else if (event.detail[0]?.message) {
+            // direct version
+            message = event.detail[0].message;
+        } else if (event.detail?.message) {
+            // sometimes detail itself is the object
+            message = event.detail.message;
+        }
 
-    if (message) {
-        alert(message);
-    } else {
-        console.error('Livewire event did not contain a message:', event);
-    }
-});
+        if (message) {
+            alert(message);
+        } else {
+            console.error("Livewire event did not contain a message:", event);
+        }
+    });
 
     window.addEventListener("editbutton", () => {
         resetActionButtons();
         document.getElementById("SubmitBtn").textContent = "Edit";
         document.getElementById("SubmitBtn").hidden = false;
-        document.getElementById("title").textContent = "VI Defect (Edit)"
+        document.getElementById("title").textContent = "VI Defect (Edit)";
         document
             .getElementById("SubmitBtn")
             .classList.add(
@@ -327,7 +370,7 @@ document.addEventListener("DOMContentLoaded", () => {
         resetActionButtons();
         document.getElementById("SubmitBtn").textContent = "Delete";
         document.getElementById("SubmitBtn").hidden = false;
-        document.getElementById("title").textContent = "VI Defect (Delete)"
+        document.getElementById("title").textContent = "VI Defect (Delete)";
         document
             .getElementById("SubmitBtn")
             .classList.add(
@@ -351,7 +394,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     window.addEventListener("viewbutton", () => {
         resetActionButtons();
-        document.getElementById("title").textContent = "VI Defect (Inquire)"
+        document.getElementById("title").textContent = "VI Defect (Inquire)";
         document
             .getElementById("Init-inquire")
             .classList.add(
@@ -380,8 +423,6 @@ document.addEventListener("DOMContentLoaded", () => {
             .getElementById("OuterPanel")
             .classList.remove("pointer-events-none");
     }
-
-
 
     // function persistAction(action, buttonId) {
     //     sessionStorage.setItem("lastAction", action);
@@ -469,8 +510,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         ppf.readOnly = true;
         ppf.classList.add("bg-gray-300");
-        document.getElementById("add-defect").focus();
+        // document.getElementById("add-defect").focus();
     }
+
+    window.addEventListener("enableoperatorform", () => {
+        lockFormFields();
+    });
+
     function lockFormFields() {
         const fields = [
             "HfNo",
@@ -593,37 +639,28 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const submitbtn = document.getElementById("SubmitBtn");
-//    ppf.addEventListener("blur", () => {
-//     const value = ppf.value.trim();
-//     if (value === '' || !/^\d+$/.test(value)) {
-//         submitbtn.disabled = true; // keep disabled if invalid
-//     } else {
-//         submitbtn.disabled = false; // enable if valid
-//     }
-// });
-// ppf.addEventListener("input", validatePPF);
+    //    ppf.addEventListener("blur", () => {
+    //     const value = ppf.value.trim();
+    //     if (value === '' || !/^\d+$/.test(value)) {
+    //         submitbtn.disabled = true; // keep disabled if invalid
+    //     } else {
+    //         submitbtn.disabled = false; // enable if valid
+    //     }
+    // });
+    // ppf.addEventListener("input", validatePPF);
 
-function validatePPF() {
-    const value = ppf.value.trim();
+    function validatePPF() {
+        const value = ppf.value.trim();
 
-    // Disable button if empty or not integer
-    submitbtn.disabled = value === '' || !/^\d+$/.test(value);
-}
+        // Disable button if empty or not integer
+        submitbtn.disabled = value === "" || !/^\d+$/.test(value);
+    }
 
-// Validate on input (as user types)
-ppf.addEventListener("input", validatePPF);
-validatePPF();
-
+    // Validate on input (as user types)
+    ppf.addEventListener("input", validatePPF);
+    validatePPF();
 
     document.addEventListener("livewire:load", () => {
         initGoodNgInputs();
     });
-
-    adddef.addEventListener("click", function () {
-        closedef.click();
-    });
-    addrew.addEventListener("click", function () {
-        closere.click();
-    });
 });
-    

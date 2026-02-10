@@ -151,7 +151,7 @@
         <div class="flex items-center gap-2 justify-center p-6" id="buttons-action" wire:ignore>
             <button
                 type="button"
-                class="w-40 rounded-lg px-6 py-3.5 text-white font-medium text-sm px-5 py-2.5 text-center me-2 mb-2"
+                class=" w-40 rounded-lg px-6 py-3.5 text-white font-medium text-sm px-5 py-2.5 text-center me-2 mb-2"
                 wire:model="submitMethod"
                 wire:click="submitAction"
                 id="SubmitBtn"

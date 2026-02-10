@@ -7,6 +7,7 @@ use App\Models\AddDefect;
 use App\Models\AddRwk;
 use App\Models\CheckHF;
 use App\Models\Defects;
+use App\Models\PRInsp;
 use App\Models\Rework;
 use App\Models\SmallDef;
 use App\Models\ViCheck;
@@ -41,6 +42,7 @@ class Add extends Component
     public $smalldefects = [];
     public $rework = [];
     public $totalngrework;
+    public $Ng;
     public $details;
     public $InspectDates;
     public $UpdateDate;
@@ -50,6 +52,8 @@ class Add extends Component
     public $hfno1, $hfno2, $hfno3, $hfno4, $hfno5;
     public $submitMethod;
     public $quantity;
+
+    public $isAdd = true;
     public $ngratioqty;
 
     public $encoder, $username;
@@ -79,11 +83,18 @@ class Add extends Component
         'ClearForm' => 'ClearForm',
         'inspectorsValidated' => 'onInspectorsValidated',
         'loadProcessRecord' => 'loadProcessRecord',
+        'InspectorUpdate' => 'InspectorUpdate'
     ];
 
     public function locked($data)
     {
         $this->locked = $data;
+    }
+
+    #[On('IsAdd')]
+    public function IsAdd()
+    {
+        $this->isAdd = false;
     }
 
     public function ClearForm()
@@ -100,21 +111,67 @@ class Add extends Component
         $this->submitMethod = $data;
     }
 
+    // public function Reworks(array $reworksData)
+    // {
+    //     $type = $reworksData['newtype'] ?? $reworksData['type'] ?? null;
+    //     if (!$type) return;
+
+    //     // Normalize once
+    //     $normalized = [
+    //         'hfno'      => $reworksData['newhfno'] ?? $reworksData['hfno'] ?? '',
+    //         'type'      => strtoupper(trim($type)),
+    //         'quan'      => (int) ($reworksData['newquan'] ?? $reworksData['quan'] ?? 0),
+    //         'totalinsp' => (int) ($reworksData['totalinsp'] ?? 0),
+    //     ];
+
+    //     if (($reworksData['action'] ?? '') === 'delete') {
+    //         // DELETE only matching hfno + type
+    //         $this->rework = collect($this->rework)
+    //             ->reject(
+    //                 fn($r) =>
+    //                 $r['hfno'] === $normalized['hfno'] &&
+    //                     $r['type'] === $normalized['type']
+    //             )
+    //             ->values()
+    //             ->toArray();
+    //     } else {
+    //         // ADD or UPDATE based on hfno + type
+    //         $this->rework = collect($this->rework)
+    //             ->reject(
+    //                 fn($r) =>
+    //                 $r['hfno'] === $normalized['hfno'] &&
+    //                     $r['type'] === $normalized['type']
+    //             )
+    //             ->push($normalized)
+    //             ->values()
+    //             ->toArray();
+    //     }
+
+    //     // Recalculate
+    //     $this->totalngrework = collect($this->rework)->sum('quan');
+    // }
+
     public function Reworks(array $reworksData)
     {
-        $type = $reworksData['newtype'] ?? $reworksData['type'] ?? null;
-        if (!$type) return;
+        // If the data is nested under 'reworksData', use it
+        $data = $reworksData['reworksData'] ?? $reworksData;
 
-        // Normalize once
+
+        $type = $data['newtype'] ?? $data['type'] ?? null;
+        if (!$type) return;
+        // Normalize
         $normalized = [
-            'hfno'      => $reworksData['newhfno'] ?? $reworksData['hfno'] ?? '',
+            'hfno'      => $data['newhfno'] ?? $data['hfno'] ?? '',
             'type'      => strtoupper(trim($type)),
-            'quan'      => (int) ($reworksData['newquan'] ?? $reworksData['quan'] ?? 0),
-            'totalinsp' => (int) ($reworksData['totalinsp'] ?? 0),
+            'quan'      => (int) ($data['newquan'] ?? $data['quan'] ?? 0),
+            'totalinsp' => (int) ($data['totalinsp'] ?? 0),
         ];
 
-        if (($reworksData['action'] ?? '') === 'delete') {
-            // DELETE only matching hfno + type
+        // Ensure $this->rework is an array
+        $this->rework = $this->rework ?? [];
+
+        if (($data['action'] ?? '') === 'delete') {
+            // Remove matching rework
             $this->rework = collect($this->rework)
                 ->reject(
                     fn($r) =>
@@ -124,7 +181,7 @@ class Add extends Component
                 ->values()
                 ->toArray();
         } else {
-            // ADD or UPDATE based on hfno + type
+            // Add or update
             $this->rework = collect($this->rework)
                 ->reject(
                     fn($r) =>
@@ -136,9 +193,17 @@ class Add extends Component
                 ->toArray();
         }
 
-        // Recalculate
+        // Recalculate total quantity
         $this->totalngrework = collect($this->rework)->sum('quan');
+
+        $hfnos = array_column($this->rework, 'hfno');
+        $this->hfno1 = $hfnos[0] ?? '';
+        $this->hfno2 = $hfnos[1] ?? '';
+        $this->hfno3 = $hfnos[2] ?? '';
+        $this->hfno4 = $hfnos[3] ?? '';
+        $this->hfno5 = $hfnos[4] ?? '';
     }
+
 
     public function ReworksData($data)
     {
@@ -166,55 +231,123 @@ class Add extends Component
         $this->insp5 = $data['insp5'] ?? '';
     }
 
+    // public function Defects($payload = [])
+    // {
+    //     if (!$payload) return;
+
+    //     $defectData = $payload['defectData'] ?? $payload;
+
+    //     $newDefect = trim($defectData['newDefect'] ?? '');
+    //     $newQuan   = (float)($defectData['newQuan'] ?? '');
+    //     $action    = $defectData['action'] ?? 'add';
+
+    //     if (!$newDefect) return;
+
+    //     $normalized = [];
+    //     foreach ($this->defects as $def) {
+    //         $type = $def['type'] ?? $def['newDefect'] ?? '';
+    //         $qty  = (float)($def['qty'] ?? $def['newQuan'] ?? '');
+
+    //         if ($type === '') continue;
+
+    //         if (isset($normalized[strtolower($type)])) {
+    //             $normalized[strtolower($type)]['qty'] += $qty;
+    //         } else {
+    //             $normalized[strtolower($type)] = [
+    //                 'type' => $type,
+    //                 'qty'  => (int) $qty
+    //             ];
+    //         }
+    //     }
+
+
+    //     $key = strtolower($newDefect);
+    //     if ($action === 'delete') {
+    //         unset($normalized[$key]);
+    //         $this->defects = array_values($normalized);
+    //         return;
+    //     }
+
+
+    //     if ($action === 'update') {
+
+    //         if (isset($normalized[$key])) {
+    //             $normalized[$key]['qty'] = $newQuan;
+    //         }
+    //     } else {
+    //         if (isset($normalized[$key])) {
+    //             $normalized[$key]['qty'] += $newQuan;
+    //         } else {
+
+    //             $normalized[$key] = [
+    //                 'type' => $newDefect,
+    //                 'qty'  => $newQuan
+    //             ];
+    //         }
+    //     }
+
+    //     $this->defects = array_values($normalized);
+    //     dd($this->defects);
+    // }
+
     public function Defects($payload = [])
     {
         if (!$payload) return;
 
+        // Get defectData; it might be a single defect or an array of defects
         $defectData = $payload['defectData'] ?? $payload;
 
-        $newDefect = trim($defectData['newDefect'] ?? '');
-        $newQuan   = (float)($defectData['newQuan'] ?? '');
-        $action    = $defectData['action'] ?? 'add';
+        // Ensure we have an array of defects
+        if (isset($defectData['newDefect'])) {
+            $defectData = [$defectData]; // single defect → array
+        }
 
-        if (!$newDefect) return;
-
+        // Step 1: Normalize existing defects (sum same types)
         $normalized = [];
         foreach ($this->defects as $def) {
-            $type = $def['type'] ?? $def['newDefect'] ?? '';
-            $qty  = (float)($def['qty'] ?? $def['newQuan'] ?? '');
-
+            $type = trim($def['type'] ?? '');
+            $qty  = (float)($def['qty'] ?? 0);
             if ($type === '') continue;
 
-            if (isset($normalized[strtolower($type)])) {
-                $normalized[strtolower($type)]['qty'] += $qty;
+            $key = strtolower($type);
+            if (isset($normalized[$key])) {
+                $normalized[$key]['qty'] += $qty;
             } else {
-                $normalized[strtolower($type)] = [
+                $normalized[$key] = [
                     'type' => $type,
-                    'qty'  => (int) $qty
+                    'qty'  => $qty
                 ];
             }
         }
 
+        // Step 2: Apply all new defects on top
+        foreach ($defectData as $data) {
+            $newDefect = trim($data['newDefect'] ?? '');
+            $newQuan   = (float)($data['newQuan'] ?? 0);
+            $action    = $data['action'] ?? 'add';
 
-        $key = strtolower($newDefect);
+            if (!$newDefect) continue;
 
-        if ($action === 'delete') {
-            unset($normalized[$key]);
-            $this->defects = array_values($normalized);
-            return;
-        }
+            $key = strtolower($newDefect);
 
 
-        if ($action === 'update') {
-
-            if (isset($normalized[$key])) {
-                $normalized[$key]['qty'] = $newQuan;
-            }
-        } else {
-
-            if (isset($normalized[$key])) {
-                $normalized[$key]['qty'] += $newQuan;
-            } else {
+            if ($action === 'delete') {
+                unset($normalized[$key]);
+            } elseif ($action === 'update') {
+                $normalized[$key] = [
+                    'type' => $newDefect,
+                    'qty'  => $newQuan
+                ];
+            } elseif ($action === 'add') {
+                if (isset($normalized[$key])) {
+                    $normalized[$key]['qty'] += $newQuan;
+                } else {
+                    $normalized[$key] = [
+                        'type' => $newDefect,
+                        'qty'  => $newQuan
+                    ];
+                }
+            } else { // initial load → just set it without adding
                 $normalized[$key] = [
                     'type' => $newDefect,
                     'qty'  => $newQuan
@@ -222,8 +355,10 @@ class Add extends Component
             }
         }
 
+        // Step 3: Save back
         $this->defects = array_values($normalized);
     }
+
 
     public function SmallDefects($smalldefectData)
     {
@@ -350,13 +485,20 @@ class Add extends Component
         return request()->input('ppf', $data);
     }
 
-    private function loadPlant($ppf)
+
+    #[On('LoadPlantGL')]
+    public function loadPlant($ppf)
     {
         $GetPlant = ViCheck::Where('PPFNO', $ppf)->first();
         if ($GetPlant) {
             $this->plant = $GetPlant->Plant;
         }
     }
+
+    // #[On('ReceiveDefectsFromGL')]
+    // public function ReceiveDefectsFromGL(){
+    //     $this->defects
+    // }
 
     private function loadDefects($ppf)
     {
@@ -428,16 +570,37 @@ class Add extends Component
             ->sum(fn($x) => (int) $x['quan']);
     }
 
-   
-    private function loadMainRecord($ppf)
+    public function InspectorUpdate($inspectorId)
     {
-        $record = AddDefect::select('PPFNo', 'PartNo', 'Lotno', 'MatNo', 'MDNo', 'PressNo', 'Shift', 'Operator', 'Total', 'Good', 'HFNo1', 'HFNo2', 'HFNo3', 'HFNo4', 'HFNo5', 'InspNo1', 'InspNo2', 'InspNo3', 'InspNo4')->where('PPFNo', $ppf)->first();
+        $slots = [
+            'insp1',
+            'insp2',
+            'insp3',
+            'insp4',
+            'insp5',
+        ];
+
+        foreach ($slots as $slot) {
+            if (empty($this->$slot)) {
+                $this->$slot = $inspectorId;
+                break;
+            }
+        }
+    }
+
+
+
+    #[On('LoadMainRecord')]
+    public function loadMainRecord($ppf)
+    {
+        $record = AddDefect::select('PPFNo', 'PartNo', 'Lotno', 'MatNo', 'MDNo', 'PressNo', 'Shift', 'Operator', 'Total', 'Good', 'HFNo1', 'HFNo2', 'HFNo3', 'HFNo4', 'HFNo5', 'InspNo1', 'InspNo2', 'InspNo3', 'InspNo4', 'ExcessQty', 'LackingQty', 'ReworkQty', 'SampleQty', 'AutoMachine', 'Details', 'Encoder')->where('PPFNo', $ppf)->first();
         $getexpct = CheckHF::where('流動NO', $ppf)->first();
 
         if ($record) {
 
             if ($getexpct) {
                 $this->expct = $getexpct->合格数;
+                $this->dispatch('totalInspectedProgress');
             }
 
             $this->Largedefects = Defects::select('LargeDefect')
@@ -508,7 +671,7 @@ class Add extends Component
                 'pressno' => $this->pressno,
                 'shift' => $this->shift,
                 'opt' => $this->opt,
-                'expct' => $this->expct,
+                'expct' => (int)$this->expct,
                 'insp5' => $this->insp5,
                 'insp1' => $this->insp1,
                 'insp2' => $this->insp2,
@@ -523,7 +686,6 @@ class Add extends Component
                 'TotalNg' => $this->totalngrework,
                 'auto' => $this->auto
             ]);
-
             return true;
         } else {
             session()->flash('failed', 'Record not found');
@@ -531,27 +693,36 @@ class Add extends Component
         }
     }
 
-    private function calculateQuantities()
+    #[On('sendNg')]
+    public function FetchNg($ng)
     {
-        $this->goodqty = (float)$this->expct
-            - (float)$this->totalngrework
-            + (float)$this->excssqty
-            - (float)$this->lackqty
-            - (float)$this->reworkqty
-            - (float)$this->sampleqty;
+        $this->Ng = $ng;
+    }
+    #[On('CalculateQuantities')]
+    public function calculateQuantities()
+    {
+        // $this->goodqty = (float)$this->expct
+        //     - (float)$this->totalngrework
+        //     + (float)$this->excssqty
+        //     - (float)$this->lackqty
+        //     - (float)$this->reworkqty
+        //     - (float)$this->sampleqty;
 
         $goodQtyNumeric = is_numeric($this->goodqty) ? $this->goodqty : 0;
-        $totalNgNumeric = is_numeric($this->totalngrework) ? $this->totalngrework : 0;
+        $totalNgNumeric = is_numeric(value: $this->Ng) ? $this->Ng : 0;
         $denominator = $goodQtyNumeric + $totalNgNumeric;
+
 
         if ($denominator === 0) {
             $this->ngratioqty = 0;
         } else {
-            $this->ngratioqty = number_format(($this->totalngrework / $denominator) * 100, 2);
+            $this->ngratioqty = number_format(($this->Ng / $denominator) * 100, 2);
         }
+        // dd([$this->Ng, $this->goodqty,$denominator, $this->ngratioqty]);
     }
 
-    private function dispatchUpdates()
+    #[On('dispatchUpdates')]
+    public function dispatchUpdates()
     {
         $this->dispatch('FromUpdate', [
             'goodqty' => $this->goodqty,
@@ -616,7 +787,13 @@ class Add extends Component
     }
     public function AddtoDb()
     {
-        //dd($this->rework);
+        $totalInspected = PRInsp::where('PPFNo', $this->ppf)
+            ->sum('total_inspect');
+
+        if ((int)$totalInspected === (int)$this->expct) {
+            $this->isAdd = false;
+        }
+
         if ($this->haserror) {
             $this->dispatch('haserror', ['message' => 'Please fix the error!']);
             return;
@@ -637,6 +814,11 @@ class Add extends Component
             session()->flash('failed', 'Please Enter PPF!');
             return;
         }
+        if ($this->isAdd) {
+            $this->dispatch('haserror', ['message' => 'Please accept first the quantity']);
+            return;
+        }
+
 
         //dd($this->rework);
         //dd($this->smalldefects);
@@ -711,16 +893,16 @@ class Add extends Component
                 'Quantity' => null,
                 'Details' => $this->details,
                 'InspectionDate' => $this->InspectDates ?? '',
-                'DateEncode' => Carbon::now()->format('Y-m-d'),
+                'DateEncode' => Carbon::now()->format('Y-m-d h:i:s A'),
                 'Encoder' => (int)$this->encoder,
                 'ExcessQty' => $this->excssqty,
                 'LackingQty' => $this->lackqty,
                 'ReworkQty' => $this->reworkqty,
                 'SampleQty' => $this->sampleqty,
-                'AutoMachine' => $this->auto,
+                'MDate' => '',
+                'AutoMachine' => $this->auto ?? '',
             ]);
         } else {
-
             foreach ($this->defects as  $defect) {
                 //dd($this->defects);
                 $type = $defect['type'] ?? $defect['newDefect'] ?? null;
@@ -753,13 +935,14 @@ class Add extends Component
                     'InspectionDate' => $this->InspectDates
                         ? Carbon::parse($this->InspectDates)->format('Y-m-d')
                         : null,
-                    'DateEncode' => Carbon::now(),
+                    'DateEncode' => Carbon::now()->format('Y-m-d h:i:s A'),
                     'Encoder' => (int)$this->encoder,
                     'ExcessQty' => $this->excssqty,
                     'LackingQty' => $this->lackqty,
                     'ReworkQty' => $this->reworkqty,
                     'SampleQty' => $this->sampleqty,
-                    'AutoMachine' => $this->auto,
+                    'MDate' => '',
+                    'AutoMachine' => $this->auto ?? '',
 
                 ]);
             }

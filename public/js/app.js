@@ -7238,16 +7238,11 @@ __webpack_require__.r(__webpack_exports__);
 document.addEventListener("DOMContentLoaded", function () {
   var codeReader = new ZXing.BrowserMultiFormatReader();
   var scanppf = document.getElementById("scan-ppf");
-  var scanbtn = document.getElementById("scan-btn");
   var scanning = false;
-  var closedef = document.getElementById("defect-id-close");
-  var adddef = document.getElementById("addDefect");
-  var addrew = document.getElementById("addRework");
-  var closere = document.getElementById("rework-id-close");
   var ppf = document.getElementById("PPF");
   var inspectorInputs = document.querySelectorAll("#inspectors input");
   lockFormFields();
-  // lockbuttons();
+  lockbuttons();
   // const alreadyReloaded = localStorage.getItem("alreadyReloaded");
 
   // if (savedBtn && !alreadyReloaded) {
@@ -7321,54 +7316,6 @@ document.addEventListener("DOMContentLoaded", function () {
       scanning = false;
     });
   });
-  scanbtn.addEventListener("click", function () {
-    if (scanning == true) {
-      return;
-    }
-    navigator.mediaDevices.enumerateDevices().then(function (devices) {
-      var videoInputDevices = devices.filter(function (device) {
-        return device.kind === "videoinput";
-      });
-      if (videoInputDevices.length === 0) {
-        alert("No Camera found.");
-        scanning = false;
-        return;
-      }
-      navigator.mediaDevices.getUserMedia({
-        video: true
-      }).then(function () {
-        return navigator.mediaDevices.enumerateDevices();
-      }).then(function (devices) {
-        console.log(devices);
-      })["catch"](function (err) {
-        console.error("Permission or device error:", err);
-      });
-      var selectedDeviceId = videoInputDevices[0].deviceId;
-      scanning = true;
-      codeReader.decodeFromVideoDevice(selectedDeviceId, "videologin", function (result, err) {
-        if (result) {
-          var qrcode = document.getElementById("PPF");
-          var scannedPPF = result.getText().trim();
-          qrcode.value = scannedPPF;
-          qrcode.dispatchEvent(new Event("input"));
-          Livewire.dispatch("post-ppf", {
-            ppf: scannedPPF
-          });
-          qrcode.focus();
-          codeReader.reset();
-          scanning = false;
-          document.getElementById("scanner-id-close").click();
-          return;
-        }
-        if (err && !(err instanceof ZXing.NotFoundException)) {
-          console.error(err);
-        }
-      });
-    })["catch"](function (err) {
-      console.error("error", err);
-      scanning = false;
-    });
-  });
   window.hasError = false;
   window.addEventListener("ppf-error", function () {
     window.hasError = true;
@@ -7403,6 +7350,28 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
   });
+  window.addEventListener("confirm-deletePren", function () {
+    if (confirm("Are you sure you want to delete this?")) {
+      Livewire.dispatch("deletePrencode");
+    }
+  });
+  window.addEventListener("ppfcheck", function () {
+    document.getElementById('Init-add').click;
+  });
+  window.addEventListener("confirm-accept", function () {
+    if (confirm("Are you sure you want to accept this?")) {
+      Livewire.dispatch("AcceptTotal");
+    }
+  });
+  window.addEventListener("redirect-to-login", function (event) {
+    // Optional: you can also show a toast or alert here
+    alert("Data inserted successfully!");
+
+    // Redirect after a short delay (2 seconds)
+    setTimeout(function () {
+      window.location.href = event.detail.url;
+    }, 2000); // 2000ms = 2 seconds
+  });
   window.addEventListener("confirm-delete", function () {
     if (confirm("Are you sure you want to delete this?")) {
       Livewire.dispatch("DeleteToDb");
@@ -7425,13 +7394,23 @@ document.addEventListener("DOMContentLoaded", function () {
   // window.addEventListener("enable-buttons", enableButtons);
 
   function lockbuttons() {
-    document.getElementById("add-rework").disabled = true;
-    document.getElementById("add-defect").disabled = true;
     document.getElementById("scan-ppf").disabled = true;
     document.getElementById("PPF").readOnly = true;
     document.getElementById("PPF").classList.add("bg-gray-500");
     document.getElementById("OuterPanel").classList.add("blur-sm");
     document.getElementById("OuterPanel").classList.add("pointer-events-none");
+  }
+  window.addEventListener("removelock", function () {
+    removelockbuttonsPren();
+  });
+  function removelockbuttonsPren() {
+    document.getElementById("scan-ppf").disabled = false;
+    document.getElementById("title").textContent = "Process Record";
+    document.getElementById("PPF").readOnly = false;
+    document.getElementById("PPF").classList.remove("bg-gray-500");
+    document.getElementById("OuterPanel").classList.remove("blur-sm");
+    document.getElementById("OuterPanel").classList.remove("pointer-events-none");
+    ppf.focus();
   }
   function resetActionButtons() {
     var buttons = ["Init-add", "Init-update", "Init-delete", "Init-inquire"];
@@ -7450,22 +7429,24 @@ document.addEventListener("DOMContentLoaded", function () {
   window.addEventListener("addbutton", function () {
     lockFormFields();
     resetActionButtons();
-    document.getElementById("SubmitBtn").textContent = "Add";
+    enableButtons();
+    document.getElementById("SubmitBtn").textContent = "Confirm";
     document.getElementById("SubmitBtn").hidden = false;
+    document.getElementById("SubmitBtn").disabled = false;
     document.getElementById("title").textContent = "VI Defect (Add)";
     document.getElementById("SubmitBtn").classList.add("bg-green-700", "hover:bg-green-800", "focus:outline-none", "focus:ring-4", "focus:ring-green-300");
     document.getElementById("Init-add").classList.add("bg-green-900", "scale-95", "shadow-inner", "transition-all", "border-2", "border-double", "border-green-400");
   });
-  Livewire.on('process', function () {
+  Livewire.on("process", function () {
     lockFormFields();
     resetActionButtons();
-    var submitBtn = document.getElementById("SubmitBtns");
+    var submitBtn = document.getElementById("SubmitBtn");
     submitBtn.textContent = "Add";
     submitBtn.hidden = false;
     submitBtn.classList.add("bg-green-700", "hover:bg-green-800", "focus:outline-none", "focus:ring-4", "focus:ring-green-300");
     document.getElementById("Init-add").classList.add("bg-green-900", "scale-95", "shadow-inner", "transition-all", "border-2", "border-double", "border-green-400");
   });
-  document.addEventListener('haserror', function (event) {
+  document.addEventListener("haserror", function (event) {
     var _event$detail$, _event$detail$2, _event$detail;
     var message = null;
 
@@ -7483,7 +7464,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (message) {
       alert(message);
     } else {
-      console.error('Livewire event did not contain a message:', event);
+      console.error("Livewire event did not contain a message:", event);
     }
   });
   window.addEventListener("editbutton", function () {
@@ -7584,8 +7565,11 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     ppf.readOnly = true;
     ppf.classList.add("bg-gray-300");
-    document.getElementById("add-defect").focus();
+    // document.getElementById("add-defect").focus();
   }
+  window.addEventListener("enableoperatorform", function () {
+    lockFormFields();
+  });
   function lockFormFields() {
     var fields = ["HfNo", "LotNo", "PartNo", "MatNo", "MoldNo", "PressNo", "shift", "opt", "expct", "excss", "lack", "rework", "sample", "good", "ng", "automach", "plant", "inspectDate", "details", "upd", "registrant"];
     fields.forEach(function (id) {
@@ -7688,7 +7672,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var value = ppf.value.trim();
 
     // Disable button if empty or not integer
-    submitbtn.disabled = value === '' || !/^\d+$/.test(value);
+    submitbtn.disabled = value === "" || !/^\d+$/.test(value);
   }
 
   // Validate on input (as user types)
@@ -7696,12 +7680,6 @@ document.addEventListener("DOMContentLoaded", function () {
   validatePPF();
   document.addEventListener("livewire:load", function () {
     initGoodNgInputs();
-  });
-  adddef.addEventListener("click", function () {
-    closedef.click();
-  });
-  addrew.addEventListener("click", function () {
-    closere.click();
   });
 });
 

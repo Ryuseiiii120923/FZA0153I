@@ -33,6 +33,11 @@ class HomeController extends Controller
     }
 
     public function gldash(){
-        return view('pages.gldashboard');
+        $systemname = request()->input('systemname');
+        return view('pages.gldashboard', compact('systemname'));
+    }
+
+    public function ppfdash(){
+        return view ('pages.ppfdashboard');
     }
 }
