@@ -516,7 +516,7 @@ class Add extends Component
                 ->values()
                 ->toArray();
 
-            $last = end($this->defects);
+            $last = end(array: $this->defects);
             $this->lastdef = $last['type'] ?? null;
             $this->lastqty = $last['qty'] ?? null;
 
@@ -653,7 +653,7 @@ class Add extends Component
             $this->details = $record->Details;
             $this->InspectDates = Carbon::parse($record->InspectionDate)->format('Y-m-d');
             $this->encoder = $record->Encoder;
-            $this->UpdateDate = Carbon::parse($record->DateEndcode)->format('Y-m-d');
+            $this->UpdateDate = Carbon::parse($record->DateEndcode)->format('Y-m-d h:i:s A');
             $this->excssqty = $record->ExcessQty;
             $this->lackqty = $record->LackingQty;
             $this->reworkqty = $record->ReworkQty;
@@ -783,6 +783,7 @@ class Add extends Component
 
         $deleteppf = AddDefect::where('PPFNo', $this->ppf)->delete();
         if ($deleteppf) {
+            $this->isAdd = false;
             $this->AddtoDb();
         }
     }
@@ -859,7 +860,7 @@ class Add extends Component
                     'EncoderOut' => $this->encoder,
                     'Plant' => $this->plant,
                     'InspectionDate' => $this->InspectDates,
-                    'Dateout' => Carbon::now()->format('Y-m-d'),
+                    'Dateout' => Carbon::now()->format('Y-m-d h:i:s A'),
                 ]);
         }
 
@@ -942,7 +943,7 @@ class Add extends Component
                     'LackingQty' => $this->lackqty,
                     'ReworkQty' => $this->reworkqty,
                     'SampleQty' => $this->sampleqty,
-                    'MDate' => '',
+                    'MDate' => ' ',
                     'AutoMachine' => $this->auto ?? '',
 
                 ]);

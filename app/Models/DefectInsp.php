@@ -16,7 +16,9 @@ class DefectInsp extends Model
         'PPFNo',
         'Defect',
         'Quantity',
-        'DateEncode'
+        'DateEncode',
+        'insp_name',
+        'Process'
     ];
 }
 

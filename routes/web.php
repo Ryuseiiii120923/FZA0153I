@@ -37,9 +37,5 @@ Route::middleware('auth:worker')->group(function () {
 
     Route::get('/prencode', [HomeController::class, 'prencode'])->name('prencode');
 
-    Route::get('/selector', [HomeController::class, 'selector'])->name('selector');
-
-    Route::get('/main', [HomeController::class, 'Main'])->name('main');
-
     Route::get('/dashboard', [HomeController::class, 'operatordash'])->name('operator.dashboard');
 });

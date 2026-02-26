@@ -18,7 +18,9 @@ class ReworkInsp extends Model
         'Quantity',
         'TotalInspQty',
         'DateEncode',
-        'InspectorID'
+        'InspectorID',
+        'insp_name',
+        'Process'
     ];
 
 }

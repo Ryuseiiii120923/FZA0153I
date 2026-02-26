@@ -7356,7 +7356,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
   window.addEventListener("ppfcheck", function () {
-    document.getElementById('Init-add').click;
+    document.getElementById("Init-add").click;
   });
   window.addEventListener("confirm-accept", function () {
     if (confirm("Are you sure you want to accept this?")) {
@@ -7403,9 +7403,26 @@ document.addEventListener("DOMContentLoaded", function () {
   window.addEventListener("removelock", function () {
     removelockbuttonsPren();
   });
+  window.addEventListener("ProcessVI", function () {
+    ProcessVI();
+  });
+  window.addEventListener("ProcessMD", function () {
+    ProcessMD();
+  });
+  window.addEventListener("ProcessHF", function () {
+    ProcessHF();
+  });
+  function ProcessVI() {
+    document.getElementById("title").textContent = "Process Record (VI)";
+  }
+  function ProcessMD() {
+    document.getElementById("title").textContent = "Process Record (MD)";
+  }
+  function ProcessHF() {
+    document.getElementById("title").textContent = "Process Record (HF)";
+  }
   function removelockbuttonsPren() {
     document.getElementById("scan-ppf").disabled = false;
-    document.getElementById("title").textContent = "Process Record";
     document.getElementById("PPF").readOnly = false;
     document.getElementById("PPF").classList.remove("bg-gray-500");
     document.getElementById("OuterPanel").classList.remove("blur-sm");

@@ -1,10 +1,14 @@
-<div x-data="{ openAddRework: false }" class="bg-white rounded-lg w-full max-w-2xl mx-auto p-4 @if($locked) opacity-50 cursor-not-allowed @endif">
-    <p class="text-4xl font-extrabold bg-gray-700 w-full text-center text-white p-4 ">Rework</p>
-    <div class="overflow-x-auto mt-3 mx-3">
+<div x-data="{ openAddRework: false }" class="bg-white rounded-lg w-full max-w-1xl mx-auto py-4 @if($locked) opacity-50 cursor-not-allowed @endif">
+    <div class="bg-gray-700 w-full">
+        <p class="text-4xl font-extrabold  text-center text-white p-4 ">Rework</p>
+    </div>
+
+    <div class="overflow-x-auto mt-3">
         <table class=" table-auto w-full text-sm text-white bg-gray-800 rounded-lg overflow-hidden">
             <thead class="bg-gray-900 text-white text-left">
                 <tr>
                     <th class="px-4 py-2">Inspector ID</th>
+                    <th class="px-4 py-2">Inspector Name</th>
                     <th class="px-4 py-2">HFNo</th>
                     <th class="px-4 py-2">RWK Defect</th>
                     <th class="px-4 py-2">Qty</th>
@@ -17,6 +21,7 @@
                 @forelse ( $reworkss as $reworks )
                 <tr wire:key="rework-{{ $reworks['type'] }}">
                     <td class="px-4 py-2">{{ $reworks['operatorid'] }}</td>
+                    <td class="px-4 py-2">{{ $reworks['operatorname'] }}</td>
                     <td class="px-4 py-2">{{ $reworks['hfno'] }}</td>
                     <td class="px-4 py-2">{{ $reworks['type'] }}</td>
                     <td class="px-4 py-2">{{ $reworks['quan'] }}</td>
@@ -143,7 +148,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="px-4 py-2 text-center">No rework added yet.</td>
+                    <td colspan="8" class="px-6 py-4 text-center">No rework added yet.</td>
                 </tr>
                 @endforelse
             </tbody>

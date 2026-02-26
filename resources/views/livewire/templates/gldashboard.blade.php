@@ -24,18 +24,24 @@
             Inquire
         </button>
     </div>
-    <livewire:templates.ppfdashboard>
-    <div id="OuterPanel">
-        <livewire:templates.checkppf :systemname="request()->input('systemname')" />
-        <div class="flex flex-col sm:flex-row gap-6 mt-4 items-start justify-center w-full px-4">
-            <div class="w-11/12 sm:w-1/2 flex justify-center">
-                <livewire:glcomponents.defects />
+
+
+    <div id="OuterPanel" class="bg-gray-100 shadow-md py-5 w-full">
+        <div class="w-full px-2 sm:px-6">
+            <div @if($currentAction !='Add' ) class="hidden" @endif>
+                <livewire:templates.ppfdashboard>
             </div>
-            <div class="w-11/12 sm:w-1/2 flex justify-center">
-                <livewire:glcomponents.reworks />
+            <livewire:templates.checkppf :systemname="request()->input('systemname')" />
+            <div class="flex flex-col sm:flex-row gap-6 mt-4 items-start justify-center w-full">
+                <div class="w-11/12 sm:w-1/2 flex justify-center">
+                    <livewire:glcomponents.defects />
+                </div>
+                <div class="w-11/12 sm:w-1/2 flex justify-center">
+                    <livewire:glcomponents.reworks />
+                </div>
             </div>
+            <livewire:templates.goodng />
+            <livewire:templates.add />
         </div>
-        <livewire:templates.goodng />
-        <livewire:templates.add />
     </div>
 </div>

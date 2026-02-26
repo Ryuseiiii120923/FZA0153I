@@ -1,7 +1,8 @@
-<div x-data="{ openAddDefect: false }" class="bg-white rounded-lg w-full max-w-2xl mx-auto p-4 @if($locked) opacity-50 cursor-not-allowed @endif">
+<div x-data="{ openAddDefect: false }" class="bg-white rounded-lg w-full max-w-1xl mx-auto py-4 @if($locked) opacity-50 cursor-not-allowed @endif">
 
-    <p class="text-4xl font-extrabold bg-gray-700 w-full text-center text-white p-4">Defect</p>
-
+     <div class="bg-gray-700 w-full">
+        <p class="text-4xl font-extrabold  text-center text-white p-4 ">Defect</p>
+    </div>
     <!-- ADD DEFECT BUTTON ABOVE TABLE -->
     <div class="w-full flex justify-center mb-3 px-3 mt-5 @if($systemname === 'ProcessRecord') hidden @endif ">
         <button

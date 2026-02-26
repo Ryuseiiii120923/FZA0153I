@@ -89,7 +89,8 @@ class Gldashboard extends Component
     // }
 
     #[On('actionTable')]
-    public function actioninTable($data){
+    public function actioninTable($data)
+    {
         if ($data['actiondash'] === 'Add') {
             $this->setAction('Add', true);
             //  $this->dispatch('ProgDis'); //deactivate the auto progress in check ppf
@@ -284,20 +285,19 @@ class Gldashboard extends Component
         $this->dispatch('Action', $this->submitMethod);
     }
 
-
     #[On('FetchDataGL')]
     public function FetchDatas($data)
     {
         $ppf = $this->resolvePpf($data);
+
         $checkppf = AddDefect::where('PPFNo', $ppf)->get()->first();
         if (!($checkppf)) {
             session()->flash('failed', 'Record not found');
             return;
         }
         $this->dispatch('LoadMainRecord', $ppf);
-
-        $this->dispatch('LoadPlantGL', $ppf);
         $this->LoadDefectsGL($ppf);
+        $this->dispatch('LoadPlantGL', $ppf);
         $this->LoadReworksGL($ppf);
         $this->dispatch('CalculateQuantities');
         $this->dispatch('dispatchUpdates');
@@ -309,94 +309,104 @@ class Gldashboard extends Component
     {
         return request()->input('ppf', $data);
     }
+
+
     public function LoadDefectsGL($ppf)
     {
-        $defect = DefectInsp::select('InspectorID', 'Defect', 'Quantity', 'DateEncode')
-            ->where('PPFNo', $ppf)
-            ->get();
+        $encoders = DefectInsp::where('PPFNo', $ppf)
+            ->whereNotNull('InspectorID')
+            ->distinct()
+            ->pluck('InspectorID');
 
-        if ($defect) {
-            // Main defect list
-            $this->defects = $defect->map(function ($item) {
-                return [
-                    'operatorid' => $item->InspectorID,
-                    'type'       => $item->Defect,
-                    'qty'        => (int)$item->Quantity,
-                    'dateEncode' => $item->DateEncode
+        $this->defects = [];
+        $this->smalldefects = [];
+
+        foreach ($encoders as $encoder) {
+
+            $defectsPerEncoder = DefectInsp::select('Defect')
+                ->where('PPFNo', $ppf)
+                ->where('InspectorID', $encoder)
+                ->distinct()
+                ->pluck('Defect');
+
+            foreach ($defectsPerEncoder as $defectName) {
+
+                // Add large defects (summed per encoder)
+                $totalQty = DefectInsp::where('PPFNo', $ppf)
+                    ->where('InspectorID', $encoder)
+                    ->where('Defect', $defectName)
+                    ->sum('Quantity');
+
+                if ((int)$totalQty <= 0) continue;
+                $latestDate = DefectInsp::where('PPFNo', $ppf)
+                    ->where('InspectorID', $encoder)
+                    ->where('Defect', $defectName)
+                    ->max('DateEncode');
+                $operatorname = DefectInsp::where('InspectorID', $encoder)
+                    ->value('insp_name');
+
+                $this->defects[] = [
+                    'operatorid' => $encoder,
+                    'operatorname' => $operatorname,
+                    'type'       => $defectName,
+                    'qty'        => (int)$totalQty,
+                    'dateEncode' => $latestDate,
                 ];
-            })->filter(fn($d) => $d['qty'] > 0)
-                ->values()
-                ->toArray();
 
-            $last = end($this->defects);
-            $this->lastdef = $last['type'] ?? null;
-            $this->lastqty = $last['qty'] ?? null;
-
-            // Load small defects
-            foreach ($defect as $item) {
-                $large = $item->Defect;
-
-                $smallDef = SmallInsp::select('LargeDefect', 'SmallDefect', 'Qty')
-                    ->where('LargeDefect', $large)
+                // Load small defects ONLY ONCE
+                $smallDefectsGrouped = SmallInsp::selectRaw('SmallDefect, SUM(Qty) as total_qty')
                     ->where('PPFNo', $ppf)
+                    ->where('InspectorID', $encoder)
+                    ->where('LargeDefect', $defectName)
+                    ->groupBy('SmallDefect')
                     ->get();
 
-                $this->smalldefects[$large] = $smallDef->map(function ($s) {
-                    return [
-                        'SelectedLargeDefect' => $s->LargeDefect,
-                        'type'                => $s->SmallDefect,
-                        'qty'                 => $s->Qty
+                foreach ($smallDefectsGrouped as $s) {
+
+                    $this->smalldefects[$defectName][$encoder][] = [
+                        'type' => $s->SmallDefect,
+                        'qty'  => (int) $s->total_qty,
                     ];
-                })->toArray();
-            }
-
-            if ($this->defects) {
-                // Dispatch defects and small defects
-                $this->dispatch('DefectFromUpdate', [
-                    'defects'      => $this->defects,
-                    'smallDefects' => $this->smalldefects,
-                ]);
-
-                // Normalize defects: sum quantities of the same type
-                $normalized = [];
-                foreach ($this->defects as $d) {
-                    $type = trim($d['type']);
-                    $qty  = (int)$d['qty'];
-
-                    if ($type === '') continue;
-
-                    $key = strtolower($type);
-
-                    if (isset($normalized[$key])) {
-                        $normalized[$key]['qty'] += $qty;
-                    } else {
-                        $normalized[$key] = [
-                            'type' => $type,
-                            'qty'  => $qty
-                        ];
-                    }
                 }
+            }
+        }
 
-                // Prepare payload for FromDefects
-                $defectPayload = array_map(fn($d) => [
-                    'newDefect' => $d['type'],
-                    'newQuan'   => $d['qty'],
-                    'action'    => ''
-                ], array_values($normalized));
-                // Dispatch normalized defects
-                $this->dispatch('FromDefects', [
-                    'defectData' => $defectPayload
-                ]);
+        if (count($this->defects) > 0) {
+            $this->dispatch('DefectFromUpdate', [
+                'defects'      => $this->defects,
+                'smallDefects' => $this->smalldefects,
+            ]);
+
+            $normalized = [];
+            foreach ($this->defects as $d) {
+                $type = strtolower(trim($d['type']));
+                if ($type === '') continue;
+
+                if (isset($normalized[$type])) {
+                    $normalized[$type]['qty'] += $d['qty'];
+                } else {
+                    $normalized[$type] = [
+                        'type' => $d['type'],
+                        'qty'  => $d['qty'],
+                    ];
+                }
             }
 
-            // Dispatch total quantity
+            $defectPayload = array_map(fn($d) => [
+                'newDefect' => $d['type'],
+                'newQuan'   => $d['qty'],
+                'action'    => '',
+            ], array_values($normalized));
+
+            $this->dispatch('FromDefects', [
+                'defectData' => $defectPayload
+            ]);
+
             $this->totalQty = collect($this->defects)->sum('qty');
             $this->dispatch('sendNg', $this->totalQty);
 
-            // Dispatch unique inspectors
             $inspectors = collect($this->defects)
                 ->pluck('operatorid')
-                ->filter(fn($id) => !empty($id))
                 ->unique()
                 ->values();
 
@@ -406,18 +416,126 @@ class Gldashboard extends Component
                 }
                 $this->inspectorsDispatched = true;
             }
+
+            $last = end($this->defects);
+            $this->lastdef = $last['type'] ?? null;
+            $this->lastqty = $last['qty'] ?? null;
         }
     }
 
+
+    // public function LoadDefectsGL($ppf, $encoder)
+    // {
+    //     $defect = DefectInsp::select('InspectorID', 'Defect', 'Quantity', 'DateEncode')
+    //         ->where('PPFNo', $ppf)
+    //         ->where('inspectorID', $encoder)
+    //         ->get();
+
+    //     if ($defect) {
+    //         // Main defect list
+    //         $this->defects = $defect->map(function ($item) {
+    //             return [
+    //                 'operatorid' => $item->InspectorID,
+    //                 'type'       => $item->Defect,
+    //                 'qty'        => (int)$item->Quantity,
+    //                 'dateEncode' => $item->DateEncode
+    //             ];
+    //         })->filter(fn($d) => $d['qty'] > 0)
+    //             ->values()
+    //             ->toArray();
+
+    //         $last = end($this->defects);
+    //         $this->lastdef = $last['type'] ?? null;
+    //         $this->lastqty = $last['qty'] ?? null;
+
+    //         // Load small defects
+    //         foreach ($defect as $item) {
+    //             $large = $item->Defect;
+
+    //             $smallDef = SmallInsp::select('LargeDefect', 'SmallDefect', 'Qty')
+    //                 ->where('LargeDefect', $large)
+    //                 ->where('inspectorID', $encoder)
+    //                 ->where('PPFNo', $ppf)
+    //                 ->get();
+
+    //             $this->smalldefects[$large] = $smallDef->map(function ($s) {
+    //                 return [
+    //                     'SelectedLargeDefect' => $s->LargeDefect,
+    //                     'type'                => $s->SmallDefect,
+    //                     'qty'                 => $s->Qty
+    //                 ];
+    //             })->toArray();
+    //         }
+
+    //         if ($this->defects) {
+    //             // Dispatch defects and small defects
+    //             $this->dispatch('DefectFromUpdate', [
+    //                 'defects'      => $this->defects,
+    //                 'smallDefects' => $this->smalldefects,
+    //             ]);
+
+    //             // Normalize defects: sum quantities of the same type
+    //             $normalized = [];
+    //             foreach ($this->defects as $d) {
+    //                 $type = trim($d['type']);
+    //                 $qty  = (int)$d['qty'];
+
+    //                 if ($type === '') continue;
+
+    //                 $key = strtolower($type);
+
+    //                 if (isset($normalized[$key])) {
+    //                     $normalized[$key]['qty'] += $qty;
+    //                 } else {
+    //                     $normalized[$key] = [
+    //                         'type' => $type,
+    //                         'qty'  => $qty
+    //                     ];
+    //                 }
+    //             }
+
+    //             // Prepare payload for FromDefects
+    //             $defectPayload = array_map(fn($d) => [
+    //                 'newDefect' => $d['type'],
+    //                 'newQuan'   => $d['qty'],
+    //                 'action'    => ''
+    //             ], array_values($normalized));
+    //             // Dispatch normalized defects
+    //             $this->dispatch('FromDefects', [
+    //                 'defectData' => $defectPayload
+    //             ]);
+    //         }
+
+    //         // Dispatch total quantity
+    //         $this->totalQty = collect($this->defects)->sum('qty');
+    //         $this->dispatch('sendNg', $this->totalQty);
+
+    //         // Dispatch unique inspectors
+    //         $inspectors = collect($this->defects)
+    //             ->pluck('operatorid')
+    //             ->filter(fn($id) => !empty($id))
+    //             ->unique()
+    //             ->values();
+
+    //         if (!$this->inspectorsDispatched) {
+    //             foreach ($inspectors as $id) {
+    //                 $this->dispatch('InspectorUpdate', $id);
+    //             }
+    //             $this->inspectorsDispatched = true;
+    //         }
+    //     }
+    // }
+
     public function LoadReworksGL($ppf)
     {
-        $reworkss = ReworkInsp::select('InspectorID', 'HFNo', 'TotalInspQty', 'Defect', 'Quantity', 'DateEncode')->where('PPFNo', $ppf)->get();
+        $reworkss = ReworkInsp::select('InspectorID','insp_name', 'HFNo', 'TotalInspQty', 'Defect', 'Quantity', 'DateEncode')->where('PPFNo', $ppf)->get();
 
         if ($reworkss) {
             $this->rework = $reworkss->map(function ($item) {
                 return [
                     'operatorid' => $item->InspectorID,
                     'hfno' => $item->HFNo,
+                    'operatorname' => $item->insp_name,
                     'totalinsp' => $item->TotalInspQty,
                     'type' => $item->Defect,
                     'quan' => $item->Quantity,

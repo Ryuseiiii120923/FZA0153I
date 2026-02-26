@@ -101,7 +101,8 @@ return [
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),
-            'host' => env('DB_HOST', 'fmdbms02'),
+            // 'host' => env('DB_HOST', 'fmdbms02'),
+            'host' => env('DB_HOST', '172.32.0.7'),
             'port' => env('DB_PORT', '1433'),
             'database' => env('DB_DATABASE', 'forge'),
             'username' => env('DB_USERNAME', 'forge'),

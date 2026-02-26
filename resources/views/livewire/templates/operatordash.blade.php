@@ -32,7 +32,7 @@
                 </td>
                 </tr>
                 @empty
-                <td colspan="3" class="px-4 py-2 text-center">No records found</td>
+                <td colspan="3" class="px-3 py-5 text-center">No records found</td>
                 @endforelse
             </tbody>
         </table>

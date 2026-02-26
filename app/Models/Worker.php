@@ -13,7 +13,8 @@ class Worker extends Authenticatable
     public $timestamps = false;
 
     protected $fillable = [
-        '社員CD'
+        '社員CD',
+        '作業員CD'
     ];
 
     public function getAuthIdentifier()

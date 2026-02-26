@@ -10,6 +10,7 @@ use App\Models\DefectInsp;
 use App\Models\PRInsp;
 use App\Models\ReworkInsp;
 use App\Models\SmallInsp;
+use App\Models\Worker;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -37,10 +38,10 @@ class Checkppf extends Component
     public $lastqty;
     public $showInspectionModal = false; // controls the modal
     public $totalInspection;
-    public $encoder;
+    public $encoder, $inspectorID;
     public $progressInsp;
     public $isAccept = false;
-
+    public $canEditTotal = false;
     public $actiondash;
     public $method; //if User press Add button method = Add, Update method = Update, Delete method = Delete, View method = View
 
@@ -178,16 +179,16 @@ class Checkppf extends Component
     private function loadProcessRecord()
     {
         $ppfexisting = AddDefect::where('PPFNo', $this->ppf)->first();
-        $ppfrecord = DefectInsp::where('InspectorID', $this->encoder)
+        $ppfrecord = DefectInsp::where('InspectorID', $this->inspectorID)
             ->where('PPFNo', $this->ppf)
             ->exists()
             ||
-            ReworkInsp::where('InspectorID', $this->encoder)
+            ReworkInsp::where('InspectorID', $this->inspectorID)
             ->where('PPFNo', $this->ppf)
             ->exists();
         $check = ModelsCheckPPF::where('流動NO', $this->ppf)->first();
         $hf = CheckHF::where('流動NO', $this->ppf)->first();
-        $totalinsp = PRInsp::where('PPFNo', $this->ppf)->where('InspectorID', $this->encoder)->first();
+        $totalinsp = PRInsp::where('PPFNo', $this->ppf)->where('InspectorID', $this->inspectorID)->first();
         $this->dispatch('GoodNg');
         if ($this->actiondash != 'edit') {
             if ($this->systemname === 'ProcessRecord') {
@@ -241,6 +242,7 @@ class Checkppf extends Component
         $this->opt     = $check ? preg_replace('/\s+/', '', $check->作業員CD) : '';
         $this->expct   = $hf ? round($hf->合格数) : 0;
         $this->totalInspection = $totalinsp ? $totalinsp->total_inspect : 0;
+        $this->dispatch('fetchTotalInspection', $this->totalInspection);
         $this->dispatch('sendExcpt', $this->expct);
         $this->dispatch('FromCheckppf', [
             'ppf' => $this->ppf,
@@ -256,6 +258,7 @@ class Checkppf extends Component
         if ($this->actiondash != 'edit') {
             if ($this->systemname === 'ProcessRecord') {
                 $this->showInspectionModal = true;
+                
             }
         }
         return true;
@@ -316,8 +319,9 @@ class Checkppf extends Component
     $this->actiondash = $actiondash;
     $userencoder = UserAuth::user()->社員CD;
     $this->encoder = (int)$userencoder;
+    $inspectID = Worker::select('作業員CD')->Where('社員CD', $this->encoder)->first();
+    $this->inspectorID = $inspectID->作業員CD ?? null;
 }
-
     public function EditActions($data)
     {
         $this->action = null;
@@ -387,6 +391,7 @@ class Checkppf extends Component
         }
         if ($this->systemname === 'ProcessRecord') {
             if ($this->loadProcessRecord()) {
+                $this->canEditTotal = true;
                 $this->dispatch('LoadDefectsPren', $ppf);
                 $this->dispatch('LoadReworksPren', $ppf);
                 $this->dispatch('process');
@@ -394,7 +399,6 @@ class Checkppf extends Component
             }
         } elseif ($this->systemname === 'GLDashboard') {
             if ($this->action === 'Add') {
-
                 if ($this->loadProcessRecord()) {
                     $this->isPPF = true; //enable the inspection Progress
                     $this->dispatch('LoadDefectsGL', $ppf);

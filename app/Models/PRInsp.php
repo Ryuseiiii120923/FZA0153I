@@ -15,6 +15,7 @@ class PRInsp extends Model
         'InspectorID',
         'PPFNo',
         'total_inspect',
-        'DateEncode'
+        'DateEncode',
+        'Process'
     ];
 }

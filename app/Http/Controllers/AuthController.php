@@ -56,8 +56,9 @@ class AuthController extends Controller
 
                                 $request->session()->regenerate();
                                 Log::info('Session regenerated');
+                                session(['process' =>$qrData['process']]);
 
-                                return redirect('/selector');
+                                return redirect()->route('prencode', ['systemname' => 'ProcessRecord']);
                             } catch (\Throwable $e) {
                                 Log::error('Worker login failed', ['message' => $e->getMessage()]);
                                 dd('Error:', $e->getMessage(), get_class($user));
@@ -82,7 +83,7 @@ class AuthController extends Controller
         if ($user && $user->PASSWORD === $request->input('password')) {
             Auth::login($user);
             $request->session()->regenerate();
-            return redirect()->route('selector');
+            return redirect()->route('gl.dashboard');
         }
 
         return back()->withErrors(['credentials' => 'Incorrect credentials']);

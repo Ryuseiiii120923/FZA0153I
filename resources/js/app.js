@@ -100,7 +100,6 @@ document.addEventListener("DOMContentLoaded", () => {
         lockFormFields();
     });
 
-
     window.addEventListener("ppf-valid", () => {
         if (window.hasError) {
             // Don't unlock if any error exists
@@ -136,10 +135,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-        window.addEventListener("ppfcheck", () => {
-        document.getElementById('Init-add').click;
+    window.addEventListener("ppfcheck", () => {
+        document.getElementById("Init-add").click;
     });
-
 
     window.addEventListener("confirm-accept", () => {
         if (confirm("Are you sure you want to accept this?")) {
@@ -191,10 +189,29 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("removelock", () => {
         removelockbuttonsPren();
     });
+    window.addEventListener("ProcessVI", () => {
+        ProcessVI();
+    });
+    window.addEventListener("ProcessMD", () => {
+        ProcessMD();
+    });
+    window.addEventListener("ProcessHF", () => {
+        ProcessHF();
+    });
+
+    function ProcessVI() {
+        document.getElementById("title").textContent = "Process Record (VI)";
+    }
+    function ProcessMD() {
+        document.getElementById("title").textContent = "Process Record (MD)";
+    }
+    function ProcessHF() {
+        document.getElementById("title").textContent = "Process Record (HF)";
+    }
 
     function removelockbuttonsPren() {
         document.getElementById("scan-ppf").disabled = false;
-        document.getElementById("title").textContent = "Process Record";
+
         document.getElementById("PPF").readOnly = false;
         document.getElementById("PPF").classList.remove("bg-gray-500");
 

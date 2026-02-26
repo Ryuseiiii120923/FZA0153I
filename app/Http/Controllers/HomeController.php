@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+use Illuminate\Support\Facades\Auth;
 
 use Illuminate\Http\Request;
 
@@ -33,6 +34,9 @@ class HomeController extends Controller
     }
 
     public function gldash(){
+        if (!Auth::guard('web')->check()) {
+        abort(403);
+    }
         $systemname = request()->input('systemname');
         return view('pages.gldashboard', compact('systemname'));
     }

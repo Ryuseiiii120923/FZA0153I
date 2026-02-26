@@ -114,10 +114,10 @@
                 wire:model="plant"
                 required>
                 <option value="">-- Select Plant--</option>
-                <option value="Plant 1A">P1A</option>
-                <option value="Plant 1B">P1B</option>
-                <option value="Plant 2A">P2A</option>
-                <option value="Plant 2B">P2B</option>
+                <option value="P1A">P1A</option>
+                <option value="P1B">P1B</option>
+                <option value="P2A">P2A</option>
+                <option value="P2B">P2B</option>
             </select>
         </div>
     </div>
