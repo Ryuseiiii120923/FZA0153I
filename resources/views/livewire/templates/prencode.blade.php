@@ -111,14 +111,7 @@
 
     <div id="OuterPanel">
         <livewire:templates.checkppf :systemname="request()->input('systemname')" />
-        <div class="flex flex-col sm:flex-row gap-6 mt-4 items-start justify-center w-full px-4">
-            <div class="w-11/12 sm:w-1/2 flex justify-center">
-                <livewire:templates.defects />
-            </div>
-            <div class="w-11/12 sm:w-1/2 flex justify-center">
-                <livewire:templates.rework />
-            </div>
-        </div>
+       <livewire:ui.drop-down>
         <div class="flex items-center gap-2 justify-center p-6" id="buttons-action">
             <button
                 type="button"
@@ -139,7 +132,6 @@
                 Add
                 @endif
             </button>
-
         </div>
     </div>
         <div class="mt-3">
