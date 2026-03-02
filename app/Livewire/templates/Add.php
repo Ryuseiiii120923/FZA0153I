@@ -7,7 +7,7 @@ use App\Models\AddDefect;
 use App\Models\AddRwk;
 use App\Models\CheckHF;
 use App\Models\Defects;
-use App\Models\PRInsp;
+use App\Models\Operator\PRInsp;
 use App\Models\Rework;
 use App\Models\SmallDef;
 use App\Models\ViCheck;

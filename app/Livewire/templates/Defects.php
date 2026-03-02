@@ -3,7 +3,7 @@
 namespace App\Livewire\Templates;
 
 use App\Models\Defects as ModelsDefects;
-use App\Models\SmallDef;
+use App\Models\Operator\SmallDef;
 use Illuminate\Support\Collection;
 use Livewire\Component;
 use Livewire\Attributes\On;
@@ -30,6 +30,7 @@ class Defects extends Component
     public $editingTypeSmall;
     public $locked = false;
     public $systemname;
+    public $formId;
 
 
     public $rules = [
@@ -139,8 +140,9 @@ class Defects extends Component
     }
 
 
-    public function mount($systemname = null)
+    public function mount($systemname = null, $formId = null)
     {
+        $this->formId = $formId;
         $this->Largedefects = ModelsDefects::select('LargeDefect')
             ->distinct()
             ->whereNotNull('LargeDefect')
@@ -207,7 +209,10 @@ class Defects extends Component
         $this->newQuan = '';
         $this->sendDefect();
 
-        $this->dispatch('FromDefects', $this->defectData);
+        $this->dispatch('defects-updated', [
+            'defects' => $this->defects,
+            'formId' => $this->formId
+        ]);
         $this->dispatch('TriggerGoodNg');
     }
 
@@ -296,7 +301,7 @@ class Defects extends Component
             'newDefect' => $type,
             'action'    => 'delete',
         ];
-        $this->dispatch('FromDefects', $this->defectData);
+        $this->dispatch('FromDefects',[ 'defects' => $this->defectData]);
 
         // Trigger recalculation of good / ng quantities
         $this->dispatch('TriggerGoodNg');
@@ -386,7 +391,7 @@ class Defects extends Component
         // Optionally update total
         $this->TotalSmallQuan += $this->newSmallQuan;
 
-        $this->smalldefectData = [
+        $this->smalldefectData[] = [
             'SelectedLargeDefect' => $this->selectedLargeDefect,
             'newSmallDefect' => $this->newSmallDefect,
             'newSmallQuan'   => $this->newSmallQuan,
@@ -395,9 +400,14 @@ class Defects extends Component
         // Reset input fields
         $this->newSmallDefect = '';
         $this->newSmallQuan = '';
+        $smallDefectsForDispatch = $this->smallDefects;
 
         // Dispatch events if needed
-        $this->dispatch('FromSmallDefects', smalldefectData: $this->smalldefectData);
+        // $this->dispatch('FromSmallDefects', smalldefectData: $this->smalldefectData);
+        $this->dispatch('defects-updated', [
+            'smallDefects' => $smallDefectsForDispatch,
+            'formId' => $this->formId
+        ]);
 
         $this->sendDefect(); // if you want to update TotalNg
     }

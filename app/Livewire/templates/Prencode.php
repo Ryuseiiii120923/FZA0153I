@@ -2,10 +2,10 @@
 
 namespace App\Livewire\Templates;
 
-use App\Models\DefectInsp;
-use App\Models\PRInsp;
-use App\Models\ReworkInsp;
-use App\Models\SmallInsp;
+use App\Models\Operator\DefectInsp;
+use App\Models\Operator\PRInsp;
+use App\Models\Operator\ReworkInsp;
+use App\Models\Operator\SmallInsp;
 use App\Models\Worker;
 use App\Models\WorkerName;
 use Carbon\Carbon;
@@ -20,7 +20,7 @@ class Prencode extends Component
     public $partno;
     public $matno;
 
-    public $encoder, $username,$inspectorID;
+    public $encoder, $username, $inspectorID;
     public $lastdef;
     public $lastqty;
     public $totalInspection;
@@ -30,7 +30,7 @@ class Prencode extends Component
     public $defects = [];
     public $smalldefects = [];
     public $rework = [];
-
+    public $dropdownForms = [];
     public $totalngrework;
     public $hfno1, $hfno2, $hfno3, $hfno4, $hfno5;
     public $process;
@@ -218,6 +218,48 @@ class Prencode extends Component
         }
     }
 
+    //updating from dropdown
+   #[On('dropdown-updated')]
+public function receiveDropdownData($data)
+{
+    foreach ($data['forms'] as $formId => $formData) {
+
+        $existingDefects = $this->dropdownForms[$formId]['defects'] ?? [];
+        $existingSmallDefects = $this->dropdownForms[$formId]['smallDefects'] ?? [];
+
+        $incomingDefects = $formData['defects'] ?? [];
+        $incomingSmallDefects = $formData['smallDefects'] ?? [];
+        
+        foreach ($incomingDefects as $def) {
+            $exists = collect($existingDefects)->contains(fn($d) => $d['type'] === $def['type']);
+            if (!$exists) {
+                $existingDefects[] = $def;
+            }
+        }
+
+        // Merge small defects grouped by LargeDefect
+       // Merge small defects grouped by LargeDefect
+        foreach ($incomingSmallDefects as $large => $smalls) {
+
+            if (!isset($existingSmallDefects[$large])) {
+                $existingSmallDefects[$large] = [];
+            }
+
+            foreach ($smalls as $small) {
+                $exists = collect($existingSmallDefects[$large])
+                    ->contains(fn($s) => strtolower(trim($s['type'] ?? '')) === strtolower(trim($small['type'] ?? '')));
+                if (!$exists && !empty($small['type'])) {
+                    $existingSmallDefects[$large][] = $small;
+                }
+            }
+        }
+
+        // Assign back to dropdownForms without overwriting merged defects
+        $this->dropdownForms[$formId] = $formData;
+        $this->dropdownForms[$formId]['defects'] = $existingDefects;
+        $this->dropdownForms[$formId]['smallDefects'] = $existingSmallDefects;
+    }
+}
 
     //To Fetch Rework
     #[On('LoadReworksPren')]
@@ -316,14 +358,14 @@ class Prencode extends Component
         $UserName = WorkerName::select('名前')->Where('社員CD', $this->encoder)->first();
         $this->username = $UserName->名前 ?? '';
         $inspectorID = Worker::select('作業員CD')->Where('社員CD', $this->encoder)->first();
-        $this->inspectorID = $inspectorID -> 作業員CD;
+        $this->inspectorID = $inspectorID->作業員CD;
         $this->process = session('process');
 
-        if ($this->process === 'VI'){
+        if ($this->process === 'VI') {
             $this->dispatch('ProcessVI');
-        }elseif ($this->process === 'MD'){
+        } elseif ($this->process === 'MD') {
             $this->dispatch('ProcessMD');
-        }else{
+        } else {
             $this->dispatch('ProcessHF');
         }
     }
@@ -354,7 +396,8 @@ class Prencode extends Component
     }
 
     #[On('fetchTotalInspection')]
-    public function fetchTotalInspection($data){
+    public function fetchTotalInspection($data)
+    {
         $this->totalInspection = $data;
     }
 
@@ -369,12 +412,12 @@ class Prencode extends Component
             return;
         }
 
-        if(!empty($this->ppf)){
+        if (!empty($this->ppf)) {
             PRInsp::Create([
                 'InspectorID' => $this->inspectorID,
                 'insp_name' => $this->username,
                 'PPFNo' => $this->ppf,
-                'total_inspect' =>$this->totalInspection,
+                'total_inspect' => $this->totalInspection,
                 'DateEncode' => Carbon::now()->format('Y-m-d h:i:s A'),
                 'Process' => $this->process
             ]);

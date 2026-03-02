@@ -4,7 +4,7 @@ namespace App\Livewire\Templates;
 
 use App\Models\AddDefect;
 use App\Models\CheckHF;
-use App\Models\PRInsp;
+use App\Models\Operator\PRInsp;
 use Livewire\Component;
 
 class PPFDashboard extends Component

@@ -4,10 +4,10 @@ namespace App\Livewire\Templates;
 
 use App\Models\AddDefect;
 use App\Models\CheckHF;
-use App\Models\DefectInsp;
+use App\Models\Operator\DefectInsp;
 use App\Models\Defects;
-use App\Models\ReworkInsp;
-use App\Models\SmallInsp;
+use App\Models\Operator\ReworkInsp;
+use App\Models\Operator\SmallInsp;
 use App\Models\ViCheck;
 use App\Models\WorkerName;
 use Carbon\Carbon;

@@ -21,6 +21,7 @@ class Rework extends Component
     public $hfname;
     public $editingType;
     public $locked = false;
+    public $formId;
 
     public $listeners = [
         'FetchRework' => 'Fetch',
@@ -40,6 +41,11 @@ class Rework extends Component
         'newRework.required' => 'Please enter a rework type.',
         'newQuan.required' => 'Please enter a quantity.',
     ];
+
+    public function mount($formId = null)
+    {
+        $this->formId = $formId;
+    }
 
     public function locked($data)
     {
@@ -112,7 +118,6 @@ class Rework extends Component
         'type'       => trim($this->newRework),
         'quan'       => $this->newQuan,
     ];
-
     $reworksData = [
         'newhfno'   => $this->hfno,
         'newtype'   => $this->newRework, 
@@ -122,7 +127,7 @@ class Rework extends Component
     ];
     $this->UpdatedNGRework();
 
-    $this->dispatch('FromReworks', reworksData: $reworksData);
+    $this->dispatch('defects-updated', ['reworksData' => $reworksData, 'formId'=> $this->formId,]);
     $this->dispatch('FromReworksData', [
             'totalngrework' => $this->totalngrework
         ]);

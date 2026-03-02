@@ -2,9 +2,9 @@
 
 namespace App\Livewire\Templates;
 
-use App\Models\DefectInsp;
-use App\Models\ReworkInsp;
-use App\Models\SmallInsp;
+use App\Models\Operator\DefectInsp;
+use App\Models\Operator\ReworkInsp;
+use App\Models\Operator\SmallInsp;
 use App\Models\Worker;
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth as UserAuth;

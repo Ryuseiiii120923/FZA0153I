@@ -138,5 +138,4 @@
             <livewire:templates.operatordash>
         </div>
 
-
 </div>

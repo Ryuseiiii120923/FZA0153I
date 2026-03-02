@@ -1,26 +1,24 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Operator;
 
 use Illuminate\Database\Eloquent\Model;
 
-class ReworkInsp extends Model
+class DefectInsp extends Model
 {
-     protected $table = "Inspector_Rework";
+    protected $table = "Inspector_Defect";
     public $incrementing = false;
     public $timestamps = false;
     protected $primaryKey = 'RecNo';
     protected $keyType = 'string';
     protected $fillable = [
-        'HFNo',
+        'InspectorID',
         'PPFNo',
         'Defect',
         'Quantity',
-        'TotalInspQty',
         'DateEncode',
-        'InspectorID',
         'insp_name',
         'Process'
     ];
-
 }
+

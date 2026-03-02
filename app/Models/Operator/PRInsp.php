@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Operator;
 
 use Illuminate\Database\Eloquent\Model;
 
-class DefectInsp extends Model
+class PRInsp extends Model
 {
-     protected $table = "Inspector_Defect";
+    protected $table = "Inspector_PR";
     public $incrementing = false;
     public $timestamps = false;
     protected $primaryKey = 'RecNo';
@@ -14,11 +14,8 @@ class DefectInsp extends Model
     protected $fillable = [
         'InspectorID',
         'PPFNo',
-        'Defect',
-        'Quantity',
+        'total_inspect',
         'DateEncode',
-        'insp_name',
         'Process'
     ];
 }
-

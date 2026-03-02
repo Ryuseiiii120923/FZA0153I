@@ -16,7 +16,7 @@
         <div class="flex justify-between items-center cursor-pointer px-4 py-2 bg-gray-100"
              @click="open = !open; $wire.toggle('{{ $formId }}')">
 
-            <span class="font-medium">Operator Form #{{ $loop->iteration }}</span>
+            <span class="font-medium">Operator Form #{{ $form['hf_id'] ?? 'Unknown' }}</span>
 
             <div class="flex items-center gap-2">
                 <!-- Remove Button -->
