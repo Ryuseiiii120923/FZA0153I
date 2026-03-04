@@ -14,9 +14,11 @@ class Rework extends Model
     protected $keyType = 'string';
     protected $fillable = [
         'hf_id',
+        'hfno',
         'rework_type',
         'qty',
         'created_at',
-        'updated_at'
+        'updated_by',
+        'ppfno'
     ];
 }

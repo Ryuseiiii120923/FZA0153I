@@ -16,6 +16,7 @@ class Defect extends Model
         'defect',
         'qty',
         'created_at',
-        'updated_at'
+        'updated_by',
+        'ppfno'
     ];
 }

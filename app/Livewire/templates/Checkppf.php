@@ -79,7 +79,8 @@ class Checkppf extends Component
     }
 
     #[On('fromppf')]
-    public function fromppf($data){
+    public function fromppf($data)
+    {
         $this->ppf = $data;
         $this->checkPPF();
     }
@@ -95,7 +96,8 @@ class Checkppf extends Component
 
 
     //This confirm if the total inspect
-    public function confirmAccept(){
+    public function confirmAccept()
+    {
         $this->dispatch('confirm-accept');
     }
 
@@ -140,31 +142,31 @@ class Checkppf extends Component
     // }
 
     public function totalInspectedProgress()
-{
-    // Compute the current tota
-    $totalInspected = PRInsp::where('PPFNo', $this->ppf)
-        ->sum('total_inspect');
+    {
+        // Compute the current tota
+        $totalInspected = PRInsp::where('PPFNo', $this->ppf)
+            ->sum('total_inspect');
 
-    // Only proceed if the sum changed
-    if ($totalInspected === $this->totalInspection) {
-        return; // nothing changed, exit early
+        // Only proceed if the sum changed
+        if ($totalInspected === $this->totalInspection) {
+            return; // nothing changed, exit early
+        }
+
+        // Update the properties since the sum changed
+        $this->totalInspection = $totalInspected;
+        $this->progressInsp = $this->totalInspection . "/" . $this->expct;
+
+        // Update isAccept and dispatch event if fully inspected
+        if ((int)$this->totalInspection === (int)$this->expct) {
+            $this->isAccept = true;
+            $this->dispatch('UpdateQty', [
+                'excssqty' => 0,
+                'lackqty' => 0,
+            ]);
+        } else {
+            $this->isAccept = false;
+        }
     }
-
-    // Update the properties since the sum changed
-    $this->totalInspection = $totalInspected;
-    $this->progressInsp = $this->totalInspection . "/" . $this->expct;
-
-    // Update isAccept and dispatch event if fully inspected
-    if ((int)$this->totalInspection === (int)$this->expct) {
-        $this->isAccept = true;
-        $this->dispatch('UpdateQty', [
-            'excssqty' => 0,
-            'lackqty' => 0,
-        ]);
-    } else {
-        $this->isAccept = false;
-    }
-}
 
     public function totalInspectedProgressFetch()
     {
@@ -258,7 +260,6 @@ class Checkppf extends Component
         if ($this->actiondash != 'edit') {
             if ($this->systemname === 'ProcessRecord') {
                 $this->showInspectionModal = true;
-                
             }
         }
         return true;
@@ -312,16 +313,16 @@ class Checkppf extends Component
         $this->expct = $data['expct'] ?? 0;
     }
 
- public function mount($systemname = null, $ppf = null, $actiondash = null)
-{
-    $this->systemname = $systemname;
-    $this->ppf = $ppf;
-    $this->actiondash = $actiondash;
-    $userencoder = UserAuth::user()->社員CD;
-    $this->encoder = (int)$userencoder;
-    $inspectID = Worker::select('作業員CD')->Where('社員CD', $this->encoder)->first();
-    $this->inspectorID = $inspectID->作業員CD ?? null;
-}
+    public function mount($systemname = null, $ppf = null, $actiondash = null)
+    {
+        $this->systemname = $systemname;
+        $this->ppf = $ppf;
+        $this->actiondash = $actiondash;
+        $userencoder = UserAuth::user()->社員CD;
+        $this->encoder = (int)$userencoder;
+        $inspectID = Worker::select('作業員CD')->Where('社員CD', $this->encoder)->first();
+        $this->inspectorID = $inspectID->作業員CD ?? null;
+    }
     public function EditActions($data)
     {
         $this->action = null;
@@ -362,7 +363,8 @@ class Checkppf extends Component
     }
 
     #[On('ProgDis')]
-    public function ProgDis (){
+    public function ProgDis()
+    {
         $this->isPPF = false;
     }
 
@@ -372,7 +374,7 @@ class Checkppf extends Component
         $this->validate();
         $ppf = $this->ppf; // fallback
         if ($this->ppf === null) {
-            $this->dispatch('ppf-error');
+            $this->dispatch(event: 'ppf-error');
             return;
         }
         if (request()->has('ppf')) {
@@ -392,10 +394,15 @@ class Checkppf extends Component
         if ($this->systemname === 'ProcessRecord') {
             if ($this->loadProcessRecord()) {
                 $this->canEditTotal = true;
-                $this->dispatch('LoadDefectsPren', $ppf);
-                $this->dispatch('LoadReworksPren', $ppf);
+                // $this->dispatch('LoadDefectsPren', $ppf);
+                // $this->dispatch('LoadReworksPren', $ppf);
                 $this->dispatch('process');
                 $this->dispatch('LoadDash');
+                $this->dispatch(
+                    'edit-ppf',
+                    ppf: $ppf,
+                    inspectorId: $this->inspectorID
+                );
             }
         } elseif ($this->systemname === 'GLDashboard') {
             if ($this->action === 'Add') {

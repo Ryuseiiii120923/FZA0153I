@@ -22,6 +22,7 @@ class Reworks extends Component
     public $hfname;
     public $editingType;
     public $locked = false;
+    public $formId;
 
     public $listeners = [
         'FetchRework' => 'Fetch',

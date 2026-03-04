@@ -15,6 +15,7 @@ class HF extends Model
         'hf_id',
         'total_inspect',
         'created_at',
-        'updated_at'
+        'updated_by',
+        'ppfno'
     ];
 }

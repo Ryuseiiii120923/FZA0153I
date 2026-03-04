@@ -42,11 +42,18 @@ class Rework extends Component
         'newQuan.required' => 'Please enter a quantity.',
     ];
 
-    public function mount($formId = null)
+
+      public function mount($formId = null, $loadedRework = [])
     {
         $this->formId = $formId;
+        $this->setReworks($loadedRework);
     }
-
+    public function setReworks($loadedReworks)
+    {
+        $this->reworkss = $loadedReworks;
+        $this->totalngrework = collect($this->reworkss)
+            ->sum(fn($x) => (int) $x['quan']);
+    }
     public function locked($data)
     {
         $this->locked = $data;
@@ -112,12 +119,14 @@ class Rework extends Component
             return;
         }
 
-    $this->reworkss[] = [
+    $newRework = [
         'hfno'       => $this->hfno,
         'totalinsp'  => $this->totalInsp,
         'type'       => trim($this->newRework),
         'quan'       => $this->newQuan,
     ];
+
+    $this->reworkss[] = $newRework;
     $reworksData = [
         'newhfno'   => $this->hfno,
         'newtype'   => $this->newRework, 
@@ -127,7 +136,7 @@ class Rework extends Component
     ];
     $this->UpdatedNGRework();
 
-    $this->dispatch('defects-updated', ['reworksData' => $reworksData, 'formId'=> $this->formId,]);
+    $this->dispatch('defects-updated', ['reworksData' => $newRework, 'formId'=> $this->formId,]);
     $this->dispatch('FromReworksData', [
             'totalngrework' => $this->totalngrework
         ]);
@@ -184,8 +193,9 @@ class Rework extends Component
         $this->UpdatedNgRework();
 
         // Send to the other component
-        $this->dispatch('FromReworks', reworksData: $reworksData);
+        // $this->dispatch('FromReworks', reworksData: $reworksData);
 
+        $this->dispatch('defects-updated', ['reworksData' => $reworksData, 'formId'=> $this->formId,]);
         $this->dispatch('FromReworksData', [
             'totalngrework' => $this->totalngrework
         ]);

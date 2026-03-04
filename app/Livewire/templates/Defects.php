@@ -140,7 +140,7 @@ class Defects extends Component
     }
 
 
-    public function mount($systemname = null, $formId = null)
+    public function mount($systemname = null, $formId = null, $loadedDefects = [])
     {
         $this->formId = $formId;
         $this->Largedefects = ModelsDefects::select('LargeDefect')
@@ -150,6 +150,12 @@ class Defects extends Component
             ->get();
 
         $this->systemname = $systemname;
+        $this->setDefects($loadedDefects);
+    }
+    public function setDefects($defects)
+    {
+        $this->defects = $defects ?? [];
+        $this->TotalNg = collect($this->defects)->sum('qty');
     }
 
 
@@ -301,7 +307,7 @@ class Defects extends Component
             'newDefect' => $type,
             'action'    => 'delete',
         ];
-        $this->dispatch('FromDefects',[ 'defects' => $this->defectData]);
+        $this->dispatch('FromDefects', ['defects' => $this->defectData]);
 
         // Trigger recalculation of good / ng quantities
         $this->dispatch('TriggerGoodNg');

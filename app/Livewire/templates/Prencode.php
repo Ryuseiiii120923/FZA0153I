@@ -2,6 +2,10 @@
 
 namespace App\Livewire\Templates;
 
+use App\Models\HF\Defect;
+use App\Models\HF\HF;
+use App\Models\HF\Rework;
+use App\Models\HF\SmallDefect;
 use App\Models\Operator\DefectInsp;
 use App\Models\Operator\PRInsp;
 use App\Models\Operator\ReworkInsp;
@@ -219,47 +223,57 @@ class Prencode extends Component
     }
 
     //updating from dropdown
-   #[On('dropdown-updated')]
-public function receiveDropdownData($data)
-{
-    foreach ($data['forms'] as $formId => $formData) {
+    #[On('dropdown-updated')]
+    public function receiveDropdownData($data)
+    {
+        foreach ($data['forms'] as $formId => $formData) {
 
-        $existingDefects = $this->dropdownForms[$formId]['defects'] ?? [];
-        $existingSmallDefects = $this->dropdownForms[$formId]['smallDefects'] ?? [];
+            $existingDefects = $this->dropdownForms[$formId]['defects'] ?? [];
+            $existingSmallDefects = $this->dropdownForms[$formId]['smallDefects'] ?? [];
+            $existingReworks = $this->dropdownForms[$formId]['rework'] ?? [];
 
-        $incomingDefects = $formData['defects'] ?? [];
-        $incomingSmallDefects = $formData['smallDefects'] ?? [];
-        
-        foreach ($incomingDefects as $def) {
-            $exists = collect($existingDefects)->contains(fn($d) => $d['type'] === $def['type']);
-            if (!$exists) {
-                $existingDefects[] = $def;
-            }
-        }
+            $incomingDefects = $formData['defects'] ?? [];
+            $incomingSmallDefects = $formData['smallDefects'] ?? [];
+            $incomingReworks = $formData['rework'] ?? [];
 
-        // Merge small defects grouped by LargeDefect
-       // Merge small defects grouped by LargeDefect
-        foreach ($incomingSmallDefects as $large => $smalls) {
-
-            if (!isset($existingSmallDefects[$large])) {
-                $existingSmallDefects[$large] = [];
-            }
-
-            foreach ($smalls as $small) {
-                $exists = collect($existingSmallDefects[$large])
-                    ->contains(fn($s) => strtolower(trim($s['type'] ?? '')) === strtolower(trim($small['type'] ?? '')));
-                if (!$exists && !empty($small['type'])) {
-                    $existingSmallDefects[$large][] = $small;
+            foreach ($incomingDefects as $def) {
+                $exists = collect($existingDefects)->contains(fn($d) => $d['type'] === $def['type']);
+                if (!$exists) {
+                    $existingDefects[] = $def;
                 }
             }
-        }
 
-        // Assign back to dropdownForms without overwriting merged defects
-        $this->dropdownForms[$formId] = $formData;
-        $this->dropdownForms[$formId]['defects'] = $existingDefects;
-        $this->dropdownForms[$formId]['smallDefects'] = $existingSmallDefects;
+            // Merge small defects grouped by LargeDefect
+            // Merge small defects grouped by LargeDefect
+            foreach ($incomingSmallDefects as $large => $smalls) {
+
+                if (!isset($existingSmallDefects[$large])) {
+                    $existingSmallDefects[$large] = [];
+                }
+
+                foreach ($smalls as $small) {
+                    $exists = collect($existingSmallDefects[$large])
+                        ->contains(fn($s) => strtolower(trim($s['type'] ?? '')) === strtolower(trim($small['type'] ?? '')));
+                    if (!$exists && !empty($small['type'])) {
+                        $existingSmallDefects[$large][] = $small;
+                    }
+                }
+            }
+
+            foreach ($incomingReworks as $rework) {
+                $exists = collect($existingReworks)->contains(fn($r) => $r['hfno'] === $rework['hfno'] && $r['type'] === $rework['type']);
+                if (!$exists) {
+                    $existingReworks[] = $rework;
+                }
+            }
+
+            // Assign back to dropdownForms without overwriting merged defects
+            $this->dropdownForms[$formId] = $formData;
+            $this->dropdownForms[$formId]['defects'] = $existingDefects;
+            $this->dropdownForms[$formId]['smallDefects'] = $existingSmallDefects;
+            $this->dropdownForms[$formId]['rework'] = $existingReworks;
+        }
     }
-}
 
     //To Fetch Rework
     #[On('LoadReworksPren')]
@@ -403,118 +417,168 @@ public function receiveDropdownData($data)
 
     public function submitPrencode()
     {
-        if (empty($this->ppf)) {
-            session()->flash('failed', 'Please Enter PPF!');
-            return;
-        }
-        if ($this->ppf === "0") {
+        if (empty($this->ppf) || $this->ppf === "0") {
             session()->flash('failed', 'Please Enter PPF!');
             return;
         }
 
-        if (!empty($this->ppf)) {
-            PRInsp::Create([
-                'InspectorID' => $this->inspectorID,
-                'insp_name' => $this->username,
-                'PPFNo' => $this->ppf,
-                'total_inspect' => $this->totalInspection,
-                'DateEncode' => Carbon::now()->format('Y-m-d h:i:s A'),
-                'Process' => $this->process
+        $mergedDefects = [];
+        $mergedSmallDefects = [];
+        $mergedReworks = [];
+
+        foreach ($this->dropdownForms as $formData) {
+
+            HF::create([
+                'hf_id' => (int)$formData['hf_id'] ?? null,
+                'total_inspect' => $formData['total_inspect'] ?? null,
+                'created_at' => now(),
+                'updated_by' => $this->inspectorID,
+                    'ppfno' => $this->ppf
             ]);
-        }
+            // 🔵 MERGE LARGE DEFECTS
+            foreach ($formData['defects'] ?? [] as $defect) {
 
-        if (!empty($this->rework)) {
-            foreach ($this->rework as $reworks) {
-                $type = $reworks['type'] ?? $reworks['newtype'] ?? null;
-                $qty  = isset($reworks['quan']) ? (float)$reworks['quan'] : (float)($reworks['newquan'] ?? 0);
-                $hfno = $reworks['newhfno'] ?? $reworks['hfno'];
+                Defect::create(
+                    [
+                        'hf_id' => (int)$formData['hf_id'] ?? null,
+                        'defect' => $defect['type'] ?? null,
+                        'qty' => $defect['qty'] ?? null,
+                        'created_at' => now(),
+                        'updated_by' => $this->inspectorID,
+                    'ppfno' => $this->ppf
+                    ]
+                );
 
-                if (!$type || $qty <= 0) {
-                    continue;
-                }
+                $type = $defect['type'] ?? null;
+                $qty  = (float)($defect['qty'] ?? 0);
 
-                ReworkInsp::create([
-                    'HFNo' => $hfno ?? '',
-                    $this->hfno1 => $hfno[0] ?? '',
-                    $this->hfno2 => $hfno[1] ?? '',
-                    $this->hfno3 => $hfno[2] ?? '',
-                    $this->hfno4 => $hfno[3] ?? '',
-                    $this->hfno5 => $hfno[4] ?? '',
-                    'InspectorID' => $this->inspectorID,
-                    'insp_name' => $this->username,
-                    'PPFNo' => $this->ppf,
-                    'Defect' => $type ?? null,
-                    'Quantity' => $qty ?? null,
-                    'DateEncode' => Carbon::now()->format('Y-m-d h:i:s A'),
-                    'TotalInspQty' => $reworks['totalinsp'] ?? null,
-                    'Process' => $this->process
-                ]);
-            }
-        } else {
-            ReworkInsp::create([
-                'HFNo' => null,
-                'InspectorID' => $this->inspectorID,
-                'insp_name' => $this->username,
-                'PPFNo' => $this->ppf,
-                'Defect' => null,
-                'Quantity' => null,
-                'DateEncode' => Carbon::now()->format('Y-m-d h:i:s A'),
-                'TotalInspQty' => null,
-                'Process' => $this->process
-            ]);
-        }
-
-        if (empty($this->defects) || count($this->defects) === 0) {
-
-            DefectInsp::create([
-
-                'PPFNo' => (float) $this->ppf,
-                'Defect' => '',
-                'Quantity' => null,
-                'DateEncode' => Carbon::now()->format('Y-m-d h:i:s A'),
-                'InspectorID' => $this->inspectorID,
-                'insp_name' => $this->username,
-                'Process' => $this->process
-            ]);
-        } else {
-
-            foreach ($this->defects as  $defect) {
-                //dd($this->defects);
-                $type = $defect['type'] ?? $defect['newDefect'] ?? null;
-                $qty  = isset($defect['qty']) ? (float)$defect['qty'] : (float)($defect['newQuan'] ?? '');
                 if (!$type || $qty <= 0) continue;
-                DefectInsp::create([
-                    'PPFNo' => (float) $this->ppf,
-                    'Defect' => $type,
-                    'Quantity' => $qty,
-                    'DateEncode' => Carbon::now()->format('Y-m-d h:i:s A'),
+
+                if (!isset($mergedDefects[$type])) {
+                    $mergedDefects[$type] = 0;
+                }
+
+                $mergedDefects[$type] += $qty;
+            }
+
+            // 🔵 MERGE SMALL DEFECTS
+            foreach ($formData['smallDefects'] ?? [] as $large => $smalls) {
+
+                foreach ($smalls as $small) {
+
+                SmallDefect::create([
+                        'hf_id' => (int)$formData['hf_id'] ?? null,
+                        'large_defect' => $small['SelectedLargeDefect'] ?? null,
+                        'small_defect' => $small['type'] ?? null,
+                        'qty' => $small['qty'] ?? null,
+                        'created_at' => now(),
+                        'updated_by' => $this->inspectorID,
+                    'ppfno' => $this->ppf
+                    ]);
+                    $type = $small['type'] ?? null;
+                    $qty  = (float)($small['qty'] ?? 0);
+
+                    if (!$type || $qty <= 0) continue;
+
+                    if (!isset($mergedSmallDefects[$large][$type])) {
+                        $mergedSmallDefects[$large][$type] = 0;
+                    }
+
+                    $mergedSmallDefects[$large][$type] += $qty;
+                }
+            }
+
+            // 🔵 MERGE REWORKS
+            foreach ($formData['rework'] ?? [] as $rework) {
+                Rework::create([
+                    'hf_id' => (int)$formData['hf_id'] ?? null,
+                    'hfno' => $rework['hfno'] ?? null,
+                    'rework_type' => $rework['type'] ?? null,
+                    'qty' => $rework['quan'] ?? null,
+                    'created_at' => now(),
+                    'updated_by' => $this->inspectorID,
+                    'ppfno' => $this->ppf
+                ]);
+                $type = $rework['type'] ?? null;
+                $qty  = (float)($rework['quan'] ?? 0);
+                $hfno = $rework['hfno'] ?? '';
+
+                if (!$type || $qty <= 0) continue;
+
+                $key = $hfno . '_' . $type;
+
+                if (!isset($mergedReworks[$key])) {
+                    $mergedReworks[$key] = [
+                        'hfno' => $hfno,
+                        'type' => $type,
+                        'totalinsp' => $rework['totalinsp'] ?? null,
+                        'qty' => 0
+                    ];
+                }
+
+                $mergedReworks[$key]['qty'] += $qty;
+            }
+        }
+
+        // ✅ SAVE MAIN RECORD ONCE
+        PRInsp::create([
+            'InspectorID'   => $this->inspectorID,
+            'insp_name'     => $this->username,
+            'PPFNo'         => $this->ppf,
+            'total_inspect' => $this->totalInspection,
+            'DateEncode'    => now(),
+            'Process'       => $this->process
+        ]);
+
+        // ✅ SAVE MERGED LARGE DEFECTS
+        foreach ($mergedDefects as $type => $qty) {
+            DefectInsp::create([
+                'PPFNo'       => (float)$this->ppf,
+                'Defect'      => $type,
+                'Quantity'    => $qty,
+                'DateEncode'  => now(),
+                'InspectorID' => $this->inspectorID,
+                'insp_name'   => $this->username,
+                'Process'     => $this->process
+            ]);
+        }
+
+        // ✅ SAVE MERGED SMALL DEFECTS
+        foreach ($mergedSmallDefects as $large => $smalls) {
+            foreach ($smalls as $type => $qty) {
+                SmallInsp::create([
                     'InspectorID' => $this->inspectorID,
-                    'insp_name' => $this->username,
-                    'Process' => $this->process
+                    'PPFNo'       => $this->ppf,
+                    'LargeDefect' => $large,
+                    'SmallDefect' => $type,
+                    'Qty'         => $qty,
+                    'Process'     => $this->process
                 ]);
             }
         }
 
-        if (!empty($this->smalldefects)) {
-            // SmallInsp::select('PPFNo', 'LargeDefect', 'SmallDefect', 'Qty')->where('PPFNo', $this->ppf)
-            //     ->where('dFlg', 'VI')
-            //     ->delete();
+        // ✅ SAVE MERGED REWORKS
+        foreach ($mergedReworks as $rework) {
 
-            foreach ($this->smalldefects as $largeDefect => $smalls) {
-                foreach ($smalls as $small) {
-                    SmallInsp::create([
-                        'InspectorID' => $this->inspectorID,
-                        'PPFNo'       => $this->ppf,
-                        'LargeDefect' => $largeDefect, // <-- the name, not the array
-                        'SmallDefect' => $small['newSmallDefect'] ?? $small['type'],
-                        'Qty'         => $small['newSmallQuan'] ?? $small['qty'],
-                        'Process' => $this->process
-                    ]);
-                }
-            }
+            $hfno = $rework['hfno'];
+
+            ReworkInsp::create([
+                'HFNo'         => $hfno,
+                'HFNo1'        => $hfno[0] ?? null,
+                'HFNo2'        => $hfno[1] ?? null,
+                'HFNo3'        => $hfno[2] ?? null,
+                'HFNo4'        => $hfno[3] ?? null,
+                'HFNo5'        => $hfno[4] ?? null,
+                'InspectorID'  => $this->inspectorID,
+                'insp_name'    => $this->username,
+                'PPFNo'        => $this->ppf,
+                'Defect'       => $rework['type'],
+                'Quantity'     => $rework['qty'],
+                'DateEncode'   => now(),
+                'TotalInspQty' => $rework['totalinsp'],
+                'Process'      => $this->process
+            ]);
         }
-
-
 
         session()->flash('successAdd', 'Data inserted successfully!');
     }

@@ -2,20 +2,33 @@
 
 namespace App\Livewire\Ui;
 
+use App\Models\HF\Defect;
+use App\Models\HF\HF;
+use App\Models\HF\Rework;
+use App\Models\HF\SmallDefect;
+use App\Models\Worker;
+use App\Models\WorkerName;
+use Illuminate\Testing\Fluent\Concerns\Has;
 use Livewire\Component;
 use Livewire\Attributes\On;
+
+use function Laravel\Prompts\search;
 
 class DropDown extends Component
 {
     public $forms = [];
     public $defects = [];
     public $currentFormId = null;
+    public $toggles = false;
+    public $hasError = false;
 
     public function addNew()
     {
+        $this->toggles = true;
         $uniqueId = uniqid();
         $this->forms[$uniqueId] = [
             'hf_id' => '',
+            'hf_name' => '',
             'total_inspect' => '',
             'open' => false, // start expanded by default
             'defects' => [],
@@ -30,96 +43,111 @@ class DropDown extends Component
         ]);
     }
 
-    //    #[On('defects-updated')]
-    // public function updateDefectsFromChild($data = [])
-    // {
-    //     $this->currentFormId = $data['formId'];
+    #[On('edit-ppf')]
+    public function editPPFFromChild($ppf, $inspectorId)
+    {
+        $hfRecords = HF::where('ppfno', $ppf)
+            ->where('updated_by', $inspectorId)
+            ->get();
 
-    //     $defectData = $data['defects'] ?? [];
-    //     $smallDefectData = $data['smallDefects'] ?? [];
-    //     $reworkData = $data['reworksData'] ?? [];
+        if ($hfRecords->isEmpty()) return;
 
-    //     if(!$defectData && !$smallDefectData && !$reworkData) {
-    //         return; // No data to merge, exit early
-    //     }
+        $this->toggles = true;
 
-    //     $normalized = [];
-    //     foreach ($this->defects as $def) {
-    //         $type = $def['type'] ?? $def['newDefect'] ??'';
-    //         $qty = (float)$def['qty'] ?? $def['newQuan'] ?? 0;
+        foreach ($hfRecords as $h) {
 
-    //         if($type === '') {
-    //             continue; // Skip if type is empty
-    //         }
+            $operatorDefects = Defect::where('ppfno', $ppf)
+                ->where('updated_by', $inspectorId)
+                ->where('hf_id', $h->hf_id) // <-- use correct column
+                ->get()
+                ->map(function ($d) {
+                    return [
+                        'type' => $d->defect,
+                        'qty' => $d->qty ?? 1,
+                    ];
+                })
+                ->toArray();
 
+            $operatorRework = Rework::where('ppfno', $ppf)
+                ->where('updated_by', $inspectorId)
+                ->where('hf_id', $h->hf_id)
+                ->get()
+                ->map(function ($r) {
+                    return [
+                        'hfno' => $r->hfno,
+                        'totalinsp' => $r->totalinsp ?? 0,
+                        'type' => $r->rework_type,
+                        'quan' => $r->qty ?? 1,
+                    ];
+                })
+                ->toArray();
 
-    //         if (isset($normalized[strtolower($type)])) {
-    //             $normalized[strtolower($type)]['qty'] += $qty;
-    //         } else {
-    //             $normalized[strtolower($type)] = [
-    //                 'type' => $def['type'],
-    //                 'qty'  => (int)$qty
-    //             ];
-    //         }
-    //     }
+            $operatorSmallDefects = SmallDefect::where('ppfno', $ppf)
+                ->where('updated_by', $inspectorId)
+                ->where('hf_id', $h->hf_id)
+                ->whereNotNull('large_defect')
+                ->get()
+                ->groupBy('large_defect')
+                ->map(fn($group) => $group->values()->toArray())
+                ->toArray();
 
+            $uniqueId = uniqid();
+            $this->forms[$uniqueId] = [
+                'hf_id' => $h->hf_id,
+                'ppfno' => $h->ppfno,
+                'total_inspect' => $h->total_inspect,
+                'open' => true,
+                'defects' => $operatorDefects,
+                'smallDefects' => $operatorSmallDefects,
+                'rework' => $operatorRework,
+            ];
+            $this->CheckHf($uniqueId);
+        }
 
-    //     // Merge large defects
-    //     if (isset($data['defects'])) {
-    //         $this->forms[$this->currentFormId]['defects'] = array_merge(
-    //             $this->forms[$this->currentFormId]['defects'] ?? [],
-    //             $data['defects']
-    //         );
-    //     }
+        $this->dispatch('dropdown-updated', [
+            'forms' => $this->forms
+        ]);
+    }
 
-    //     // Merge small defects
-    //     if (isset($data['smallDefects'])) {
-    //         // Ensure small defects are grouped by LargeDefect
-    //         $existingSmall = $this->forms[$this->currentFormId]['smallDefects'] ?? [];
-    //         $newSmall = $data['smallDefects'] ?? [];
+    public function CheckHf($formId)
+    {
+        if (!$formId || !isset($this->forms[$formId])) {
+            return;
+        }
 
-    //         $this->forms[$this->currentFormId]['smallDefects'] = array_merge_recursive($existingSmall, $newSmall);
-    //     }
+  
+        if (empty($this->forms[$formId]['hf_id'])) {
+            $this->forms[$formId]['hf_id'] = null;
+            $this->resetErrorBag('forms.' . $formId . '.hf_id');
+            $this->hasError = true;
+            return;
+        }
 
-    //     // Merge reworks
-    //     if(isset($data['reworksData'])) {
-    //         $this->forms[$this->currentFormId]['rework'] = array_merge(
-    //             $this->forms[$this->currentFormId]['rework'] ?? [],
-    //             [$data['reworksData']] // make sure it's an array
-    //         );
-    //     }
+        $searchValue = strlen($this->forms[$formId]['hf_id']) === 2
+            ? ' ' . $this->forms[$formId]['hf_id']
+            : $this->forms[$formId]['hf_id'];
 
-    //     // Bubble up
-    //     $this->dispatch('dropdown-updated', [
-    //         'forms' => $this->forms
-    //     ]);
-    // }
+        $hf = Worker::where('作業員CD', $searchValue)
+            ->where('区分', 1)
+            ->first();
 
+        if ($hf) {
+            $name = WorkerName::where('社員CD', $hf->社員CD)->first();
 
-    // #[On('defects-updated')]
-    // public function updateDefectsFromChild($data = [])
-    // {
-    //     $formId = $data['formId'] ?? null;
-    //     if (!$formId) return;
+            $this->forms[$formId]['hf_name'] = $name?->名前;
+            $this->resetErrorBag('forms.' . $formId . '.hf_id');
+            $this->hasError = false;
+        } else {
+            $this->addError(
+                'forms.' . $formId . '.hf_id',
+                'This Operator does not exist'
+            );
 
-    //     if (isset($data['defects'])) {
-    //         $this->forms[$formId]['defects'] = array_merge($this->forms[$formId]['defects'] ?? [], $data['defects']);
-    //     }
-
-    //     if (isset($data['smallDefects'])) {
-    //         $this->forms[$formId]['smallDefects'] = $data['smallDefects'];
-    //     }
-
-    //     if (isset($data['reworksData'])) {
-    //         $this->forms[$formId]['rework'] = $data['reworksData'];
-    //     }
-
-    //     $this->dispatch('dropdown-updated', [
-    //         'forms' => $this->forms
-    //     ]);
-
-    //     dd($this->forms[$formId]['defects']);
-    // }
+            $this->forms[$formId]['hf_id'] = null;
+            $this->forms[$formId]['hf_name'] = null;
+            $this->hasError = true;
+        }
+    }
 
     #[On('defects-updated')]
     public function updateDefectsFromChild($data = [])
@@ -132,19 +160,22 @@ class DropDown extends Component
             $data['defects'] ?? []
         );
 
-       foreach ($data['smallDefects'] ?? [] as $large => $smalls) {
-        if (!isset($this->forms[$formId]['smallDefects'][$large])) {
-            $this->forms[$formId]['smallDefects'][$large] = [];
-        }
+        foreach ($data['smallDefects'] ?? [] as $large => $smalls) {
+            if (!isset($this->forms[$formId]['smallDefects'][$large])) {
+                $this->forms[$formId]['smallDefects'][$large] = [];
+            }
 
-        foreach ($smalls as $small) {
-            $exists = collect($this->forms[$formId]['smallDefects'][$large])
-                ->contains(fn($s) => strtolower(trim($s['type'] ?? '')) === strtolower(trim($small['type'] ?? '')));
-            if (!$exists && !empty($small['type'])) {
-                $this->forms[$formId]['smallDefects'][$large][] = $small;
+            foreach ($smalls as $small) {
+                $exists = collect($this->forms[$formId]['smallDefects'][$large])
+                    ->contains(fn($s) => strtolower(trim($s['type'] ?? '')) === strtolower(trim($small['type'] ?? '')));
+                if (!$exists && !empty($small['type'])) {
+                    $this->forms[$formId]['smallDefects'][$large][] = $small;
+                }
             }
         }
-    }
+        if (!empty($data['reworksData'])) {
+            $this->forms[$formId]['rework'][] = $data['reworksData'];
+        }
 
         $this->dispatch('dropdown-updated', [
             'forms' => $this->forms
@@ -155,6 +186,7 @@ class DropDown extends Component
     {
         $this->forms[$index]['open'] = !$this->forms[$index]['open'];
     }
+
     public function remove($id)
     {
         unset($this->forms[$id]);

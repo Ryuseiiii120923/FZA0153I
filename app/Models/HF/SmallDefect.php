@@ -17,6 +17,7 @@ class SmallDefect extends Model
         'small_defect',
         'qty',
         'created_at',
-        'updated_at'
+        'updated_by',
+        'ppfno'
     ];
 }
