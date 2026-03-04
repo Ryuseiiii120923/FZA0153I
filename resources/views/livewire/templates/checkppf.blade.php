@@ -38,69 +38,6 @@
             </div>
         </div>
 
-        <div x-data="{ open: @entangle('showInspectionModal') }">
-            @if ($systemname == "ProcessRecord")
-            <div class="flex flex-col mt-3 w-11/12 sm:w-1/3 mx-5 sm:mx-2 ">
-                <label for="displayTotal" class="block text-sm font-medium text-black">Saved Total Inspection</label>
-                <div class="flex items-center gap-2 mt-1">
-                    <input
-                        type="number"
-                        id="displayTotal"
-                        wire:model="totalInspection"
-                        class="my-2 block w-full border border-black rounded-md px-2 py-1"
-                        readonly>
-
-                    <button
-                        type="button"
-                        @if (!$canEditTotal)
-                        disabled
-                        @endif
-                        @click="open = true"
-                        class="px-4 py-1 ms-3 bg-blue-600 text-white rounded-md
-                   hover:bg-blue-700 hover:shadow-md transition duration-200">
-                        Edit
-                    </button>
-                </div>
-            </div>
-            @endif
-
-
-
-            <div
-
-                x-show="open"
-                x-cloak
-                class="fixed inset-0 z-50 flex items-center justify-center">
-                <!-- Black overlay -->
-                <div class="absolute inset-0 bg-black bg-opacity-50"></div>
-
-                <!-- Modal content -->
-                <div class="relative bg-white rounded-lg shadow-xl w-96 p-6" @click.stop>
-                    <h2 class="text-lg font-semibold mb-4">Enter Total Inspection</h2>
-
-                    <input
-                        type="number"
-                        wire:model.defer="totalInspection"
-                        class="w-full border rounded px-3 py-2 mb-4"
-                        placeholder="Total inspection" onfocus="this.select()" autofocus>
-
-                    @error('totalInspection')
-                    <p class="text-red-500 text-sm mb-2">{{ $message }}</p>
-                    @enderror
-
-                    <div class="flex justify-end gap-2">
-
-                        <button
-                            type="button"
-                            wire:click="saveInspection"
-                            class="px-4 py-2 bg-blue-600 text-white rounded">
-                            Save
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <div class="flex flex-col sm:flex-row justify-center gap-4 mt-4 items-center">
             <div class="flex-col w-11/12 sm:w-1/3 mx-5 sm:mx-2 ">
                 <label for="PartNo" class="block text-sm font-medium text-black">Part No</label>

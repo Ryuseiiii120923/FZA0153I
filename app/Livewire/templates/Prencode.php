@@ -398,6 +398,10 @@ class Prencode extends Component
         ReworkInsp::where('InspectorID', $this->inspectorID)->where('PPFNo', $this->ppf)->delete();
         SmallInsp::where('InspectorID', $this->inspectorID)->where('PPFNo', $this->ppf)->delete();
         PRInsp::where('InspectorID', $this->inspectorID)->where('PPFNo', $this->ppf)->delete();
+        Defect::where('ppfno', $this->ppf)->delete();
+        Rework::where('ppfno', $this->ppf)->delete();
+        SmallDefect::where('ppfno', $this->ppf)->delete();
+        HF::where('ppfno', $this->ppf)->delete();
         session()->flash('success', 'Delete successfully!');
     }
     public function editPrencode()
@@ -468,7 +472,7 @@ class Prencode extends Component
 
                 SmallDefect::create([
                         'hf_id' => (int)$formData['hf_id'] ?? null,
-                        'large_defect' => $small['SelectedLargeDefect'] ?? null,
+                        'large_defect' => $large ?? null,
                         'small_defect' => $small['type'] ?? null,
                         'qty' => $small['qty'] ?? null,
                         'created_at' => now(),

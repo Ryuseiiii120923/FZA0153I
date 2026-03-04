@@ -107,6 +107,7 @@ class DropDown extends Component
         $this->dispatch('dropdown-updated', [
             'forms' => $this->forms
         ]);
+
     }
 
     public function CheckHf($formId)
@@ -180,6 +181,7 @@ class DropDown extends Component
         $this->dispatch('dropdown-updated', [
             'forms' => $this->forms
         ]);
+
     }
 
     public function toggle($index)

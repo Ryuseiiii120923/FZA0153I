@@ -129,17 +129,17 @@
                 <!-- SMALL DEFECT ROWS -->
                 @if(isset($smallDefects[$defect['type']]))
                 @foreach($smallDefects[$defect['type']] as $sDefect)
-                <tr class="bg-gray-500" wire:key="smalldefect-{{ $sDefect['type']}}">
+                <tr class="bg-gray-500" wire:key="smalldefect-{{ $sDefect['type'] ?? $sDefect['small_defect']}}">
                     @if ($systemname == 'ProcessRecord')
                         <td class="px-8 py-1"></td>
                     <td class="px-4 py-1"></td>
                     @endif
-                    <td class="px-8 py-1">{{ $sDefect['type'] }}</td>
+                    <td class="px-8 py-1">{{ $sDefect['type'] ?? $sDefect['small_defect'] }}</td>
                     <td class="px-4 py-1">{{ $sDefect['qty'] }}</td>
                     <td class="px-4 py-2 flex justify-center gap-2">
                         <div x-data="{ openSmallEdit: false }">
-                            <button @click="openSmallEdit=true" class="text-white bg-green-700 px-4 py-2 rounded" wire:click="startEditSmall('{{ $sDefect['type'] }}')" @if($locked) disabled @endif>Edit</button>
-                            <button class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded" @click.prevent="if(confirm('Are you sure you want to delete this record?')) $wire.deleteDefectSmall(@js($sDefect['type']))" @if($locked) disabled @endif>Delete</button>
+                            <button @click="openSmallEdit=true" class="text-white bg-green-700 px-4 py-2 rounded" wire:click="startEditSmall('{{ $sDefect['type'] ?? $sDefect['small_defect'] }}')" @if($locked) disabled @endif>Edit</button>
+                            <button class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded" @click.prevent="if(confirm('Are you sure you want to delete this record?')) $wire.deleteDefectSmall(@js($sDefect['type'] ?? $sDefect['small_defect']))" @if($locked) disabled @endif>Delete</button>
 
                             <div x-show="openSmallEdit" x-transition.opacity class="fixed inset-0 bg-black bg-opacity-40 z-40" style="display:none"></div>
                             <div x-show="openSmallEdit" x-transition class="fixed inset-0 flex items-center justify-center z-50" style="display:none">

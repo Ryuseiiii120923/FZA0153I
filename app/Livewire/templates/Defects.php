@@ -140,7 +140,7 @@ class Defects extends Component
     }
 
 
-    public function mount($systemname = null, $formId = null, $loadedDefects = [])
+    public function mount($systemname = null, $formId = null, $loadedDefects = [], $loadedSmallDefects = [])
     {
         $this->formId = $formId;
         $this->Largedefects = ModelsDefects::select('LargeDefect')
@@ -151,11 +151,18 @@ class Defects extends Component
 
         $this->systemname = $systemname;
         $this->setDefects($loadedDefects);
+        $this->setSmallDefects($loadedSmallDefects);
     }
     public function setDefects($defects)
     {
         $this->defects = $defects ?? [];
         $this->TotalNg = collect($this->defects)->sum('qty');
+    }
+
+    public function setSmallDefects($smallDefects)
+    {
+        $this->smallDefects = $smallDefects ?? [];
+        $this->TotalSmallQuan = collect($this->smallDefects)->flatten(1)->sum('qty');
     }
 
 
@@ -315,26 +322,26 @@ class Defects extends Component
 
     public function deleteDefectSmall($type)
     {
-        // Remove from array immediately
-        $this->smallDefects[$this->selectedLargeDefect] = collect(
-            $this->smallDefects[$this->selectedLargeDefect]
-        )
-            ->reject(
-                fn($smalldefect) =>
-                trim($smalldefect['newSmallDefect'] ?? $smalldefect['type'] ?? '') === trim($type)
-            )
+        $largeDefect = $this->selectedLargeDefect ?? array_key_first($this->smallDefects);
+
+        if (!isset($this->smallDefects[$largeDefect])) {
+            return; // nothing to delete
+        }
+
+        // Remove the small defect that matches $type
+        $this->smallDefects[$largeDefect] = collect($this->smallDefects[$largeDefect])
+            ->reject(fn($smalldefect) => trim($smalldefect['small_defect'] ?? '') === trim($type))
             ->values()
             ->toArray();
 
-        // Include SelectedLargeDefect in payload
+        // Dispatch the payload
         $this->smalldefectData = [
-            'SelectedLargeDefect' => $this->selectedLargeDefect,  // <-- important
+            'SelectedLargeDefect' => $largeDefect,
             'newSmallDefect'      => $type,
-            'newSmallQuan'   => $this->newSmallQuan,
+            'newSmallQuan'        => $this->newSmallQuan,
             'action'              => 'delete'
         ];
 
-        // Dispatch if needed
         $this->dispatch('FromSmallDefects', smalldefectData: $this->smalldefectData);
 
         // Reset inputs
@@ -412,6 +419,7 @@ class Defects extends Component
         // $this->dispatch('FromSmallDefects', smalldefectData: $this->smalldefectData);
         $this->dispatch('defects-updated', [
             'smallDefects' => $smallDefectsForDispatch,
+            'selectedLargeDefect' => $this->selectedLargeDefect,
             'formId' => $this->formId
         ]);
 

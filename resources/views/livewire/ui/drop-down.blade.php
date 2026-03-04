@@ -84,6 +84,7 @@
                         <livewire:templates.defects
                             :formId="$formId"
                             :loadedDefects="$form['defects']"
+                            :loadedSmallDefects="$form['smallDefects']"
                             :key="'defects-'.$formId" />
                     </div>
                     <div class="w-full sm:w-1/2 flex justify-center">

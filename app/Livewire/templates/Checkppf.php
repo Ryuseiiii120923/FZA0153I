@@ -393,11 +393,8 @@ class Checkppf extends Component
         }
         if ($this->systemname === 'ProcessRecord') {
             if ($this->loadProcessRecord()) {
-                $this->canEditTotal = true;
-                // $this->dispatch('LoadDefectsPren', $ppf);
-                // $this->dispatch('LoadReworksPren', $ppf);
-                $this->dispatch('process');
-                $this->dispatch('LoadDash');
+                $this->dispatch('process'); //dispatch in process in js
+                $this->dispatch('LoadDash'); //to update the inspection table in dashboard
                 $this->dispatch(
                     'edit-ppf',
                     ppf: $ppf,
