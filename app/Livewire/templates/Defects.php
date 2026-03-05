@@ -331,38 +331,38 @@ class Defects extends Component
         $this->dispatch('TriggerGoodNg');
     }
 
-    public function deleteDefectSmall($type)
-    {
-        $largeDefect = $this->selectedLargeDefect ?? array_key_first($this->smallDefects);
+   public function deleteDefectSmall($type)
+{
+    $largeDefect = $this->selectedLargeDefect ?? array_key_first($this->smallDefects);
 
-        if (!isset($this->smallDefects[$largeDefect])) {
-            return; // nothing to delete
-        }
-
-        // Remove the small defect that matches $type
-        $this->smallDefects[$largeDefect] = collect($this->smallDefects[$largeDefect])
-            ->reject(fn($smalldefect) => trim($smalldefect['type'] ?? '') === trim($type))
-            ->values()
-            ->toArray();
-
-        // Dispatch the payload
-        $this->smalldefectData = [
-            'SelectedLargeDefect' => $largeDefect,
-            'newSmallDefect'      => $type,
-            'newSmallQuan'        => $this->newSmallQuan,
-            'action'              => 'delete'
-        ];
-
-        $this->dispatch('defects-updated', [
-            'smallDefects' => $this->smallDefects,
-            'formId' => $this->formId,
-            'action' => 'delete'
-        ]);
-
-        // Reset inputs
-        $this->newSmallDefect = '';
-        $this->newSmallQuan = '';
+    if (!isset($this->smallDefects[$largeDefect])) {
+        return;
     }
+
+    // Remove the small defect
+    $this->smallDefects[$largeDefect] = collect($this->smallDefects[$largeDefect])
+        ->reject(fn($defect) => trim($defect['type'] ?? '') === trim($type))
+        ->values()
+        ->toArray();
+
+    // Dispatch updated structure
+    $this->dispatch('defects-updated', [
+       'smallDefects' => [
+        $largeDefect => [
+            [
+                'type' => $type,
+                'qty'  => 0
+            ]
+        ]
+    ],
+        'formId' => $this->formId,
+        'action' => 'delete'
+    ]);
+
+    // Reset inputs
+    $this->newSmallDefect = '';
+    $this->newSmallQuan = '';
+}
     public function addSmallDefect()
 
 
