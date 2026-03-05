@@ -472,20 +472,22 @@ class Defects extends Component
 
     public function updateDefectSmallArray()
     {
-        foreach ($this->smallDefects[$this->selectedLargeDefect] as &$defect) {
+        $large = $this->selectedLargeDefect;
+        if (!isset($this->smallDefects[$large])) return;
+
+        foreach ($this->smallDefects[$large] as &$defect) {
             if ($defect['type'] === $this->editingTypeSmall) {
-                $defect['qty'] = $this->newSmallQuan;
+                $defect['qty'] = (float) $this->newSmallQuan;
                 break;
             }
         }
 
-        $this->smalldefectData = [
-            'SelectedLargeDefect' => $this->selectedLargeDefect,
-            'type' => $this->editingTypeSmall,
-            'qty'  => $this->newSmallQuan,
-            'action' => 'update',
-        ];
-        $this->dispatch('FromSmallDefects', smalldefectData: $this->smalldefectData);
+        // Dispatch the current smallDefects array directly
+        $this->dispatch('defects-updated', [
+            'smallDefects' => $this->smallDefects,
+            'formId' => $this->formId,
+            'action' => 'update'
+        ]);
 
         $this->editingTypeSmall = null;
         $this->newSmallQuan = '';

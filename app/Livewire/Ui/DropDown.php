@@ -257,7 +257,13 @@ class DropDown extends Component
                     case 'update':
                         if (isset($normalizedSmall[$type])) {
                             $normalizedSmall[$type]['qty'] = $qty;
-                        }
+                        }else
+                    {
+                            $normalizedSmall[$type] = [
+                                'type' => $incoming['type'],
+                                'qty'  => $qty
+                            ];
+                    }
                         break;
 
                     case 'add':
