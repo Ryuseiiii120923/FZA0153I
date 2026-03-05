@@ -11,11 +11,13 @@ use App\Models\WorkerName;
 use Illuminate\Testing\Fluent\Concerns\Has;
 use Livewire\Component;
 use Livewire\Attributes\On;
+use App\Traits\HandlesFormItems;
 
 use function Laravel\Prompts\search;
 
 class DropDown extends Component
 {
+    use HandlesFormItems;
     public $forms = [];
     public $defects = [];
     public $currentFormId = null;
@@ -107,7 +109,6 @@ class DropDown extends Component
         $this->dispatch('dropdown-updated', [
             'forms' => $this->forms
         ]);
-
     }
 
     public function CheckHf($formId)
@@ -116,7 +117,7 @@ class DropDown extends Component
             return;
         }
 
-  
+
         if (empty($this->forms[$formId]['hf_id'])) {
             $this->forms[$formId]['hf_id'] = null;
             $this->resetErrorBag('forms.' . $formId . '.hf_id');
@@ -156,32 +157,167 @@ class DropDown extends Component
         $formId = $data['formId'] ?? null;
         if (!$formId) return;
 
-        $this->forms[$formId]['defects'] = array_merge(
-            $this->forms[$formId]['defects'] ?? [],
-            $data['defects'] ?? []
-        );
+        $action = $data['action'] ?? 'add';
 
-        foreach ($data['smallDefects'] ?? [] as $large => $smalls) {
-            if (!isset($this->forms[$formId]['smallDefects'][$large])) {
-                $this->forms[$formId]['smallDefects'][$large] = [];
-            }
+        // Ensure structure exists
+        $this->forms[$formId]['defects'] ??= [];
+        $this->forms[$formId]['smallDefects'] ??= [];
+        $this->forms[$formId]['rework'] ??= [];
 
-            foreach ($smalls as $small) {
-                $exists = collect($this->forms[$formId]['smallDefects'][$large])
-                    ->contains(fn($s) => strtolower(trim($s['type'] ?? '')) === strtolower(trim($small['type'] ?? '')));
-                if (!$exists && !empty($small['type'])) {
-                    $this->forms[$formId]['smallDefects'][$large][] = $small;
-                }
+        $normalized = [];
+
+
+        // Start from existing defects
+        foreach ($this->forms[$formId]['defects'] as $def) {
+
+            $type = strtolower(trim($def['type'] ?? ''));
+            $qty  = (float)($def['qty'] ?? 0);
+
+            if ($type === '') continue;
+
+            if (!isset($normalized[$type])) {
+                $normalized[$type] = [
+                    'type' => $def['type'],
+                    'qty'  => $qty
+                ];
+            } else {
+                $normalized[$type]['qty'] += $qty;
             }
         }
-        if (!empty($data['reworksData'])) {
-            $this->forms[$formId]['rework'][] = $data['reworksData'];
+
+        foreach ($data['defects'] ?? [] as $incoming) {
+            $type = strtolower(trim($incoming['type'] ?? ''));
+            $qty  = (float)($incoming['qty'] ?? 0);
+            if ($type === '') continue;
+
+            switch ($action) {
+
+                case 'delete':
+                    unset($normalized[$type]);
+                    break;
+
+                case 'update':
+                    if (isset($normalized[$type])) {
+                        $normalized[$type]['qty'] = $qty;
+                    } else {
+                        $normalized[$type] = [
+                            'type' => $incoming['type'],
+                            'qty'  => $qty
+                        ];
+                    }
+                    break;
+
+                case 'add':
+                default:
+                    if (isset($normalized[$type])) {
+                        $normalized[$type]['qty'] += $qty;
+                    } else {
+                        $normalized[$type] = [
+                            'type' => $incoming['type'],
+                            'qty'  => $qty
+                        ];
+                    }
+                    break;
+            }
+        }
+
+        $this->forms[$formId]['defects'] = array_values($normalized);
+        foreach ($data['smallDefects'] ?? [] as $large => $smalls) {
+
+            $this->forms[$formId]['smallDefects'][$large] ??= [];
+            $normalizedSmall = [];
+
+            foreach ($this->forms[$formId]['smallDefects'][$large] as $small) {
+                $type = strtolower(trim($small['type'] ?? ''));
+                $qty  = (float)($small['qty'] ?? 0);
+
+                if ($type === '') continue;
+
+                if (!isset($normalizedSmall[$type])) {
+                    $normalizedSmall[$type] = [
+                        'type' => $small['type'],
+                        'qty'  => $qty
+                    ];
+                } else {
+                    $normalizedSmall[$type]['qty'] += $qty;
+                }
+            }
+
+            foreach ($smalls as $incoming) {
+                $type = strtolower(trim($incoming['type'] ?? ''));
+                $qty  = (float)($incoming['qty'] ?? 0);
+                if ($type === '') continue;
+
+                switch ($action) {
+
+                    case 'delete':
+                        unset($normalizedSmall[$type]);
+                        break;
+
+                    case 'update':
+                        if (isset($normalizedSmall[$type])) {
+                            $normalizedSmall[$type]['qty'] = $qty;
+                        }
+                        break;
+
+                    case 'add':
+                    default:
+                        if (isset($normalizedSmall[$type])) {
+                            $normalizedSmall[$type]['qty'] += $qty;
+                        } else {
+                            $normalizedSmall[$type] = [
+                                'type' => $incoming['type'],
+                                'qty'  => $qty
+                            ];
+                        }
+                        break;
+                }
+            }
+
+            $this->forms[$formId]['smallDefects'][$large] = array_values($normalizedSmall);
+        }
+
+        foreach ($data['reworksData'] ?? [] as $incoming) {
+
+            $type = strtolower(trim($incoming['type'] ?? ''));
+
+            if ($type === '') continue;
+
+            switch ($action) {
+
+                case 'delete':
+                    $this->forms[$formId]['rework'] =
+                        array_values(array_filter(
+                            $this->forms[$formId]['rework'],
+                            fn($r) => strtolower(trim($r['type'] ?? '')) !== $type
+                        ));
+                    break;
+
+                case 'update':
+                    foreach ($this->forms[$formId]['rework'] as $i => $r) {
+                        if (strtolower(trim($r['type'] ?? '')) === $type) {
+                            $this->forms[$formId]['rework'][$i] = array_merge($r, $incoming);
+                            break;
+                        }
+                    }
+                    break;
+
+                case 'add':
+                default:
+                    $exists = collect($this->forms[$formId]['rework'])
+                        ->contains(fn($r) => strtolower(trim($r['type'] ?? '')) === $type);
+
+                    if (!$exists) {
+                        $this->forms[$formId]['rework'][] = $incoming;
+                    }
+                    break;
+            }
         }
 
         $this->dispatch('dropdown-updated', [
-            'forms' => $this->forms
+            'forms' => $this->forms,
+            'action' => $action
         ]);
-
     }
 
     public function toggle($index)

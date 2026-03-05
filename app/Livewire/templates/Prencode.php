@@ -222,6 +222,8 @@ class Prencode extends Component
         }
     }
 
+
+
     //updating from dropdown
     #[On('dropdown-updated')]
     public function receiveDropdownData($data)
@@ -236,15 +238,47 @@ class Prencode extends Component
             $incomingSmallDefects = $formData['smallDefects'] ?? [];
             $incomingReworks = $formData['rework'] ?? [];
 
+            // $action = $data['action'] ?? 'add';
+
             foreach ($incomingDefects as $def) {
                 $exists = collect($existingDefects)->contains(fn($d) => $d['type'] === $def['type']);
                 if (!$exists) {
                     $existingDefects[] = $def;
                 }
+
+                // if($action === 'delete') {
+                //     foreach ($existingDefects as $existDef => $item) {
+                //         if (strtolower($item['type']) === strtolower($def['type'])) {
+                //             unset($existingDefects[$existDef]);
+                //             $existingDefects = array_values($existingDefects);
+                //             break;
+                //         }
+                //     }
+                // }
+
+                // if($action === 'update') {
+                //     foreach ($existingDefects as $existDef => $item) {
+                //         if (strtolower($item['type']) === strtolower($def['type'])) {
+                //             $existingDefects[$existDef]['qty'] = $def['qty'];
+                //             break;
+                //         }
+                //     }
+                // }else{
+                //     foreach ($existingDefects as $existDef => $item) {
+                //         if (strtolower($item['type']) === strtolower($def['type'])) {
+                //             $existingDefects[$existDef]['qty'] += $def['qty'];
+                //             break;
+                //         }else{
+                //             $existingDefects[$existDef] = [
+                //                 'type' => $def['type'],
+                //                 'qty'  => $def['qty']   
+                //             ];
+                //             break;
+                //         }
+                //     }
+                // }
             }
 
-            // Merge small defects grouped by LargeDefect
-            // Merge small defects grouped by LargeDefect
             foreach ($incomingSmallDefects as $large => $smalls) {
 
                 if (!isset($existingSmallDefects[$large])) {
@@ -273,6 +307,7 @@ class Prencode extends Component
             $this->dropdownForms[$formId]['smallDefects'] = $existingSmallDefects;
             $this->dropdownForms[$formId]['rework'] = $existingReworks;
         }
+        dd($this->dropdownForms);
     }
 
     //To Fetch Rework
@@ -409,7 +444,11 @@ class Prencode extends Component
         DefectInsp::where('InspectorID', $this->inspectorID)->where('PPFNo', $this->ppf)->delete();
         ReworkInsp::where('InspectorID', $this->inspectorID)->where('PPFNo', $this->ppf)->delete();
         SmallInsp::where('InspectorID', $this->inspectorID)->where('PPFNo', $this->ppf)->delete();
-        PrInsp::where('InspectorID', $this->inspectorID)->where('PPFNo', $this->ppf)->delete();
+        PRInsp::where('InspectorID', $this->inspectorID)->where('PPFNo', $this->ppf)->delete();
+        Defect::where('ppfno', $this->ppf)->delete();
+        Rework::where('ppfno', $this->ppf)->delete();
+        SmallDefect::where('ppfno', $this->ppf)->delete();
+        HF::where('ppfno', $this->ppf)->delete();
         $this->submitPrencode();
     }
 

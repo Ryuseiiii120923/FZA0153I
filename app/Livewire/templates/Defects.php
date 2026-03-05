@@ -310,11 +310,22 @@ class Defects extends Component
         $this->sendDefect();
 
         // Dispatch the updated defects array like in addDefect
-        $this->defectData = [
-            'newDefect' => $type,
+        $this->defectData[] = [
+            'type' => $type,
             'action'    => 'delete',
         ];
-        $this->dispatch('FromDefects', ['defects' => $this->defectData]);
+
+
+        $this->dispatch('defects-updated', [
+            'defects' => [
+                [
+                    'type' => $type,
+                    'qty' => 0
+                ]
+            ],
+            'action' => 'delete',
+            'formId' => $this->formId
+        ]);
 
         // Trigger recalculation of good / ng quantities
         $this->dispatch('TriggerGoodNg');
@@ -330,7 +341,7 @@ class Defects extends Component
 
         // Remove the small defect that matches $type
         $this->smallDefects[$largeDefect] = collect($this->smallDefects[$largeDefect])
-            ->reject(fn($smalldefect) => trim($smalldefect['small_defect'] ?? '') === trim($type))
+            ->reject(fn($smalldefect) => trim($smalldefect['type'] ?? '') === trim($type))
             ->values()
             ->toArray();
 
@@ -342,7 +353,11 @@ class Defects extends Component
             'action'              => 'delete'
         ];
 
-        $this->dispatch('FromSmallDefects', smalldefectData: $this->smalldefectData);
+        $this->dispatch('defects-updated', [
+            'smallDefects' => $this->smallDefects,
+            'formId' => $this->formId,
+            'action' => 'delete'
+        ]);
 
         // Reset inputs
         $this->newSmallDefect = '';
@@ -436,12 +451,20 @@ class Defects extends Component
             }
         }
 
-        $this->defectData = [
-            'newDefect' => $this->editingType,
-            'newQuan'   => $this->newQuan,
-            'action'    => 'update',
+
+        $this->defectData[] = [
+            'type' => trim($this->editingType),
+            'qty'   => $this->newQuan,
         ];
-        $this->dispatch('FromDefects', $this->defectData);
+
+        $this->dispatch('defects-updated', [
+            'defects' => [[
+                'type' => trim($this->editingType),
+                'qty'   => $this->newQuan,
+            ]],
+            'formId' => $this->formId,
+            'action' => 'update'
+        ]);
 
         $this->editingType = null;
         $this->newQuan = '';
