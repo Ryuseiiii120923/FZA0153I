@@ -50,33 +50,44 @@
             <div class="flex flex-col gap-4 mt-4 p-4 bg-gray-50 rounded">
 
                 <!-- HF ID + Total Inspect (Above) -->
-                <div class="flex flex-col sm:flex-row gap-4">
+               <div 
+    x-data="{ open: @entangle('modalOpen') }"
+    x-show="open"
+    x-cloak
+    class="fixed inset-0 flex items-center justify-center bg-black/50 z-50"
+    @keydown.escape.prevent
+    @click.away.prevent
+>
+    <div class="bg-white rounded-lg p-6 w-11/12 sm:w-1/3">
+        <h2 class="text-lg font-semibold mb-4">Operator HF ID</h2>
 
-                    <div class="w-full sm:w-1/2">
-                        <label class="block text-sm font-medium">HF ID</label>
-                        <div class="flex items-center gap-3">
-                            <input type="text"
-                                wire:blur="CheckHf('{{ $formId }}')"
-                                wire:model="forms.{{ $formId }}.hf_id"
-                                class="w-full border p-2 rounded"
-                                placeholder="Enter HF ID"
-                                maxlength="4" pattern="\d{4}">
-                            @if(!empty($form['hf_name']))
-                            <p class="text-sm font-medium text-black">{{ $form['hf_name'] }}</p>
-                            @endif
-                        </div>
+        <div class="flex flex-col gap-4">
+            <div>
+                <label class="block text-sm font-medium">HF ID</label>
+                <input type="text"
+                    wire:model="hf_id"
+                    wire:blur="CheckHF{{ $this->currentFormId }}"
+                    class="w-full border p-2 rounded"
+                    placeholder="Enter HF ID"
+                    maxlength="4" pattern="\d{4}">
+                @error('hf_id') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
+            </div>
 
-                    </div>
-                    @error('forms.' . $formId . '.hf_id') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
+            <div>
+                <label class="block text-sm font-medium">Total Inspect</label>
+                <input type="number"
+                    wire:model="total_inspect"
+                    class="w-full border p-2 rounded"
+                    placeholder="Enter Total Inspect">
+                @error('total_inspect') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
+            </div>
 
-                    <div class="w-full sm:w-1/2">
-                        <label class="block text-sm font-medium">Total Inspect</label>
-                        <input type="number"
-                            wire:model="forms.{{ $formId }}.total_inspect"
-                            class="w-full border p-2 rounded"
-                            placeholder="Enter Total Inspect">
-                    </div>
-                </div>
+            <button wire:click="saveHF" class="bg-green-600 text-white px-4 py-2 rounded mt-2 w-full">
+                Save
+            </button>
+        </div>
+    </div>
+</div>
 
                 <!-- Defects + Rework -->
                 <div class="flex flex-col sm:flex-row gap-6 mt-4">
@@ -110,5 +121,33 @@
             Save Operator
         </button>
     </div>
+
+    @if (session()->has('success'))
+    <div
+        x-data="{ open: true }"
+        x-show="open"
+        class="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 z-50"
+        x-cloak>
+        <div class="bg-white rounded-lg shadow-lg w-96 p-6 text-center relative">
+            <!-- Close Button -->
+            <button
+                @click="open = false"
+                class="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
+                ✕
+            </button>
+
+            <!-- Modal Content -->
+            <h2 class="text-lg font-semibold text-red-600 mb-2">Error</h2>
+            <p class="text-gray-700 mb-4">{{ session('error') }}</p>
+
+            <button
+                @click="open = false;"
+                class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
+                OK
+            </button>
+        </div>
+    </div>
+    @endif
+</div>
 
 </div>

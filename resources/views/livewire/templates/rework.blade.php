@@ -34,7 +34,7 @@
                                 <button
                                     @if($locked) disabled @endif
                                     @click="openSmall = true"
-                                    wire:click="startEdit('{{ $reworks['type'] }}')"
+                                    wire:click="startEdit('{{ $reworks['type'] }}', '{{ $reworks['hfno'] }}')"
                                     class="text-white bg-green-700 px-4 py-2 rounded">
                                     Edit
                                 </button>
@@ -78,7 +78,7 @@
                                         <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t border-gray-200">
                                             <h3 class="text-xl font-semibold text-gray-900">
                                                 Edit Rework for
-                                                <span class="font-bold text-red-600 text-xl">{{ $reworks['type'] }}</span>
+                                                <span class="font-bold text-red-600 text-xl">{{ $reworks['type']}}  (HFNO {{ $reworks['hfno'] }})</span>
                                             </h3>
 
                                             <button

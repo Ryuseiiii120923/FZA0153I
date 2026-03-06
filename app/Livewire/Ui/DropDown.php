@@ -23,7 +23,12 @@ class DropDown extends Component
     public $currentFormId = null;
     public $toggles = false;
     public $hasError = false;
+    public $isSaved = false;
+    public $hf_id = '';
+    public $hf_name = '';
+    public $total_inspect = '';
 
+    public $modalOpen = false;
     public function addNew()
     {
         $this->toggles = true;
@@ -37,12 +42,34 @@ class DropDown extends Component
             'smallDefects' => [],
             'rework' => [],
         ];
+        $this->modalOpen = true; 
     }
     public function updatedForms()
     {
-        $this->dispatch('dropdown-updated', [
-            'forms' => $this->forms,
+        $this->validate([
+            'hf_id' => 'required|digits:4',
+            'total_inspect' => 'required|numeric|min:1',
         ]);
+
+        $this->forms[$this->currentFormId] = [
+            'hf_id' => $this->hf_id,
+            'total_inspect' => $this->total_inspect,
+            'defects' => [],
+            'smallDefects' => [],
+            'rework' => [],
+        ];
+
+        // Close modal
+        $this->modalOpen = false;
+
+        // Reset modal fields
+        $this->hf_id = '';
+        $this->total_inspect = '';
+    }
+
+    public function saveHF(){
+        $this->isSaved = true;
+        session()->flash('success', 'All changes have been saved!.');
     }
 
     #[On('edit-ppf')]
@@ -154,6 +181,7 @@ class DropDown extends Component
     #[On('defects-updated')]
     public function updateDefectsFromChild($data = [])
     {
+        $this->isSaved = false; // Mark as unsaved when defects are updated
         $formId = $data['formId'] ?? null;
         if (!$formId) return;
 
@@ -257,13 +285,12 @@ class DropDown extends Component
                     case 'update':
                         if (isset($normalizedSmall[$type])) {
                             $normalizedSmall[$type]['qty'] = $qty;
-                        }else
-                    {
+                        } else {
                             $normalizedSmall[$type] = [
                                 'type' => $incoming['type'],
                                 'qty'  => $qty
                             ];
-                    }
+                        }
                         break;
 
                     case 'add':
@@ -283,11 +310,12 @@ class DropDown extends Component
             $this->forms[$formId]['smallDefects'][$large] = array_values($normalizedSmall);
         }
 
+
         foreach ($data['reworksData'] ?? [] as $incoming) {
-
             $type = strtolower(trim($incoming['type'] ?? ''));
-
+            $hfno = strtolower(trim($incoming['hfno'] ?? null));
             if ($type === '') continue;
+            
 
             switch ($action) {
 
@@ -295,15 +323,21 @@ class DropDown extends Component
                     $this->forms[$formId]['rework'] =
                         array_values(array_filter(
                             $this->forms[$formId]['rework'],
-                            fn($r) => strtolower(trim($r['type'] ?? '')) !== $type
+                            fn($r) =>
+                            strtolower(trim($r['type'] ?? '')) !== $type &&
+                                ($r['hfno'] ?? null) !== $hfno
                         ));
                     break;
 
                 case 'update':
                     foreach ($this->forms[$formId]['rework'] as $i => $r) {
-                        if (strtolower(trim($r['type'] ?? '')) === $type) {
-                            $this->forms[$formId]['rework'][$i] = array_merge($r, $incoming);
-                            break;
+                        if (strtolower(trim($r['type'] ?? '')) === $type && strtolower(trim($r['hfno'] ?? '')) === $hfno) {
+                            if (isset($incoming['quan'])) {
+                                $this->forms[$formId]['rework'][$i]['quan'] = $incoming['quan'];
+                            }
+                            if (isset($incoming['totalinsp'])) {
+                                $this->forms[$formId]['rework'][$i]['totalinsp'] = $incoming['totalinsp'];
+                            }
                         }
                     }
                     break;
@@ -311,7 +345,7 @@ class DropDown extends Component
                 case 'add':
                 default:
                     $exists = collect($this->forms[$formId]['rework'])
-                        ->contains(fn($r) => strtolower(trim($r['type'] ?? '')) === $type);
+                        ->contains(fn($r) => strtolower(trim($r['type'] ?? '')) === $type && strtolower(trim($r['hfno'] ?? '')) === $hfno);
 
                     if (!$exists) {
                         $this->forms[$formId]['rework'][] = $incoming;
@@ -319,11 +353,12 @@ class DropDown extends Component
                     break;
             }
         }
-
         $this->dispatch('dropdown-updated', [
             'forms' => $this->forms,
             'action' => $action
         ]);
+
+        dd($this->isSaved);
     }
 
     public function toggle($index)

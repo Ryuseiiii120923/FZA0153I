@@ -307,7 +307,7 @@ class Prencode extends Component
             $this->dropdownForms[$formId]['smallDefects'] = $existingSmallDefects;
             $this->dropdownForms[$formId]['rework'] = $existingReworks;
         }
-        dd($this->dropdownForms);
+        // dd($this->dropdownForms);
     }
 
     //To Fetch Rework
