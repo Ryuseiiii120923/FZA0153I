@@ -171,6 +171,11 @@
                 @endforelse
             </tbody>
         </table>
+         <div class="flex-col w-11/12 sm:w-1/3 mt-3 ">
+            <label for="TotalNG" class="block text-sm font-medium text-black">Total NG</label>
+            <input type="text" id="TotalNG" class="my-2 block w-full border border-black rounded-md px-2 py-1"
+                placeholder=" " required wire:model="TotalNg" readonly>
+        </div>
     </div>
 
     <!-- ERROR MESSAGES -->

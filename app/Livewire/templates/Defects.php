@@ -30,6 +30,7 @@ class Defects extends Component
     public $editingTypeSmall;
     public $locked = false;
     public $systemname;
+    public $newCategory;
     public $formId;
 
 
@@ -186,11 +187,12 @@ class Defects extends Component
     {
         $this->validate();
 
-        $normalizedNewDefect = strtoLower(trim($this->newDefect));
+        $normalizedNewDefect = strtolower(trim($this->newDefect));
+        $category = $this->newCategory ?? 'large'; // make sure you have a category selector in your form
 
-
-        $existing = collect($this->defects)->contains(function ($defect) use ($normalizedNewDefect) {
-            return strtolower(trim($defect['type'])) === $normalizedNewDefect;
+        $existing = collect($this->defects)->contains(function ($defect) use ($normalizedNewDefect, $category) {
+            return strtolower(trim($defect['type'])) === $normalizedNewDefect
+                && strtolower(trim($defect['category'] ?? 'large')) === strtolower($category);
         });
 
         $existsInMaster = $this->Largedefects
@@ -198,34 +200,34 @@ class Defects extends Component
             ->map(fn($d) => strtolower(trim($d)))
             ->contains($normalizedNewDefect);
 
-
         if (!$existsInMaster) {
-            $this->addError('newDefect', 'This defect type is not exist');
+            $this->addError('newDefect', 'This defect type does not exist in the master list');
             return;
         }
 
         if ($existing) {
-            $this->addError('newDefect', 'This defect type is already exist');
+            $this->addError('newDefect', 'This defect type in this category already exists');
             return;
         }
 
         $this->defects[] = [
             'type' => trim($this->newDefect),
+            'category' => $category,
             'qty' => $this->newQuan
         ];
+
         $this->TotalNg = collect($this->defects)->sum('qty');
-        $this->defectData = [
-            'newDefect' => $this->newDefect,
-            'newQuan'   => $this->newQuan,
-        ];
+
         $this->newDefect = '';
         $this->newQuan = '';
+        $this->newCategory = null; // reset category if you have one
         $this->sendDefect();
 
         $this->dispatch('defects-updated', [
             'defects' => $this->defects,
             'formId' => $this->formId
         ]);
+
         $this->dispatch('TriggerGoodNg');
     }
 
@@ -331,38 +333,38 @@ class Defects extends Component
         $this->dispatch('TriggerGoodNg');
     }
 
-   public function deleteDefectSmall($type)
-{
-    $largeDefect = $this->selectedLargeDefect ?? array_key_first($this->smallDefects);
+    public function deleteDefectSmall($type)
+    {
+        $largeDefect = $this->selectedLargeDefect ?? array_key_first($this->smallDefects);
 
-    if (!isset($this->smallDefects[$largeDefect])) {
-        return;
+        if (!isset($this->smallDefects[$largeDefect])) {
+            return;
+        }
+
+        // Remove the small defect
+        $this->smallDefects[$largeDefect] = collect($this->smallDefects[$largeDefect])
+            ->reject(fn($defect) => trim($defect['type'] ?? '') === trim($type))
+            ->values()
+            ->toArray();
+
+        // Dispatch updated structure
+        $this->dispatch('defects-updated', [
+            'smallDefects' => [
+                $largeDefect => [
+                    [
+                        'type' => $type,
+                        'qty'  => 0
+                    ]
+                ]
+            ],
+            'formId' => $this->formId,
+            'action' => 'delete'
+        ]);
+
+        // Reset inputs
+        $this->newSmallDefect = '';
+        $this->newSmallQuan = '';
     }
-
-    // Remove the small defect
-    $this->smallDefects[$largeDefect] = collect($this->smallDefects[$largeDefect])
-        ->reject(fn($defect) => trim($defect['type'] ?? '') === trim($type))
-        ->values()
-        ->toArray();
-
-    // Dispatch updated structure
-    $this->dispatch('defects-updated', [
-       'smallDefects' => [
-        $largeDefect => [
-            [
-                'type' => $type,
-                'qty'  => 0
-            ]
-        ]
-    ],
-        'formId' => $this->formId,
-        'action' => 'delete'
-    ]);
-
-    // Reset inputs
-    $this->newSmallDefect = '';
-    $this->newSmallQuan = '';
-}
     public function addSmallDefect()
 
 

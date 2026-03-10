@@ -393,6 +393,7 @@ class Checkppf extends Component
         }
         if ($this->systemname === 'ProcessRecord') {
             if ($this->loadProcessRecord()) {
+                $this->dispatch('expected', $this->expct);
                 $this->dispatch('process'); //dispatch in process in js
                 $this->dispatch('LoadDash'); //to update the inspection table in dashboard
                 $this->dispatch(

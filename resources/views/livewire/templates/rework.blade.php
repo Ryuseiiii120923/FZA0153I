@@ -1,5 +1,5 @@
 <div x-data="{ openAddRework: false }" class="bg-white rounded-lg w-full max-w-1xl mx-auto py-4 @if($locked) opacity-50 cursor-not-allowed @endif">
-     <div class="bg-gray-700 w-full">
+    <div class="bg-gray-700 w-full">
         <p class="text-4xl font-extrabold  text-center text-white p-4 ">Rework</p>
     </div>
     <div class="w-full flex flex-col items-center mt-5">
@@ -49,8 +49,7 @@
             @js($reworks['hfno']),
             @js($reworks['type'])
         );
-            }
-        ">
+            }">
                                     Delete
                                 </button>
                             </div>
@@ -78,14 +77,14 @@
                                         <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t border-gray-200">
                                             <h3 class="text-xl font-semibold text-gray-900">
                                                 Edit Rework for
-                                                <span class="font-bold text-red-600 text-xl">{{ $reworks['type']}}  (HFNO {{ $reworks['hfno'] }})</span>
+                                                <span class="font-bold text-red-600 text-xl">{{ $reworks['type']}} (HFNO {{ $reworks['hfno'] }})</span>
                                             </h3>
 
                                             <button
                                                 @if($locked) disabled @endif
                                                 type="button"
                                                 @click="openSmall = false"
-                                                wire:click="$set('newQuan', ''); $set('totalInsp', '')"
+                                                wire:click="$set('newQuan', ''); $set('totalInsp.{{ $formId }}', '')"
                                                 class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center">
                                                 <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
                                                     viewBox="0 0 14 14">
@@ -108,7 +107,7 @@
                                                     class="my-2 block w-full border border-black rounded-md px-2 py-1 text-black"
                                                     wire:model.defer="newQuan">
 
-                                                @error('newQuann')
+                                                @error('newQuan')
                                                 <p class="text-red-500 text-sm">{{ $message }}</p>
                                                 @enderror
                                             </div>
@@ -118,9 +117,9 @@
                                                 <input
                                                     type="text"
                                                     class="my-2 block w-full border border-black rounded-md px-2 py-1 text-black"
-                                                    wire:model.defer="totalInsp">
+                                                    wire:model.defer="totalInsp.{{ $formId }}">
 
-                                                @error('totalInsp')
+                                                @error('totalInsp.' . $formId)
                                                 <p class="text-red-500 text-sm">{{ $message }}</p>
                                                 @enderror
                                             </div>
@@ -147,7 +146,7 @@
                     </td>
                 </tr>
                 @empty
-               <tr>
+                <tr>
                     <td colspan="5" class="px-6 py-4 text-center">
                         No defects added yet.
                     </td>
@@ -161,10 +160,10 @@
                 placeholder=" " required wire:model="totalngrework" readonly>
         </div>
     </div>
-    @error('hfno')
+    @error('hfno.' . $formId)
     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
     @enderror
-    @error('totalInsp')
+    @error('totalInsp.' . $formId)
     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
     @enderror
     @error('newRework')
@@ -191,21 +190,21 @@
                     <label for="HfNo" class="block text-sm font-medium text-black">HF No.</label>
 
                     <div class="flex items-center gap-3">
-                        <input type="number" id="HF" x-ref="firstInput" class="my-2 block w-full border border-black rounded-md px-2 py-1" wire:blur="CheckHf" wire:model.lazy="hfno">
-                        @if(!empty($hfno))
+                        <input type="number" readonly id="HF" x-ref="firstInput" class="my-2 bg-gray-500 block w-full border border-black rounded-md px-2 py-1" wire:blur="CheckHf" wire:model.lazy="hfno.{{ $formId }}">
+                        @if(!empty($hfno[$formId]))
                         <p class="text-sm font-medium text-black">{{ $hfname }}</p>
                         @endif
                     </div>
 
 
-                    @error('hfno') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
+                    @error('hfno.' . $formId) <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
 
                 </div>
 
                 <div class="flex-col w-11/12 sm:w-full mx-auto">
                     <label for="totalInspct" class="block text-sm font-medium text-black">Total Inspct Qty.</label>
-                    <input type="number" id="totalInspct" class="my-2 block w-full border border-black rounded-md px-2 py-1" wire:model="totalInsp">
-                    @error('totalInsp') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
+                    <input type="number" readonly id="totalInspct" class="my-2 bg-gray-500 block w-full border border-black rounded-md px-2 py-1" wire:model="totalInsp.{{ $formId }}">
+                    @error('totalInsp.' . $formId) <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
                 </div>
 
                 <div class="flex-col w-11/12 sm:w-full mx-auto">

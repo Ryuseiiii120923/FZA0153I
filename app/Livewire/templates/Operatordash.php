@@ -3,6 +3,7 @@
 namespace App\Livewire\Templates;
 
 use App\Models\Operator\DefectInsp;
+use App\Models\Operator\PRInsp;
 use App\Models\Operator\ReworkInsp;
 use App\Models\Operator\SmallInsp;
 use App\Models\Worker;
@@ -36,16 +37,20 @@ class Operatordash extends Component
 
 
     #[On('LoadDash')]
-    public function LoadPPF()
+   public function LoadPPF()
 {
-    $defect = DefectInsp::select('PPFNo', 'DateEncode')
+    $prQuery = PRInsp::select('PPFNo', 'DateEncode')
         ->where('InspectorID', $this->inspectorID);
 
-    $rework = ReworkInsp::select('PPFNo', 'DateEncode')
+    $defectQuery = DefectInsp::select('PPFNo', 'DateEncode')
         ->where('InspectorID', $this->inspectorID);
 
-    $ppfrecord = $defect
-        ->unionAll($rework)
+    $reworkQuery = ReworkInsp::select('PPFNo', 'DateEncode')
+        ->where('InspectorID', $this->inspectorID);
+
+    $ppfrecord = $prQuery
+        ->unionAll($defectQuery)
+        ->unionAll($reworkQuery)
         ->get();
 
     $this->ppfrecord = $ppfrecord->isNotEmpty() ? $ppfrecord : [];

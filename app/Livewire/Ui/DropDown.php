@@ -12,6 +12,7 @@ use Illuminate\Testing\Fluent\Concerns\Has;
 use Livewire\Component;
 use Livewire\Attributes\On;
 use App\Traits\HandlesFormItems;
+use Illuminate\Support\Str;
 
 use function Laravel\Prompts\search;
 
@@ -24,16 +25,27 @@ class DropDown extends Component
     public $toggles = false;
     public $hasError = false;
     public $isSaved = false;
-    public $hf_id = '';
-    public $hf_name = '';
-    public $total_inspect = '';
 
-    public $modalOpen = false;
+    public $hf_id = '';
+    public $total_inspect = '';
+    public $modalOpen = [];
+
+    public $default = 'new';
+    public $expectedQty = 0;
+    public $dropdownForms = [];
+
+    public function mount()
+    {
+        foreach ($this->forms as $formId => $form) {
+            $this->modalOpen[$formId] = false; // default all modals closed
+        }
+    }
+
     public function addNew()
     {
         $this->toggles = true;
-        $uniqueId = uniqid();
-        $this->forms[$uniqueId] = [
+        $formId = (string) Str::uuid();
+        $this->forms[$formId] = [
             'hf_id' => '',
             'hf_name' => '',
             'total_inspect' => '',
@@ -42,39 +54,87 @@ class DropDown extends Component
             'smallDefects' => [],
             'rework' => [],
         ];
-        $this->modalOpen = true; 
+        $this->modalOpen[$formId] = true;
     }
     public function updatedForms()
     {
-        $this->validate([
-            'hf_id' => 'required|digits:4',
-            'total_inspect' => 'required|numeric|min:1',
+        $this->dispatch('dropdown-updated', [
+            'forms' => $this->forms,
         ]);
+    }
 
-        $this->forms[$this->currentFormId] = [
-            'hf_id' => $this->hf_id,
-            'total_inspect' => $this->total_inspect,
-            'defects' => [],
-            'smallDefects' => [],
-            'rework' => [],
-        ];
+    #[On('expected')]
+    public function expectedQty($data)
+    {
+        $this->expectedQty = $data;
+    }
+
+    public function saveHF($formId)
+    {
+        $this->validate(
+            [
+                'forms.' . $formId . '.hf_id' => 'required|digits:4',
+                'forms.' . $formId . '.total_inspect' => 'required|numeric|min:1',
+            ],
+            [
+                'forms.' . $formId . '.hf_id.required' => 'HF ID is required!',
+                'forms.' . $formId . '.hf_id.digits' => 'HF ID must be 4 digits!',
+                'forms.' . $formId . '.total_inspect.required' => 'Total Inspect is required!',
+                'forms.' . $formId . '.total_inspect.numeric' => 'Total Inspect must be a number!',
+                'forms.' . $formId . '.total_inspect.min' => 'Total Inspect must be at least 1!',
+            ],
+            [
+                "forms.$formId.hf_id" => "HF ID",
+                "forms.$formId.total_inspect" => "Total Inspect",
+            ]
+        );
+
+        // Save values
+        $this->forms[$formId]['hf_id'] = $this->forms[$formId]['hf_id'] ?? $this->hf_id;
+        $this->forms[$formId]['total_inspect'] = $this->forms[$formId]['total_inspect'] ?? $this->total_inspect;
 
         // Close modal
-        $this->modalOpen = false;
+        $this->modalOpen[$formId] = false;
+
+        // $this->dispatch('FetchHfNo', [
+        //     'hf_id' =>  $this->forms[$formId]['hf_id'],
+        //     'total_inspect' =>   (int) $this->forms[$formId]['total_inspect'],
+        //     'form_id' => $formId,
+        // ]);
+        $this->dispatch(
+            'FetchHfNo',
+            hf_id: $this->forms[$formId]['hf_id'],
+            total_inspect: (int) $this->forms[$formId]['total_inspect'],
+            form_id: $formId
+        );
 
         // Reset modal fields
         $this->hf_id = '';
         $this->total_inspect = '';
     }
 
-    public function saveHF(){
-        $this->isSaved = true;
-        session()->flash('success', 'All changes have been saved!.');
+    public function exitHF($formId)
+    {
+        // Close modal without saving
+        $this->modalOpen[$formId] = false;
+
+        if (isset($this->forms[$formId])) {
+            unset($this->forms[$formId]);
+        }
+
+        // Remove modal state
+        if (isset($this->modalOpen[$formId])) {
+            unset($this->modalOpen[$formId]);
+        }
+        // Reset modal fields
+        $this->hf_id = '';
+        $this->total_inspect = '';
     }
 
     #[On('edit-ppf')]
     public function editPPFFromChild($ppf, $inspectorId)
     {
+
         $hfRecords = HF::where('ppfno', $ppf)
             ->where('updated_by', $inspectorId)
             ->get();
@@ -111,6 +171,7 @@ class DropDown extends Component
                 })
                 ->toArray();
 
+
             $operatorSmallDefects = SmallDefect::where('ppfno', $ppf)
                 ->where('updated_by', $inspectorId)
                 ->where('hf_id', $h->hf_id)
@@ -133,22 +194,46 @@ class DropDown extends Component
             $this->CheckHf($uniqueId);
         }
 
-        $this->dispatch('dropdown-updated', [
-            'forms' => $this->forms
-        ]);
+        if ($this->hasError) {
+            $this->dispatch('hasErrorPren', $this->hasError);
+        } else {
+            $this->dispatch('dropdown-updated', [
+                'forms' => $this->forms
+            ]);
+        }
     }
+
+
 
     public function CheckHf($formId)
     {
+        $currentHfId = $this->forms[$formId]['hf_id'];
         if (!$formId || !isset($this->forms[$formId])) {
             return;
+        }
+        foreach ($this->forms as $id => $form) {
+            if ($id === $formId) continue; // skip current form
+            if (!empty($form['hf_id']) && $form['hf_id'] === $currentHfId) {
+                $this->addError(
+                    'forms.' . $formId . '.hf_id',
+                    'This Operator is already used in another form'
+                );
+                $this->hasError = true;
+                $this->dispatch('hasErrorPren', $this->hasError);
+                return;
+            }
         }
 
 
         if (empty($this->forms[$formId]['hf_id'])) {
             $this->forms[$formId]['hf_id'] = null;
             $this->resetErrorBag('forms.' . $formId . '.hf_id');
+            $this->addError(
+                'forms.' . $formId . '.hf_id',
+                'This Operator already exist'
+            );
             $this->hasError = true;
+            $this->dispatch('hasErrorPren', $this->hasError);
             return;
         }
 
@@ -176,6 +261,7 @@ class DropDown extends Component
             $this->forms[$formId]['hf_name'] = null;
             $this->hasError = true;
         }
+        $this->dispatch('hasErrorPren', $this->hasError);
     }
 
     #[On('defects-updated')]
@@ -200,165 +286,190 @@ class DropDown extends Component
 
             $type = strtolower(trim($def['type'] ?? ''));
             $qty  = (float)($def['qty'] ?? 0);
+            $size  = strtolower(trim($def['category'] ?? 'large'));
 
             if ($type === '') continue;
 
-            if (!isset($normalized[$type])) {
-                $normalized[$type] = [
+            $key = $type . '_' . $size;
+            if (!isset($normalized[$key])) {
+                $normalized[$key] = [
                     'type' => $def['type'],
+                    'category' => $size,
                     'qty'  => $qty
                 ];
             } else {
-                $normalized[$type]['qty'] += $qty;
+                $normalized[$key]['qty'] += $qty;
             }
         }
 
+        $map = collect($this->forms[$formId]['defects'])
+            ->keyBy(fn($d) => strtolower(trim($d['type'])) . '_' . strtolower(trim($d['category'] ?? 'large')))
+            ->toArray();
+
         foreach ($data['defects'] ?? [] as $incoming) {
+
             $type = strtolower(trim($incoming['type'] ?? ''));
+            $size = strtolower(trim($incoming['category'] ?? 'large'));
             $qty  = (float)($incoming['qty'] ?? 0);
+
             if ($type === '') continue;
+
+            $key = $type . '_' . $size;
 
             switch ($action) {
 
                 case 'delete':
-                    unset($normalized[$type]);
+                    unset($map[$key]);
                     break;
 
                 case 'update':
-                    if (isset($normalized[$type])) {
-                        $normalized[$type]['qty'] = $qty;
-                    } else {
-                        $normalized[$type] = [
-                            'type' => $incoming['type'],
-                            'qty'  => $qty
-                        ];
-                    }
-                    break;
-
                 case 'add':
-                default:
-                    if (isset($normalized[$type])) {
-                        $normalized[$type]['qty'] += $qty;
-                    } else {
-                        $normalized[$type] = [
-                            'type' => $incoming['type'],
-                            'qty'  => $qty
-                        ];
-                    }
+                    $map[$key] = [
+                        'type' => $incoming['type'],
+                        'category' => $size,
+                        'qty' => $qty
+                    ];
                     break;
             }
         }
 
-        $this->forms[$formId]['defects'] = array_values($normalized);
+        $this->forms[$formId]['defects'] = array_values($map);
+
         foreach ($data['smallDefects'] ?? [] as $large => $smalls) {
 
-            $this->forms[$formId]['smallDefects'][$large] ??= [];
-            $normalizedSmall = [];
-
-            foreach ($this->forms[$formId]['smallDefects'][$large] as $small) {
-                $type = strtolower(trim($small['type'] ?? ''));
-                $qty  = (float)($small['qty'] ?? 0);
-
-                if ($type === '') continue;
-
-                if (!isset($normalizedSmall[$type])) {
-                    $normalizedSmall[$type] = [
-                        'type' => $small['type'],
-                        'qty'  => $qty
-                    ];
-                } else {
-                    $normalizedSmall[$type]['qty'] += $qty;
-                }
-            }
+            // Create map from existing small defects
+            $map = collect($this->forms[$formId]['smallDefects'][$large] ?? [])
+                ->keyBy(fn($s) => strtolower(trim($s['type'] ?? '')))
+                ->toArray();
 
             foreach ($smalls as $incoming) {
+
                 $type = strtolower(trim($incoming['type'] ?? ''));
                 $qty  = (float)($incoming['qty'] ?? 0);
+
                 if ($type === '') continue;
 
                 switch ($action) {
 
                     case 'delete':
-                        unset($normalizedSmall[$type]);
+                        unset($map[$type]);
                         break;
 
                     case 'update':
-                        if (isset($normalizedSmall[$type])) {
-                            $normalizedSmall[$type]['qty'] = $qty;
-                        } else {
-                            $normalizedSmall[$type] = [
-                                'type' => $incoming['type'],
-                                'qty'  => $qty
-                            ];
-                        }
-                        break;
-
                     case 'add':
-                    default:
-                        if (isset($normalizedSmall[$type])) {
-                            $normalizedSmall[$type]['qty'] += $qty;
-                        } else {
-                            $normalizedSmall[$type] = [
-                                'type' => $incoming['type'],
-                                'qty'  => $qty
-                            ];
-                        }
+                        $map[$type] = [
+                            'type' => $incoming['type'],
+                            'qty'  => $qty
+                        ];
                         break;
                 }
             }
 
-            $this->forms[$formId]['smallDefects'][$large] = array_values($normalizedSmall);
+            $this->forms[$formId]['smallDefects'][$large] = array_values($map);
         }
 
+        $map = collect($this->forms[$formId]['rework'] ?? [])
+            ->keyBy(fn($r) => strtolower(trim($r['type'])) . '_' . (int)$r['hfno'])
+            ->toArray();
 
         foreach ($data['reworksData'] ?? [] as $incoming) {
+
             $type = strtolower(trim($incoming['type'] ?? ''));
-            $hfno = strtolower(trim($incoming['hfno'] ?? null));
+            $hfno = (int)($incoming['hfno'] ?? 0);
+
             if ($type === '') continue;
-            
+
+            $key = $type . '_' . $hfno;
 
             switch ($action) {
 
                 case 'delete':
-                    $this->forms[$formId]['rework'] =
-                        array_values(array_filter(
-                            $this->forms[$formId]['rework'],
-                            fn($r) =>
-                            strtolower(trim($r['type'] ?? '')) !== $type &&
-                                ($r['hfno'] ?? null) !== $hfno
-                        ));
+                    unset($map[$key]);
                     break;
 
                 case 'update':
-                    foreach ($this->forms[$formId]['rework'] as $i => $r) {
-                        if (strtolower(trim($r['type'] ?? '')) === $type && strtolower(trim($r['hfno'] ?? '')) === $hfno) {
-                            if (isset($incoming['quan'])) {
-                                $this->forms[$formId]['rework'][$i]['quan'] = $incoming['quan'];
-                            }
-                            if (isset($incoming['totalinsp'])) {
-                                $this->forms[$formId]['rework'][$i]['totalinsp'] = $incoming['totalinsp'];
-                            }
-                        }
-                    }
-                    break;
-
                 case 'add':
-                default:
-                    $exists = collect($this->forms[$formId]['rework'])
-                        ->contains(fn($r) => strtolower(trim($r['type'] ?? '')) === $type && strtolower(trim($r['hfno'] ?? '')) === $hfno);
-
-                    if (!$exists) {
-                        $this->forms[$formId]['rework'][] = $incoming;
-                    }
+                    $map[$key] = $incoming;
                     break;
             }
         }
-        $this->dispatch('dropdown-updated', [
-            'forms' => $this->forms,
-            'action' => $action
-        ]);
 
-        dd($this->isSaved);
+        $this->forms[$formId]['rework'] = array_values($map);
+
+        // foreach ($data['reworksData'] ?? [] as $incoming) {
+        //     $type = strtolower(trim($incoming['type'] ?? ''));
+        //     $hfno = (int)trim($incoming['hfno'] ?? null);
+        //     if ($type === '') continue;
+
+
+        //     switch ($action) {
+
+        //         case 'delete':
+        //             $this->forms[$formId]['rework'] =
+        //                 array_values(array_filter(
+        //                     $this->forms[$formId]['rework'],
+        //                     fn($r) =>
+        //                     strtolower(trim($r['type'] ?? '')) !== $type &&
+        //                         ($r['hfno'] ?? null) !== $hfno
+        //                 ));
+        //             break;
+
+        //         case 'update':
+        //             foreach ($this->forms[$formId]['rework'] as $i => $r) {
+        //                 if (strtolower(trim($r['type'] ?? '')) === $type && (int)trim($r['hfno'] ?? '') === $hfno) {
+        //                     if (isset($incoming['quan'])) {
+        //                         $this->forms[$formId]['rework'][$i]['quan'] = $incoming['quan'];
+        //                     }
+        //                     if (isset($incoming['totalinsp'])) {
+        //                         $this->forms[$formId]['rework'][$i]['totalinsp'] = $incoming['totalinsp'];
+        //                     }
+        //                 }
+        //             }
+        //             break;
+
+        //         case 'add':
+        //         default:
+        //             $exists = collect($this->forms[$formId]['rework'])
+        //                 ->contains(fn($r) => strtolower(trim($r['type'] ?? '')) === $type && strtolower(trim($r['hfno'] ?? '')) === $hfno);
+
+        //             if (!$exists) {
+        //                 $this->forms[$formId]['rework'][] = $incoming;
+        //             }
+        //             break;
+        //     }
+        // }
+
+
+
+        // $this->dispatch('dropdown-updated', [
+        //     'forms' => $this->forms
+        // ]);
+
+        $this->receiveDropdownData($this->forms);
+    }
+
+    public function receiveDropdownData($data)
+    {
+        foreach ($data as $formId => $formData) {
+
+            if (!isset($this->dropdownForms[$formId])) {
+                $this->dropdownForms[$formId] = [];
+            }
+
+            // Just replace with the normalized data
+            $this->dropdownForms[$formId]['defects'] = $formData['defects'] ?? [];
+            $this->dropdownForms[$formId]['smallDefects'] = $formData['smallDefects'] ?? [];
+            $this->dropdownForms[$formId]['rework'] = $formData['rework'] ?? [];
+
+            // keep other fields
+            foreach ($formData as $key => $value) {
+                if (!in_array($key, ['defects', 'smallDefects', 'rework'])) {
+                    $this->dropdownForms[$formId][$key] = $value;
+                }
+            }
+        }
+
+        $this->dispatch('dropdown-updated', ['forms' => $this->dropdownForms]);
     }
 
     public function toggle($index)
@@ -366,10 +477,17 @@ class DropDown extends Component
         $this->forms[$index]['open'] = !$this->forms[$index]['open'];
     }
 
-    public function remove($id)
+    public function remove($formId)
     {
-        unset($this->forms[$id]);
-        $this->forms = array_values($this->forms);
+        unset($this->forms[$formId]);
+        unset($this->modalOpen[$formId]);
+
+        // Force Livewire refresh
+        $this->forms = [...$this->forms];
+
+        $this->dispatch('dropdown-updated', [
+            'forms' => $this->forms
+        ]);
     }
     public function render()
     {

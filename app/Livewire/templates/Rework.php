@@ -7,15 +7,16 @@ use App\Models\Worker;
 use App\Models\WorkerName;
 use Livewire\Component;
 use Illuminate\Support\Collection;
+use Livewire\Attributes\On;
 
 class Rework extends Component
 {
     public Collection $reworkcheck;
     public $reworkss = [];
     public $newRework = '';
-    public $hfno = '';
+    //public $hfno = '';
     public $newQuan = '';
-    public $totalInsp = '';
+    //public $totalInsp = '';
     public $totalngrework = 0;
     public $hfworker = [];
     public $hfname;
@@ -24,21 +25,21 @@ class Rework extends Component
     public $formId;
     public $editinghfno;
 
+    public array $hfno = [];
+    public array $totalInsp = [];
+
+
     public $listeners = [
         'FetchRework' => 'Fetch',
         'locked' => 'locked',
         'ClearForm' => 'ClearForm'
     ];
     public $rules = [
-        'hfno' => 'required|string|max:50',
-        'totalInsp' => 'required|numeric|min:1',
         'newRework' => 'required|string|max:255',
         'newQuan' => 'required|numeric|min:1',
     ];
 
     protected $messages = [
-        'hfno.required' => 'Please enter HF number.',
-        'totalInsp.required' => 'Please enter total inspections.',
         'newRework.required' => 'Please enter a rework type.',
         'newQuan.required' => 'Please enter a quantity.',
     ];
@@ -49,6 +50,36 @@ class Rework extends Component
         $this->formId = $formId;
         $this->setReworks($loadedRework);
     }
+
+
+    #[On('FetchHfNo')]
+    public function fetchhfno($hf_id, $total_inspect, $form_id)
+    {
+        $this->formId = $form_id;
+
+        $this->hfno[$form_id] = $hf_id;
+        $this->totalInsp[$form_id] = (int) $total_inspect;
+    }
+    // public function fetchhfno($data)
+    // {
+    //     // Track the HF number and total inspection per form
+    //     $this->formId = $data['form_id'] ?? null;
+
+    //     $this->hfno[$this->formId] = $data['hf_id'];
+    //     (int) $this->totalInsp[$this->formId] = (int) $data['total_inspect'];
+    // }
+
+    //     #[On('FetchHfNo')]
+    // public function fetchhfno($data)
+    // {
+    //     $uniqueId = $data['uniqueId'];
+
+    //     $this->hfno[$uniqueId] = $data['hf_id'];
+    //     $this->totalInsp[$uniqueId] = $data['total_inspect'];
+    // }
+
+
+
     public function setReworks($loadedReworks)
     {
         $this->reworkss = $loadedReworks;
@@ -82,8 +113,10 @@ class Rework extends Component
     public function addRework()
     {
         $this->validate();
+
         $normalizedNewDefect = strtolower(trim($this->newRework));
 
+        // Get master defects
         $this->reworkcheck = ModelsRework::query()
             ->select('DefectType')
             ->distinct()
@@ -101,9 +134,12 @@ class Rework extends Component
             return;
         }
 
+        // Check if rework already exists
         $existing = collect($this->reworkss)->contains(function ($reworkss) use ($normalizedNewDefect) {
-            return $reworkss['hfno'] === $this->hfno and strtolower(trim($reworkss['type'])) === $normalizedNewDefect;
+            return $reworkss['hfno'] === $this->hfno
+                && strtolower(trim($reworkss['type'])) === $normalizedNewDefect;
         });
+
         $uniquehf = collect($this->reworkss)
             ->pluck('hfno')
             ->unique()
@@ -120,38 +156,41 @@ class Rework extends Component
             return;
         }
 
-        $newRework = [
-            'hfno'       => $this->hfno,
-            'totalinsp'  => $this->totalInsp,
-            'type'       => trim($this->newRework),
-            'quan'       => $this->newQuan,
-        ];
+      $newRework = [
+    'hfno'      => $this->hfno[$this->formId] ?? '',
+    'totalinsp' => $this->totalInsp[$this->formId] ?? '',
+    'type'      => trim($this->newRework),
+    'quan'      => $this->newQuan,
+];
 
         $this->reworkss[] = $newRework;
+
         $this->UpdatedNGRework();
 
-        $this->dispatch('defects-updated', ['reworksData' => $this->reworkss, 'formId' => $this->formId, 'action' => 'add']);
+        $this->dispatch('defects-updated', [
+            'reworksData' => $this->reworkss,
+            'formId'      => $this->formId,
+            'action'      => 'add'
+        ]);
+
         $this->dispatch('FromReworksData', [
             'totalngrework' => $this->totalngrework
         ]);
-        //dd($reworksData);
-        // Clear input fields
-        $this->hfno       = '';
-        $this->totalInsp  = '';
-        $this->newRework  = '';
-        $this->newQuan    = '';
-    }
 
+        // Clear input fields
+        $this->newRework = '';
+        $this->newQuan   = '';
+    }
 
     public function CheckHf()
     {
         if (empty($this->hfno)) {
-            $this->hfname = null;
+            $this->hfname[$this->formId] = null;
             $this->resetErrorBag('hfno');
             return;
         }
 
-        $searchValue = (strlen($this->hfno) === 2) ? ' ' . $this->hfno : $this->hfno;
+        $searchValue = (strlen($this->hfno[$this->formId]) === 2) ? ' ' . $this->hfno : $this->hfno;
         $hf = Worker::where('作業員CD', $searchValue)->first();
 
         if ($hf) {
@@ -160,7 +199,7 @@ class Rework extends Component
             $this->resetErrorBag('hfno');
         } else {
             $this->addError('hfno', 'This Operator does not exist');
-            $this->hfno = "";
+            $this->hfno[$this->formId] = "";
             $this->hfname = null;
         }
     }
@@ -210,8 +249,8 @@ class Rework extends Component
         foreach ($this->reworkss as &$rework) {
             if ($rework['type'] === $this->editingType) {
                 $rework['quan'] = $this->newQuan;
-                $rework['hfno'] = $this->hfno;
-                $rework['totalinsp'] = $this->totalInsp;
+                $rework['hfno'] = $this->hfno[$this->formId];
+                $rework['totalinsp'] = $this->totalInsp[$this->formId];
                 break;
             }
         }
@@ -235,8 +274,9 @@ class Rework extends Component
 
         $this->editingType = null;
         $this->newQuan = '';
-        $this->totalInsp = '';
+        $this->totalInsp[$this->formId] = '';
     }
+
 
     public function startEdit($type, $hfno)
     {
@@ -248,9 +288,9 @@ class Rework extends Component
             ->first(fn($r) => $r['type'] === $type && $r['hfno'] === $hfno);
 
         if ($rework) {
-            $this->hfno = $rework['hfno'];
+            $this->hfno[$this->formId] = $rework['hfno'];
             $this->newQuan = $rework['quan'];
-            $this->totalInsp = $rework['totalinsp'];
+            $this->totalInsp[$this->formId] = $rework['totalinsp'];
         }
     }
 }

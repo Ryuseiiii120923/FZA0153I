@@ -38,6 +38,9 @@ class Prencode extends Component
     public $totalngrework;
     public $hfno1, $hfno2, $hfno3, $hfno4, $hfno5;
     public $process;
+    public $hasError = false;
+    public $isReceive = false;
+    public $dropdownFinal = [];
 
 
     public $listeners = [
@@ -224,92 +227,158 @@ class Prencode extends Component
 
 
 
+    #[On('hasErrorPren')]
+    public function hasError($error)
+    {
+        $this->hasError = $error;
+    }
+
     //updating from dropdown
+    // #[On('dropdown-updated')]
+    // public function receiveDropdownData($data)
+    // {
+    //     // $this->isReceive = true;
+    //     // foreach ($this->dropdownForms as $formId => $form) {
+    //     //     if (!isset($data['forms'][$formId])) {
+    //     //         unset($this->dropdownForms[$formId]);
+    //     //     }
+    //     // }
+
+    //     // foreach ($data['forms'] as $formId => $formData) {
+
+    //     //     $existingDefects = $this->dropdownForms[$formId]['defects'] ?? [];
+    //     //     $existingSmallDefects = $this->dropdownForms[$formId]['smallDefects'] ?? [];
+    //     //     $existingReworks = $this->dropdownForms[$formId]['rework'] ?? [];
+
+    //     //     $incomingDefects = $formData['defects'] ?? [];
+    //     //     $incomingSmallDefects = $formData['smallDefects'] ?? [];
+    //     //     $incomingReworks = $formData['rework'] ?? [];
+
+    //     //     // $action = $data['action'] ?? 'add';
+
+    //     //     foreach ($incomingDefects as $def) {
+    //     //         $exists = collect($existingDefects)->contains(fn($d) => $d['type'] === $def['type']);
+    //     //         if (!$exists) {
+    //     //             $existingDefects[] = $def;
+    //     //         }
+    //     //     }
+
+    //     //     foreach ($incomingSmallDefects as $large => $smalls) {
+
+    //     //         if (!isset($existingSmallDefects[$large])) {
+    //     //             $existingSmallDefects[$large] = [];
+    //     //         }
+
+    //     //         foreach ($smalls as $small) {
+    //     //             $exists = collect($existingSmallDefects[$large])
+    //     //                 ->contains(fn($s) => strtolower(trim($s['type'] ?? '')) === strtolower(trim($small['type'] ?? '')));
+    //     //             if (!$exists && !empty($small['type'])) {
+    //     //                 $existingSmallDefects[$large][] = $small;
+    //     //             }
+    //     //         }
+    //     //     }
+
+    //     //     foreach ($incomingReworks as $rework) {
+    //     //         $exists = collect($existingReworks)->contains(fn($r) => $r['hfno'] === $rework['hfno'] && $r['type'] === $rework['type']);
+    //     //         if (!$exists) {
+    //     //             $existingReworks[] = $rework;
+    //     //         }
+    //     //     }
+
+    //     //     // Assign back to dropdownForms without overwriting merged defects
+    //     //     $this->dropdownForms[$formId] = $formData;
+    //     //     $this->dropdownForms[$formId]['defects'] = $existingDefects;
+    //     //     $this->dropdownForms[$formId]['smallDefects'] = $existingSmallDefects;
+    //     //     $this->dropdownForms[$formId]['rework'] = $existingReworks;
+    //     // }
+    //     foreach ($data['forms'] as $formId => $formData) {
+    //     $existing = $this->dropdownForms[$formId] ?? [];
+    //     $this->dropdownForms[$formId] = array_merge($existing, $formData);
+    // }
+
+    // }
+
+    // #[On('dropdown-updated')]
+    // public function receiveDropdownData($data)
+    // {
+    //     // Remove any forms that no longer exist
+    //     foreach ($this->dropdownForms as $formId => $form) {
+    //         if (!isset($data['forms'][$formId])) {
+    //             unset($this->dropdownForms[$formId]);
+    //         }
+    //     }
+
+    //     // Update or add forms
+    //     foreach ($data['forms'] as $formId => $formData) {
+    //         if (isset($this->dropdownForms[$formId])) {
+    //             // Merge without overwriting nested arrays
+    //             $this->dropdownForms[$formId] = array_merge(
+    //                 $this->dropdownForms[$formId],
+    //                 $formData
+    //             );
+    //         } else {
+    //             // Add new form
+    //             $this->dropdownForms[$formId] = $formData;
+    //         }
+
+    //         //    $this->dispatch('FetchHfNo', [
+    //         //     'hf_id' => $formData['hf_id'],
+    //         //     'total_inspect' => $formData['total_inspect'],
+    //         //     'form_id' => $formId,
+    //         // ]);
+    //         $this->dispatch(
+    //             'FetchHfNo',
+    //             hf_id: $formData['hf_id'],
+    //             total_inspect: (int) $formData['total_inspect'],
+    //             form_id: $formId
+    //         );
+    //     }
+    // }
+
     #[On('dropdown-updated')]
     public function receiveDropdownData($data)
     {
+        dd($data);
+        // Remove forms that no longer exist
+        foreach ($this->dropdownForms as $formId => $form) {
+            if (!isset($data['forms'][$formId])) {
+                unset($this->dropdownForms[$formId]);
+            }
+        }
+
+        // Update or add forms
         foreach ($data['forms'] as $formId => $formData) {
 
-            $existingDefects = $this->dropdownForms[$formId]['defects'] ?? [];
-            $existingSmallDefects = $this->dropdownForms[$formId]['smallDefects'] ?? [];
-            $existingReworks = $this->dropdownForms[$formId]['rework'] ?? [];
+            if (!isset($this->dropdownForms[$formId])) {
+                $this->dropdownForms[$formId] = $formData;
+            } else {
 
-            $incomingDefects = $formData['defects'] ?? [];
-            $incomingSmallDefects = $formData['smallDefects'] ?? [];
-            $incomingReworks = $formData['rework'] ?? [];
+                foreach ($formData as $key => $value) {
 
-            // $action = $data['action'] ?? 'add';
+                    // 🔹 If array (defects, smallDefects, rework) just replace it
+                    if (is_array($value)) {
+                        $this->dropdownForms[$formId][$key] = $value;
+                    }
 
-            foreach ($incomingDefects as $def) {
-                $exists = collect($existingDefects)->contains(fn($d) => $d['type'] === $def['type']);
-                if (!$exists) {
-                    $existingDefects[] = $def;
-                }
-
-                // if($action === 'delete') {
-                //     foreach ($existingDefects as $existDef => $item) {
-                //         if (strtolower($item['type']) === strtolower($def['type'])) {
-                //             unset($existingDefects[$existDef]);
-                //             $existingDefects = array_values($existingDefects);
-                //             break;
-                //         }
-                //     }
-                // }
-
-                // if($action === 'update') {
-                //     foreach ($existingDefects as $existDef => $item) {
-                //         if (strtolower($item['type']) === strtolower($def['type'])) {
-                //             $existingDefects[$existDef]['qty'] = $def['qty'];
-                //             break;
-                //         }
-                //     }
-                // }else{
-                //     foreach ($existingDefects as $existDef => $item) {
-                //         if (strtolower($item['type']) === strtolower($def['type'])) {
-                //             $existingDefects[$existDef]['qty'] += $def['qty'];
-                //             break;
-                //         }else{
-                //             $existingDefects[$existDef] = [
-                //                 'type' => $def['type'],
-                //                 'qty'  => $def['qty']   
-                //             ];
-                //             break;
-                //         }
-                //     }
-                // }
-            }
-
-            foreach ($incomingSmallDefects as $large => $smalls) {
-
-                if (!isset($existingSmallDefects[$large])) {
-                    $existingSmallDefects[$large] = [];
-                }
-
-                foreach ($smalls as $small) {
-                    $exists = collect($existingSmallDefects[$large])
-                        ->contains(fn($s) => strtolower(trim($s['type'] ?? '')) === strtolower(trim($small['type'] ?? '')));
-                    if (!$exists && !empty($small['type'])) {
-                        $existingSmallDefects[$large][] = $small;
+                    // 🔹 If scalar (hf_id, total_inspect etc.)
+                    else {
+                        $this->dropdownForms[$formId][$key] = $value;
                     }
                 }
             }
 
-            foreach ($incomingReworks as $rework) {
-                $exists = collect($existingReworks)->contains(fn($r) => $r['hfno'] === $rework['hfno'] && $r['type'] === $rework['type']);
-                if (!$exists) {
-                    $existingReworks[] = $rework;
-                }
-            }
-
-            // Assign back to dropdownForms without overwriting merged defects
-            $this->dropdownForms[$formId] = $formData;
-            $this->dropdownForms[$formId]['defects'] = $existingDefects;
-            $this->dropdownForms[$formId]['smallDefects'] = $existingSmallDefects;
-            $this->dropdownForms[$formId]['rework'] = $existingReworks;
+            // Dispatch HF data
+            $this->dispatch(
+                'FetchHfNo',
+                hf_id: $formData['hf_id'] ?? null,
+                total_inspect: (int) ($formData['total_inspect'] ?? 0),
+                form_id: $formId
+            );
         }
+
+        // Debug
         // dd($this->dropdownForms);
     }
-
     //To Fetch Rework
     #[On('LoadReworksPren')]
     public function LoadReworksPren($ppf)
@@ -441,6 +510,7 @@ class Prencode extends Component
     }
     public function editPrencode()
     {
+
         DefectInsp::where('InspectorID', $this->inspectorID)->where('PPFNo', $this->ppf)->delete();
         ReworkInsp::where('InspectorID', $this->inspectorID)->where('PPFNo', $this->ppf)->delete();
         SmallInsp::where('InspectorID', $this->inspectorID)->where('PPFNo', $this->ppf)->delete();
@@ -458,6 +528,17 @@ class Prencode extends Component
         $this->totalInspection = $data;
     }
 
+    public function addPrencode()
+    {
+
+        //dd($this->dropdownForms);
+        foreach ($this->dropdownForms as $formData) {
+            $totalinspect = $formData['total_inspect'] ?? null;
+            $this->totalInspection += (int)$totalinspect;
+        }
+        $this->submitPrencode();
+    }
+
     public function submitPrencode()
     {
         if (empty($this->ppf) || $this->ppf === "0") {
@@ -471,24 +552,24 @@ class Prencode extends Component
 
         foreach ($this->dropdownForms as $formData) {
 
-            HF::create([
-                'hf_id' => (int)$formData['hf_id'] ?? null,
+            HF::create(attributes: [
+                'hf_id' => isset($formData['hf_id']) ? (int)$formData['hf_id'] : null,
                 'total_inspect' => $formData['total_inspect'] ?? null,
                 'created_at' => now(),
                 'updated_by' => $this->inspectorID,
-                    'ppfno' => $this->ppf
+                'ppfno' => $this->ppf
             ]);
             // 🔵 MERGE LARGE DEFECTS
             foreach ($formData['defects'] ?? [] as $defect) {
 
                 Defect::create(
                     [
-                        'hf_id' => (int)$formData['hf_id'] ?? null,
+                        'hf_id' => isset($formData['hf_id']) ? (int)$formData['hf_id'] : null,
                         'defect' => $defect['type'] ?? null,
                         'qty' => $defect['qty'] ?? null,
                         'created_at' => now(),
                         'updated_by' => $this->inspectorID,
-                    'ppfno' => $this->ppf
+                        'ppfno' => $this->ppf
                     ]
                 );
 
@@ -509,14 +590,14 @@ class Prencode extends Component
 
                 foreach ($smalls as $small) {
 
-                SmallDefect::create([
-                        'hf_id' => (int)$formData['hf_id'] ?? null,
+                    SmallDefect::create([
+                        'hf_id' => isset($formData['hf_id']) ? (int)$formData['hf_id'] : null,
                         'large_defect' => $large ?? null,
                         'small_defect' => $small['type'] ?? null,
                         'qty' => $small['qty'] ?? null,
                         'created_at' => now(),
                         'updated_by' => $this->inspectorID,
-                    'ppfno' => $this->ppf
+                        'ppfno' => $this->ppf
                     ]);
                     $type = $small['type'] ?? null;
                     $qty  = (float)($small['qty'] ?? 0);
@@ -534,11 +615,12 @@ class Prencode extends Component
             // 🔵 MERGE REWORKS
             foreach ($formData['rework'] ?? [] as $rework) {
                 Rework::create([
-                    'hf_id' => (int)$formData['hf_id'] ?? null,
+                    'hf_id' => isset($formData['hf_id']) ? (int)$formData['hf_id'] : null,
                     'hfno' => $rework['hfno'] ?? null,
                     'rework_type' => $rework['type'] ?? null,
                     'qty' => $rework['quan'] ?? null,
                     'created_at' => now(),
+                    'totalinsp' => $rework['totalinsp'] ?? null,
                     'updated_by' => $this->inspectorID,
                     'ppfno' => $this->ppf
                 ]);

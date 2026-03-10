@@ -117,12 +117,13 @@
                 type="button"
                 id="SubmitBtns"
                 class="w-40 rounded-lg bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 text-white font-medium text-sm text-center me-2 mb-2 px-6 py-3.5"
+                 @if($hasError) disabled class="opacity-50 cursor-not-allowed" @endif
                 @if($actiondash==='edit' )
                 wire:click="editPrencode"
                 @elseif($actiondash==='delete' )
                 wire:click="deletePrencode"
                 @else
-                wire:click="submitPrencode"
+                wire:click="addPrencode"
                 @endif>
                 @if ($actiondash === 'edit')
                 Edit
@@ -131,6 +132,7 @@
                 @else
                 Add
                 @endif
+                
             </button>
         </div>
     </div>

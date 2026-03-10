@@ -16,6 +16,7 @@ class Rework extends Model
         'hf_id',
         'hfno',
         'rework_type',
+        'totalinsp',
         'qty',
         'created_at',
         'updated_by',
