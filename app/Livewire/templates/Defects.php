@@ -221,7 +221,7 @@ class Defects extends Component
         $this->newDefect = '';
         $this->newQuan = '';
         $this->newCategory = null; // reset category if you have one
-        $this->sendDefect();
+
 
         $this->dispatch('defects-updated', [
             'defects' => $this->defects,
@@ -229,6 +229,7 @@ class Defects extends Component
         ]);
 
         $this->dispatch('TriggerGoodNg');
+        $this->sendDefect();
     }
 
     public function deleteDefect($type)
@@ -261,6 +262,10 @@ class Defects extends Component
     {
         $value = $this->TotalNg;
         $this->dispatch('sendNg', $value);
+        $this->dispatch('FetchNgDefectDropdown', [
+            'formId' => $this->formId,
+            'defectNg' => $value
+        ]);
     }
 
     public function sendDispatch()
@@ -439,60 +444,92 @@ class Defects extends Component
             'selectedLargeDefect' => $this->selectedLargeDefect,
             'formId' => $this->formId
         ]);
-
-        $this->sendDefect(); // if you want to update TotalNg
     }
+
+    // public function updateDefectArray()
+    // {
+    //     foreach ($this->defects as &$defect) {
+    //         if ($defect['type'] === $this->editingType) {
+    //             $defect['qty'] = $this->newQuan;
+
+    //             break;
+    //         }
+    //     }
+
+
+    //     $this->defectData[] = [
+    //         'type' => trim($this->editingType),
+    //         'qty'   => $this->newQuan,
+    //     ];
+
+    //     $this->dispatch('defects-updated', [
+    //         'defects' => [[
+    //             'type' => trim($this->editingType),
+    //             'qty'   => $this->newQuan,
+    //         ]],
+    //         'formId' => $this->formId,
+    //         'action' => 'update'
+    //     ]);
+    //     $this->sendDefect();
+    //     $this->editingType = null;
+    //     $this->newQuan = '';
+    // }
 
     public function updateDefectArray()
     {
         foreach ($this->defects as &$defect) {
             if ($defect['type'] === $this->editingType) {
-                $defect['qty'] = $this->newQuan;
-
+                $defect['qty'] = (float) $this->newQuan;
                 break;
             }
         }
 
+        // 🔹 Adjust small defects if they exceed the new large qty
+        if (isset($this->smallDefects[$this->editingType])) {
+
+            $largeQty = (float) $this->newQuan;
+
+            $smallTotal = collect($this->smallDefects[$this->editingType])
+                ->sum(fn($s) => (float)$s['qty']);
+
+            if ($smallTotal > $largeQty) {
+
+                $remaining = $largeQty;
+
+                foreach ($this->smallDefects[$this->editingType] as &$small) {
+
+                    if ($remaining <= 0) {
+                        $small['qty'] = 0;
+                        continue;
+                    }
+
+                    if ($small['qty'] > $remaining) {
+                        $small['qty'] = $remaining;
+                    }
+
+                    $remaining -= $small['qty'];
+                }
+            }
+        }
 
         $this->defectData[] = [
             'type' => trim($this->editingType),
-            'qty'   => $this->newQuan,
+            'qty'  => $this->newQuan,
         ];
 
         $this->dispatch('defects-updated', [
             'defects' => [[
                 'type' => trim($this->editingType),
-                'qty'   => $this->newQuan,
+                'qty'  => $this->newQuan,
             ]],
             'formId' => $this->formId,
             'action' => 'update'
         ]);
 
+        $this->sendDefect();
+
         $this->editingType = null;
         $this->newQuan = '';
-    }
-
-    public function updateDefectSmallArray()
-    {
-        $large = $this->selectedLargeDefect;
-        if (!isset($this->smallDefects[$large])) return;
-
-        foreach ($this->smallDefects[$large] as &$defect) {
-            if ($defect['type'] === $this->editingTypeSmall) {
-                $defect['qty'] = (float) $this->newSmallQuan;
-                break;
-            }
-        }
-
-        // Dispatch the current smallDefects array directly
-        $this->dispatch('defects-updated', [
-            'smallDefects' => $this->smallDefects,
-            'formId' => $this->formId,
-            'action' => 'update'
-        ]);
-
-        $this->editingTypeSmall = null;
-        $this->newSmallQuan = '';
     }
 
 
@@ -508,15 +545,67 @@ class Defects extends Component
         }
     }
 
-    public function startEditSmall($type)
+    // public function startEditSmall($type)
+    // {
+    //     $this->editingTypeSmall = $type;
+
+    //     // Find the rework by type
+    //     $large = $this->selectedLargeDefect ?? array_key_first($this->smallDefects ?? []);
+    //     $smalldefects = collect($this->smallDefects[$large] ?? [])->firstWhere('type', $type);
+    //     dd($this->smallDefects[$large]);
+    //     if ($smalldefects) {
+    //         $this->newSmallQuan = $smalldefects['qty'];
+    //     }
+    // }
+
+    public function startEditSmall($large, $type)
     {
+        $this->selectedLargeDefect = $large;
         $this->editingTypeSmall = $type;
 
-        // Find the rework by type
-        $smalldefects = collect($this->smallDefects[$this->selectedLargeDefect])->firstWhere('type', $type);
+        $smalldefects = collect($this->smallDefects[$large])
+            ->first(fn($s) => strtolower(trim($s['type'])) === strtolower(trim($type)));
 
         if ($smalldefects) {
             $this->newSmallQuan = $smalldefects['qty'];
         }
+    }
+
+    public function updateDefectSmallArray()
+    {
+        $large = $this->selectedLargeDefect;
+
+        $largeQty = collect($this->defects)
+            ->firstWhere('type', $large)['qty'] ?? 0;
+
+        if (!isset($this->smallDefects[$large])) return;
+
+        // Total qty of OTHER small defects
+        $otherTotal = collect($this->smallDefects[$large])
+            ->reject(fn($d) => $d['type'] === $this->editingTypeSmall)
+            ->sum(fn($d) => (float)$d['qty']);
+
+        // Remaining qty allowed
+        $remaining = $largeQty - $otherTotal;
+
+        foreach ($this->smallDefects[$large] as &$defect) {
+
+            if ($defect['type'] === $this->editingTypeSmall) {
+
+                // Do not exceed remaining qty
+                $defect['qty'] = min((float)$this->newSmallQuan, $remaining);
+
+                break;
+            }
+        }
+
+        $this->dispatch('defects-updated', [
+            'smallDefects' => $this->smallDefects,
+            'formId' => $this->formId,
+            'action' => 'update'
+        ]);
+
+        $this->editingTypeSmall = null;
+        $this->newSmallQuan = '';
     }
 }

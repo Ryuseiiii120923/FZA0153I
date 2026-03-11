@@ -33,6 +33,10 @@ class DropDown extends Component
     public $default = 'new';
     public $expectedQty = 0;
     public $dropdownForms = [];
+    public  $GoodQty;
+
+    public array $reworkNg = [];
+    public array $defectNg = [];
 
     public function mount()
     {
@@ -134,7 +138,7 @@ class DropDown extends Component
     #[On('edit-ppf')]
     public function editPPFFromChild($ppf, $inspectorId)
     {
-
+        $this->defectNg = [];
         $hfRecords = HF::where('ppfno', $ppf)
             ->where('updated_by', $inspectorId)
             ->get();
@@ -147,15 +151,20 @@ class DropDown extends Component
 
             $operatorDefects = Defect::where('ppfno', $ppf)
                 ->where('updated_by', $inspectorId)
-                ->where('hf_id', $h->hf_id) // <-- use correct column
+                ->where('hf_id', $h->hf_id)
                 ->get()
-                ->map(function ($d) {
+                ->groupBy(fn($d) => strtolower(trim($d->defect)))
+                ->map(function ($group) {
+                    $first = $group->first();
+                    $totalQty = $group->sum(fn($d) => $d->qty ?? 1);
                     return [
-                        'type' => $d->defect,
-                        'qty' => $d->qty ?? 1,
+                        'type' => $first->defect,
+                        'qty'  => $totalQty
                     ];
                 })
+                ->values()
                 ->toArray();
+            $this->defectNg[$h->hf_id] = collect($operatorDefects)->sum('qty');
 
             $operatorRework = Rework::where('ppfno', $ppf)
                 ->where('updated_by', $inspectorId)
@@ -170,18 +179,25 @@ class DropDown extends Component
                     ];
                 })
                 ->toArray();
-
-
+            $this->reworkNg[$h->hf_id] = collect($operatorRework)->sum('quan');
             $operatorSmallDefects = SmallDefect::where('ppfno', $ppf)
                 ->where('updated_by', $inspectorId)
                 ->where('hf_id', $h->hf_id)
                 ->whereNotNull('large_defect')
                 ->get()
                 ->groupBy('large_defect')
-                ->map(fn($group) => $group->values()->toArray())
+                ->mapWithKeys(function ($group, $largeDefect) {
+                    return [
+                        $largeDefect => collect($group)->map(fn($s) => [
+                            'type' => $s->small_defect,
+                            'qty'  => $s->qty ?? 0,
+                        ])->toArray()
+                    ];
+                })
                 ->toArray();
-
+            // dd($operatorSmallDefects);
             $uniqueId = uniqid();
+            $selectedLarge = array_key_first($operatorSmallDefects) ?? null;
             $this->forms[$uniqueId] = [
                 'hf_id' => $h->hf_id,
                 'ppfno' => $h->ppfno,
@@ -189,9 +205,11 @@ class DropDown extends Component
                 'open' => true,
                 'defects' => $operatorDefects,
                 'smallDefects' => $operatorSmallDefects,
+                'selectedLargeDefect' => $selectedLarge,
                 'rework' => $operatorRework,
             ];
             $this->CheckHf($uniqueId);
+            $this->CalcGoodQty($uniqueId);
         }
 
         if ($this->hasError) {
@@ -446,6 +464,42 @@ class DropDown extends Component
         // ]);
 
         $this->receiveDropdownData($this->forms);
+    }
+
+    #[On('FetchNgReworkDropdown')]
+    public function FetchNgRework($data)
+    {
+        $formId = $data['formId'];
+        $this->reworkNg[$formId] = $data['totalReworkNg'];
+        $this->CalcGoodQty($formId);
+    }
+
+    #[On('FetchNgDefectDropdown')]
+    public function FetchNgDefect($data)
+    {
+        $formId = $data['formId'];
+        $this->defectNg[$formId] = (int) $data['defectNg'];
+        $this->CalcGoodQty($formId);
+    }
+    public function CalcGoodQty($formId)
+    {
+        if (!isset($this->forms[$formId])) return;
+
+        $form = $this->forms[$formId];
+        dd();
+
+        $defectQty = collect($form['defects'] ?? [])->sum('qty');
+        $reworkQty = collect($form['rework'] ?? [])->sum('quan');
+
+        $totalNg = $defectQty + $reworkQty;
+
+        // Store NG per form
+        $this->defectNg[$formId] = $defectQty;
+        $this->reworkNg[$formId] = $reworkQty;
+
+        $this->forms[$formId]['GoodQty'] = ($form['total_inspect'] ?? 0) - $totalNg;
+
+        return $this->forms[$formId]['GoodQty'];
     }
 
     public function receiveDropdownData($data)

@@ -338,7 +338,7 @@ class Prencode extends Component
     #[On('dropdown-updated')]
     public function receiveDropdownData($data)
     {
-        dd($data);
+
         // Remove forms that no longer exist
         foreach ($this->dropdownForms as $formId => $form) {
             if (!isset($data['forms'][$formId])) {
@@ -551,7 +551,6 @@ class Prencode extends Component
         $mergedReworks = [];
 
         foreach ($this->dropdownForms as $formData) {
-
             HF::create(attributes: [
                 'hf_id' => isset($formData['hf_id']) ? (int)$formData['hf_id'] : null,
                 'total_inspect' => $formData['total_inspect'] ?? null,
@@ -593,7 +592,7 @@ class Prencode extends Component
                     SmallDefect::create([
                         'hf_id' => isset($formData['hf_id']) ? (int)$formData['hf_id'] : null,
                         'large_defect' => $large ?? null,
-                        'small_defect' => $small['type'] ?? null,
+                        'small_defect' => $small['type'] ?? $small['small_defect'] ?? null,
                         'qty' => $small['qty'] ?? null,
                         'created_at' => now(),
                         'updated_by' => $this->inspectorID,

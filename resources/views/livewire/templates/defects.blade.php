@@ -1,6 +1,6 @@
 <div x-data="{ openAddDefect: false }" class="bg-white rounded-lg w-full max-w-1xl mx-auto py-4 @if($locked) opacity-50 cursor-not-allowed @endif">
 
-     <div class="bg-gray-700 w-full">
+    <div class="bg-gray-700 w-full">
         <p class="text-4xl font-extrabold  text-center text-white p-4 ">Defect</p>
     </div>
     <!-- ADD DEFECT BUTTON ABOVE TABLE -->
@@ -38,11 +38,11 @@
 
                     <td class="px-4 py-2">{{ $defect['type'] }}</td>
                     <td class="px-4 py-2">{{ $defect['qty'] > 0 ? $defect['qty'] : '' }}</td>
-                    
+
                     @if($systemname == 'ProcessRecord')
                     <td class="px-4 py-2">{{ $defect['date'] }}</td>
                     @endif
-                    
+
                     <td class="px-4 py-2 flex justify-center gap-2">
                         <div x-data="{ openSmall: false, openEdit: false }">
 
@@ -131,14 +131,18 @@
                 @foreach($smallDefects[$defect['type']] as $sDefect)
                 <tr class="bg-gray-500" wire:key="smalldefect-{{ $sDefect['type'] ?? $sDefect['small_defect']}}">
                     @if ($systemname == 'ProcessRecord')
-                        <td class="px-8 py-1"></td>
+                    <td class="px-8 py-1"></td>
                     <td class="px-4 py-1"></td>
                     @endif
                     <td class="px-8 py-1">{{ $sDefect['type'] ?? $sDefect['small_defect'] }}</td>
                     <td class="px-4 py-1">{{ $sDefect['qty'] }}</td>
                     <td class="px-4 py-2 flex justify-center gap-2">
                         <div x-data="{ openSmallEdit: false }">
-                            <button @click="openSmallEdit=true" class="text-white bg-green-700 px-4 py-2 rounded" wire:click="startEditSmall('{{ $sDefect['type'] ?? $sDefect['small_defect'] }}')" @if($locked) disabled @endif>Edit</button>
+                            <button
+                                @click="openSmallEdit=true"
+                                class="text-white bg-green-700 px-4 py-2 rounded"
+                                wire:click="startEditSmall('{{ $defect['type'] }}','{{ $sDefect['type'] ?? $sDefect['small_defect'] }}')"
+                                @if($locked) disabled @endif>Edit</button>
                             <button class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded" @click.prevent="if(confirm('Are you sure you want to delete this record?')) $wire.deleteDefectSmall(@js($sDefect['type'] ?? $sDefect['small_defect']))" @if($locked) disabled @endif>Delete</button>
 
                             <div x-show="openSmallEdit" x-transition.opacity class="fixed inset-0 bg-black bg-opacity-40 z-40" style="display:none"></div>
@@ -171,7 +175,7 @@
                 @endforelse
             </tbody>
         </table>
-         <div class="flex-col w-11/12 sm:w-1/3 mt-3 ">
+        <div class="flex-col w-11/12 sm:w-1/3 mt-3 ">
             <label for="TotalNG" class="block text-sm font-medium text-black">Total NG</label>
             <input type="text" id="TotalNG" class="my-2 block w-full border border-black rounded-md px-2 py-1"
                 placeholder=" " required wire:model="TotalNg" readonly>

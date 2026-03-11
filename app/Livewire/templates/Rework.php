@@ -17,7 +17,7 @@ class Rework extends Component
     //public $hfno = '';
     public $newQuan = '';
     //public $totalInsp = '';
-    public $totalngrework = 0;
+    public array $totalngrework = [];
     public $hfworker = [];
     public $hfname;
     public $editingType;
@@ -55,8 +55,6 @@ class Rework extends Component
     #[On('FetchHfNo')]
     public function fetchhfno($hf_id, $total_inspect, $form_id)
     {
-        $this->formId = $form_id;
-
         $this->hfno[$form_id] = $hf_id;
         $this->totalInsp[$form_id] = (int) $total_inspect;
     }
@@ -83,8 +81,19 @@ class Rework extends Component
     public function setReworks($loadedReworks)
     {
         $this->reworkss = $loadedReworks;
-        $this->totalngrework = collect($this->reworkss)
-            ->sum(fn($x) => (int) $x['quan']);
+
+        // Initialize total NG per form
+        $this->totalngrework = [];
+
+        foreach ($loadedReworks as $rework) {
+            $formId = $rework['formId'] ?? $this->formId ?? 'default';
+
+            if (!isset($this->totalngrework[$formId])) {
+                $this->totalngrework[$formId] = 0;
+            }
+
+            $this->totalngrework[$formId] += (int) ($rework['quan'] ?? 0);
+        }
     }
     public function locked($data)
     {
@@ -97,17 +106,43 @@ class Rework extends Component
             'rework' => $rework,
         ]);
     }
-    public function ClearForm()
+    public function ClearForm($formId = null)
     {
-        $this->reworkss = [];
-        $this->totalngrework = null;
+        if ($formId) {
+            // Clear only the specified form
+            $this->reworkss = collect($this->reworkss)
+                ->reject(fn($r) => ($r['formId'] ?? null) === $formId)
+                ->values()
+                ->toArray();
+
+            $this->totalngrework[$formId] = 0;
+        } else {
+            // Clear all forms
+            $this->reworkss = [];
+            $this->totalngrework = [];
+        }
     }
 
     public function Fetch($data)
     {
-        $this->reworkss = $data['reworks'];
-        $this->totalngrework = collect($this->reworkss)
-            ->sum(fn($x) => (int) $x['quan']);
+        $formId = $data['formId'] ?? $this->formId ?? 'default';
+
+        // Filter reworks for this form
+        $formReworks = collect($data['reworks'] ?? [])
+            ->filter(fn($r) => ($r['formId'] ?? $formId) === $formId)
+            ->values()
+            ->toArray();
+
+        $this->reworkss = $formReworks;
+
+        // Calculate total NG for this form
+        $this->totalngrework[$formId] = collect($formReworks)
+            ->sum(fn($x) => (int) ($x['quan'] ?? 0));
+
+        $this->dispatch('FetchNgDropdown', [
+            'formId' => $formId,
+            'totalReworkNg' => $this->totalngrework[$formId]
+        ]);
     }
 
     public function addRework()
@@ -156,16 +191,16 @@ class Rework extends Component
             return;
         }
 
-      $newRework = [
-    'hfno'      => $this->hfno[$this->formId] ?? '',
-    'totalinsp' => $this->totalInsp[$this->formId] ?? '',
-    'type'      => trim($this->newRework),
-    'quan'      => $this->newQuan,
-];
+        $newRework = [
+            'hfno'      => $this->hfno[$this->formId] ?? '',
+            'totalinsp' => $this->totalInsp[$this->formId] ?? '',
+            'type'      => trim($this->newRework),
+            'quan'      => $this->newQuan,
+        ];
 
         $this->reworkss[] = $newRework;
 
-        $this->UpdatedNGRework();
+
 
         $this->dispatch('defects-updated', [
             'reworksData' => $this->reworkss,
@@ -177,6 +212,7 @@ class Rework extends Component
             'totalngrework' => $this->totalngrework
         ]);
 
+        $this->UpdatedNgRework($this->formId);
         // Clear input fields
         $this->newRework = '';
         $this->newQuan   = '';
@@ -219,7 +255,7 @@ class Rework extends Component
             ->values()
             ->toArray();
 
-        $this->UpdatedNgRework();
+        $this->UpdatedNgRework($this->formId);
 
         // Send to the other component
         // $this->dispatch('FromReworks', reworksData: $reworksData);
@@ -238,30 +274,40 @@ class Rework extends Component
     }
 
 
-    public function UpdatedNgRework()
+    public function UpdatedNgRework($formId = null)
     {
-        // Now recalc total
-        $this->totalngrework = collect($this->reworkss)
+        $formId = $formId ?? $this->formId;
+        if (!$formId) return;
+
+        // Sum only the reworks belonging to    this form
+        $this->totalngrework[$formId] = collect($this->reworkss)
+            ->filter(fn($r) => $r['hfno'] === ($this->hfno[$formId] ?? ''))
             ->sum(fn($x) => (int) $x['quan']);
+
+        $this->dispatch('FetchNgReworkDropdown', [
+            'formId' => $formId,
+            'totalReworkNg' => $this->totalngrework[$formId],
+        ]);
     }
+
     public function updateRework()
     {
         foreach ($this->reworkss as &$rework) {
-            if ($rework['type'] === $this->editingType) {
+            if ($rework['type'] === $this->editingType && $rework['hfno'] === $this->editinghfno) {
                 $rework['quan'] = $this->newQuan;
                 $rework['hfno'] = $this->hfno[$this->formId];
                 $rework['totalinsp'] = $this->totalInsp[$this->formId];
                 break;
             }
         }
-        $this->UpdatedNGRework();
+
 
         $this->dispatch('defects-updated', [
             'reworksData' => [[
-                'hfno' => $this->hfno,
+                'hfno' => $this->hfno[$this->formId] ?? null,
                 'type' => $this->editingType,
                 'quan' => $this->newQuan,
-                'totalinsp' => $this->totalInsp,
+                'totalinsp' => $this->totalInsp[$this->formId] ?? null,
             ]],
             'formId' => $this->formId,
             'action' => 'update'
@@ -271,26 +317,29 @@ class Rework extends Component
         $this->dispatch('FromReworksData', [
             'totalngrework' => $this->totalngrework
         ]);
-
+        $this->UpdatedNGRework();
         $this->editingType = null;
         $this->newQuan = '';
         $this->totalInsp[$this->formId] = '';
     }
 
 
-    public function startEdit($type, $hfno)
+    public function startEditRework($formId, $type, $hfno)
     {
         $this->editingType = $type;
         $this->editinghfno = $hfno;
+        $this->formId = $formId;
 
-        // Find the rework by type
         $rework = collect($this->reworkss)
-            ->first(fn($r) => $r['type'] === $type && $r['hfno'] === $hfno);
+            ->first(
+                fn($r) => ($r['type'] ?? '') === $type &&
+                    ($r['hfno'] ?? '') == $hfno
+            );
 
         if ($rework) {
-            $this->hfno[$this->formId] = $rework['hfno'];
+            $this->hfno[$formId] = $rework['hfno'];
             $this->newQuan = $rework['quan'];
-            $this->totalInsp[$this->formId] = $rework['totalinsp'];
+            $this->totalInsp[$formId] = $rework['totalinsp'];
         }
     }
 }
