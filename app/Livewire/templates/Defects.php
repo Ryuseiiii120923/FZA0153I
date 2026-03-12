@@ -580,19 +580,19 @@ class Defects extends Component
 
         if (!isset($this->smallDefects[$large])) return;
 
-        // Total qty of OTHER small defects
+
         $otherTotal = collect($this->smallDefects[$large])
             ->reject(fn($d) => $d['type'] === $this->editingTypeSmall)
             ->sum(fn($d) => (float)$d['qty']);
 
-        // Remaining qty allowed
+
         $remaining = $largeQty - $otherTotal;
 
         foreach ($this->smallDefects[$large] as &$defect) {
 
             if ($defect['type'] === $this->editingTypeSmall) {
 
-                // Do not exceed remaining qty
+     
                 $defect['qty'] = min((float)$this->newSmallQuan, $remaining);
 
                 break;

@@ -3,7 +3,7 @@
             <div class="w-11/12 sm:w-1/3 mx-5 sm:mx-2 flex flex-col items-">
                 <label for="PPF" class="block text-md font-medium text-black">PPF</label>
                 <input type="number" id="PPF" class="mt-1 block w-full border border-black rounded-md px-2 py-1"
-                    placeholder=" " wire:model.lazy="ppf" wire:keydown.enter="checkPPF">
+                    placeholder=" " wire:model.lazy="ppf" wire:keydown.enter="EnterPPF">
 
             </div>
             <div class="w-full sm:w-1/2">

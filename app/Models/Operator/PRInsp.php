@@ -2,6 +2,8 @@
 
 namespace App\Models\Operator;
 
+use App\Models\Worker;
+use App\Models\WorkerName;
 use Illuminate\Database\Eloquent\Model;
 
 class PRInsp extends Model
@@ -18,4 +20,10 @@ class PRInsp extends Model
         'DateEncode',
         'Process'
     ];
+
+
+    public function worker()
+    {
+        return $this->belongsTo(Worker::class, 'InspectorID', '作業員CD');
+    }
 }

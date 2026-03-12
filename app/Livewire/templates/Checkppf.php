@@ -348,6 +348,7 @@ class Checkppf extends Component
     #[On('dash-ppf')]
     public function PPFCheckDash($data)
     {
+        
         $this->ppf = $data['ppf'];
         $this->actiondash = $data['actiondash'];
 
@@ -366,6 +367,13 @@ class Checkppf extends Component
     public function ProgDis()
     {
         $this->isPPF = false;
+    }
+
+    public function EnterPPF(){
+        $this->dispatch('ClearFormDropdown');
+        $this->dispatch('dash-ppf1', ['actiondash' => 'add']); // action in Prencode
+        $this->checkPPF();
+
     }
 
     #[On('post-ppf')]
@@ -401,8 +409,10 @@ class Checkppf extends Component
                     ppf: $ppf,
                     inspectorId: $this->inspectorID
                 );
+                $this->dispatch('IsCheckPPF', true);
             }
         } elseif ($this->systemname === 'GLDashboard') {
+            $this->dispatch('FetchTotalInspectionTable', $ppf);
             if ($this->action === 'Add') {
                 if ($this->loadProcessRecord()) {
                     $this->isPPF = true; //enable the inspection Progress

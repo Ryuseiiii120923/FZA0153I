@@ -114,6 +114,9 @@
        <livewire:ui.drop-down>
         <div class="flex items-center gap-2 justify-center p-6" id="buttons-action">
             <button
+                @if (!$isCheckPPF)
+                    disabled
+                @endif
                 type="button"
                 id="SubmitBtns"
                 class="w-40 rounded-lg bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 text-white font-medium text-sm text-center me-2 mb-2 px-6 py-3.5"

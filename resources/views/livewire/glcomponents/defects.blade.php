@@ -32,9 +32,9 @@
                 @foreach($smallDefects[$defect['type']][$defect['operatorid']] as $sDefect)
                 <tr class="bg-gray-500" wire:key="smalldefect-{{ $sDefect['type']}}">
                     <td class="px-8 py-1"></td>
-                    <td class="px-8 py-1">{{ $sDefect['type'] }}</td>
+                     <td class="px-8 py-1"></td>
+                    <td class="px-9 py-1">- {{ $sDefect['type'] }}</td>
                     <td class="px-4 py-1">{{ $sDefect['qty'] }}</td>
-                    <td class="px-8 py-1"></td>
                     <td class="px-4 py-2 flex justify-center gap-2">
                         <div x-data="{ openSmallEdit: false }">
                             <div x-show="openSmallEdit" x-transition.opacity class="fixed inset-0 bg-black bg-opacity-40 z-40" style="display:none"></div>

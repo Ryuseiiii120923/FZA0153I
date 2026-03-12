@@ -3,6 +3,9 @@
     <!-- Add Operator Button -->
     <div class="px-2 py-5">
         <button
+            @if (!$isCheckPPF)
+                disabled
+            @endif
             wire:click="addNew"
             class="bg-blue-600 text-white px-4 py-2 rounded">
             + Add Worker

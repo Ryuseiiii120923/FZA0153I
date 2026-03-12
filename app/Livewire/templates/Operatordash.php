@@ -39,18 +39,8 @@ class Operatordash extends Component
     #[On('LoadDash')]
    public function LoadPPF()
 {
-    $prQuery = PRInsp::select('PPFNo', 'DateEncode')
-        ->where('InspectorID', $this->inspectorID);
-
-    $defectQuery = DefectInsp::select('PPFNo', 'DateEncode')
-        ->where('InspectorID', $this->inspectorID);
-
-    $reworkQuery = ReworkInsp::select('PPFNo', 'DateEncode')
-        ->where('InspectorID', $this->inspectorID);
-
-    $ppfrecord = $prQuery
-        ->unionAll($defectQuery)
-        ->unionAll($reworkQuery)
+    $ppfrecord = PRInsp::where('InspectorID', $this->inspectorID)
+        ->orderBy('DateEncode', 'desc')
         ->get();
 
     $this->ppfrecord = $ppfrecord->isNotEmpty() ? $ppfrecord : [];
@@ -62,6 +52,7 @@ class Operatordash extends Component
             'actiondash' => 'edit',
             'encoder' => $this->inspectorID
             ]);
+             $this->dispatch('ClearFormDropdown');
     }
 
      public function deletePPF($ppf){

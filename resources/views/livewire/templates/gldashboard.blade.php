@@ -32,6 +32,10 @@
                 <livewire:templates.ppfdashboard>
             </div>
             <livewire:templates.checkppf :systemname="request()->input('systemname')" />
+            <div class="mt-6 mb-6">
+                <livewire:glcomponents.total-inspection />
+            </div>
+
             <div class="flex flex-col sm:flex-row gap-6 mt-4 items-start justify-center w-full">
                 <div class="w-11/12 sm:w-1/2 flex justify-center">
                     <livewire:glcomponents.defects />
