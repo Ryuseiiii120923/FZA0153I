@@ -83,7 +83,7 @@ class AuthController extends Controller
         if ($user && $user->PASSWORD === $request->input('password')) {
             Auth::login($user);
             $request->session()->regenerate();
-            return redirect()->route('gl.dashboard');
+            return redirect()->route('gl.dashboard', ['systemname' => 'GLDashboard']);
         }
 
         return back()->withErrors(['credentials' => 'Incorrect credentials']);

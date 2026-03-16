@@ -34,6 +34,7 @@ class Checkppf extends Component
     public $smalldefects = [];
     public $systemname;
     public $locked = false;
+    public $ppfLoaded = false;
     public $lastdef;
     public $lastqty;
     public $showInspectionModal = false; // controls the modal
@@ -187,15 +188,18 @@ class Checkppf extends Component
             ||
             ReworkInsp::where('InspectorID', $this->inspectorID)
             ->where('PPFNo', $this->ppf)
+            ->exists()
+            || PRInsp::where('InspectorID', $this->inspectorID)
+            ->where('PPFNo', $this->ppf)
             ->exists();
         $check = ModelsCheckPPF::where('流動NO', $this->ppf)->first();
         $hf = CheckHF::where('流動NO', $this->ppf)->first();
         $totalinsp = PRInsp::where('PPFNo', $this->ppf)->where('InspectorID', $this->inspectorID)->first();
         $this->dispatch('GoodNg');
         if ($this->actiondash != 'edit') {
+ 
             if ($this->systemname === 'ProcessRecord') {
                 if ($ppfrecord) {
-
                     $this->errorexisting = 'This PPF is already encoded. Kindly review the table below for details.';
                     return false;
                 }
@@ -320,8 +324,8 @@ class Checkppf extends Component
         $this->actiondash = $actiondash;
         $userencoder = UserAuth::user()->社員CD;
         $this->encoder = (int)$userencoder;
-        $inspectID = Worker::select('作業員CD')->Where('社員CD', $this->encoder)->first();
-        $this->inspectorID = $inspectID->作業員CD ?? null;
+        $this->inspectorID = Worker::where('社員CD', $this->encoder)
+            ->value('作業員CD');
     }
     public function EditActions($data)
     {
@@ -348,7 +352,7 @@ class Checkppf extends Component
     #[On('dash-ppf')]
     public function PPFCheckDash($data)
     {
-        
+
         $this->ppf = $data['ppf'];
         $this->actiondash = $data['actiondash'];
 
@@ -369,16 +373,22 @@ class Checkppf extends Component
         $this->isPPF = false;
     }
 
-    public function EnterPPF(){
+    public function EnterPPF()
+    {
         $this->dispatch('ClearFormDropdown');
         $this->dispatch('dash-ppf1', ['actiondash' => 'add']); // action in Prencode
+        $this->actiondash = 'add';
         $this->checkPPF();
-
     }
 
     #[On('post-ppf')]
     public function checkPPF()
     {
+        if ($this->ppfLoaded) {
+            return;
+        }
+
+        $this->ppfLoaded = true;
         $this->validate();
         $ppf = $this->ppf; // fallback
         if ($this->ppf === null) {
@@ -402,8 +412,8 @@ class Checkppf extends Component
         if ($this->systemname === 'ProcessRecord') {
             if ($this->loadProcessRecord()) {
                 $this->dispatch('expected', $this->expct);
-                $this->dispatch('process'); //dispatch in process in js
-                $this->dispatch('LoadDash'); //to update the inspection table in dashboard
+                $this->dispatch('process');
+                $this->dispatch('LoadDash');
                 $this->dispatch(
                     'edit-ppf',
                     ppf: $ppf,

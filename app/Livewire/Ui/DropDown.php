@@ -12,6 +12,7 @@ use Illuminate\Testing\Fluent\Concerns\Has;
 use Livewire\Component;
 use Livewire\Attributes\On;
 use App\Traits\HandlesFormItems;
+use Carbon\Carbon;
 use Illuminate\Support\Str;
 
 use function Laravel\Prompts\search;
@@ -24,6 +25,7 @@ class DropDown extends Component
     public $currentFormId = null;
     public $toggles = false;
     public $hasError = false;
+    public $hasErrorForm = [];
     public $isSaved = false;
 
     public $hf_id = '';
@@ -38,6 +40,7 @@ class DropDown extends Component
 
     public array $reworkNg = [];
     public array $defectNg = [];
+    public $modalMode;
 
     public function mount()
     {
@@ -52,6 +55,7 @@ class DropDown extends Component
         $formId = (string) Str::uuid();
         $this->forms[$formId] = [
             'hf_id' => '',
+            'inspect_REC' => uniqid(),
             'hf_name' => '',
             'total_inspect' => '',
             'open' => false, // start expanded by default
@@ -69,7 +73,8 @@ class DropDown extends Component
     }
 
     #[On('IsCheckPPF')]
-    public function IsCheckPPF($data){
+    public function IsCheckPPF($data)
+    {
         $this->isCheckPPF = $data;
     }
 
@@ -83,12 +88,11 @@ class DropDown extends Component
     {
         $this->validate(
             [
-                'forms.' . $formId . '.hf_id' => 'required|digits:4',
+                'forms.' . $formId . '.hf_id' => 'required',
                 'forms.' . $formId . '.total_inspect' => 'required|numeric|min:1',
             ],
             [
                 'forms.' . $formId . '.hf_id.required' => 'HF ID is required!',
-                'forms.' . $formId . '.hf_id.digits' => 'HF ID must be 4 digits!',
                 'forms.' . $formId . '.total_inspect.required' => 'Total Inspect is required!',
                 'forms.' . $formId . '.total_inspect.numeric' => 'Total Inspect must be a number!',
                 'forms.' . $formId . '.total_inspect.min' => 'Total Inspect must be at least 1!',
@@ -117,14 +121,15 @@ class DropDown extends Component
             total_inspect: (int) $this->forms[$formId]['total_inspect'],
             form_id: $formId
         );
-
+        $this->CalcGoodQty($formId);
         // Reset modal fields
         $this->hf_id = '';
         $this->total_inspect = '';
     }
 
     #[On('ClearFormDropdown')]
-    public function ClearForm(){
+    public function ClearForm()
+    {
         $this->forms = [];
     }
 
@@ -162,15 +167,16 @@ class DropDown extends Component
 
             $operatorDefects = Defect::where('ppfno', $ppf)
                 ->where('updated_by', $inspectorId)
-                ->where('hf_id', $h->hf_id)
+                ->where('inspect_REC', $h->inspect_REC)
                 ->get()
                 ->groupBy(fn($d) => strtolower(trim($d->defect)))
                 ->map(function ($group) {
                     $first = $group->first();
                     $totalQty = $group->sum(fn($d) => $d->qty ?? 1);
                     return [
+                        'id' => $first->RECNO,
                         'type' => $first->defect,
-                        'qty'  => $totalQty
+                        'qty'  => $totalQty,
                     ];
                 })
                 ->values()
@@ -179,10 +185,11 @@ class DropDown extends Component
 
             $operatorRework = Rework::where('ppfno', $ppf)
                 ->where('updated_by', $inspectorId)
-                ->where('hf_id', $h->hf_id)
+                ->where('inspect_REC', $h->inspect_REC)
                 ->get()
                 ->map(function ($r) {
                     return [
+                        'id' => $r->RECNO,
                         'hfno' => $r->hfno,
                         'totalinsp' => $r->totalinsp ?? 0,
                         'type' => $r->rework_type,
@@ -193,13 +200,14 @@ class DropDown extends Component
             $this->reworkNg[$h->hf_id] = collect($operatorRework)->sum('quan');
             $operatorSmallDefects = SmallDefect::where('ppfno', $ppf)
                 ->where('updated_by', $inspectorId)
-                ->where('hf_id', $h->hf_id)
+                ->where('inspect_REC', $h->inspect_REC)
                 ->whereNotNull('large_defect')
                 ->get()
                 ->groupBy('large_defect')
                 ->mapWithKeys(function ($group, $largeDefect) {
                     return [
                         $largeDefect => collect($group)->map(fn($s) => [
+                            'id' => $s->RECNO,
                             'type' => $s->small_defect,
                             'qty'  => $s->qty ?? 0,
                         ])->toArray()
@@ -210,17 +218,22 @@ class DropDown extends Component
             $uniqueId = uniqid();
             $selectedLarge = array_key_first($operatorSmallDefects) ?? null;
             $this->forms[$uniqueId] = [
+                'id' => $h->RECNO,
+                'inspect_REC' => $h->inspect_REC,
                 'hf_id' => $h->hf_id,
                 'ppfno' => $h->ppfno,
                 'total_inspect' => $h->total_inspect,
                 'open' => true,
                 'defects' => $operatorDefects,
+                'created_at' => $h->created_at ?? null,
+                'updated_date' => $h->updated_date ?? null,
                 'smallDefects' => $operatorSmallDefects,
                 'selectedLargeDefect' => $selectedLarge,
                 'rework' => $operatorRework,
             ];
             $this->CheckHf($uniqueId);
             $this->CalcGoodQty($uniqueId);
+            $this->modalOpen[$uniqueId] = false;
         }
 
         if ($this->hasError) {
@@ -233,64 +246,89 @@ class DropDown extends Component
     }
 
 
+    public function editHF($formId)
+    {
+        $this->modalMode[$formId] = "edit";
+        $this->modalOpen[$formId] = true;
+    }
 
+    public function CloseModal($formId)
+    {
+        $this->modalOpen[$formId] = false;
+    }
     public function CheckHf($formId)
     {
         $currentHfId = $this->forms[$formId]['hf_id'];
+        $currentDate = now()->format('Y-m-d');
         if (!$formId || !isset($this->forms[$formId])) {
             return;
         }
-        foreach ($this->forms as $id => $form) {
-            if ($id === $formId) continue; // skip current form
-            if (!empty($form['hf_id']) && $form['hf_id'] === $currentHfId) {
-                $this->addError(
-                    'forms.' . $formId . '.hf_id',
-                    'This Operator is already used in another form'
-                );
-                $this->hasError = true;
-                $this->dispatch('hasErrorPren', $this->hasError);
-                return;
-            }
-        }
 
+        if (empty($currentHfId)) {
 
-        if (empty($this->forms[$formId]['hf_id'])) {
-            $this->forms[$formId]['hf_id'] = null;
-            $this->resetErrorBag('forms.' . $formId . '.hf_id');
+            $this->forms[$formId]['hf_name'] = null;
+
             $this->addError(
                 'forms.' . $formId . '.hf_id',
-                'This Operator already exist'
+                'HF ID cannot be empty'
             );
+
             $this->hasError = true;
             $this->dispatch('hasErrorPren', $this->hasError);
             return;
         }
 
-        $searchValue = strlen($this->forms[$formId]['hf_id']) === 2
-            ? ' ' . $this->forms[$formId]['hf_id']
-            : $this->forms[$formId]['hf_id'];
+        // 2️⃣ Format HF ID for search
+        $searchValue = strlen($currentHfId) === 2
+            ? ' ' . $currentHfId
+            : $currentHfId;
 
+        // 3️⃣ Check if worker exists
         $hf = Worker::where('作業員CD', $searchValue)
             ->where('区分', 1)
             ->first();
 
-        if ($hf) {
-            $name = WorkerName::where('社員CD', $hf->社員CD)->first();
+        if (!$hf) {
 
-            $this->forms[$formId]['hf_name'] = $name?->名前;
-            $this->resetErrorBag('forms.' . $formId . '.hf_id');
-            $this->hasError = false;
-        } else {
             $this->addError(
                 'forms.' . $formId . '.hf_id',
                 'This Operator does not exist'
             );
 
-            $this->forms[$formId]['hf_id'] = null;
             $this->forms[$formId]['hf_name'] = null;
-            $this->hasError = true;
+            $this->hasErrorForm[$formId] = true;
+
+            return;
         }
-        $this->dispatch('hasErrorPren', $this->hasError);
+
+        // Get worker name
+        $name = WorkerName::where('社員CD', $hf->社員CD)->first();
+
+        $this->forms[$formId]['hf_name'] = $name?->名前;
+        $this->resetErrorBag('forms.' . $formId . '.hf_id');
+        $this->hasErrorForm[$formId] = false;
+
+
+        // 4️⃣ Check duplicates in other forms
+        foreach ($this->forms as $id => $form) {
+
+            if ($id === $formId) continue;
+            $otherDate = isset($form['created_at'])
+                ? Carbon::parse($form['created_at'])->format('Y-m-d')
+                : null;
+            if ($form['hf_id'] === $currentHfId && $currentDate === $otherDate) {
+
+                $this->addError(
+                    'forms.' . $formId . '.hf_id',
+                    'This Operator is already used in another form with the same date'
+                );
+
+                $this->hasError = true;
+                $this->dispatch('hasErrorPren', $this->hasError);
+
+                return;
+            }
+        }
     }
 
     #[On('defects-updated')]
@@ -340,6 +378,7 @@ class DropDown extends Component
             $type = strtolower(trim($incoming['type'] ?? ''));
             $size = strtolower(trim($incoming['category'] ?? 'large'));
             $qty  = (float)($incoming['qty'] ?? 0);
+            $date_created = $incoming['date_created'] ?? null;
 
             if ($type === '') continue;
 
@@ -356,7 +395,10 @@ class DropDown extends Component
                     $map[$key] = [
                         'type' => $incoming['type'],
                         'category' => $size,
-                        'qty' => $qty
+                        'qty' => $qty,
+                        'date_created' => $date_created
+
+
                     ];
                     break;
             }
@@ -427,7 +469,7 @@ class DropDown extends Component
         $this->receiveDropdownData($this->forms);
     }
 
-     public function receiveDropdownData($data)
+    public function receiveDropdownData($data)
     {
         foreach ($data as $formId => $formData) {
 
@@ -486,7 +528,7 @@ class DropDown extends Component
         return $this->forms[$formId]['GoodQty'];
     }
 
-   
+
 
     public function toggle($index)
     {
@@ -497,6 +539,8 @@ class DropDown extends Component
     {
         unset($this->forms[$formId]);
         unset($this->modalOpen[$formId]);
+        $this->resetErrorBag('forms.' . $formId);
+        unset($this->hasErrorForm[$formId]);
 
         // Force Livewire refresh
         $this->forms = [...$this->forms];

@@ -26,8 +26,8 @@ class Operatordash extends Component
     {
         $userencoder = UserAuth::user()->社員CD;
         $this->encoder = (int)$userencoder;
-         $inspectorID = Worker::select('作業員CD')->Where('社員CD', $this->encoder)->first();
-        $this->inspectorID = $inspectorID -> 作業員CD;
+        $this->inspectorID = Worker::where('社員CD', $this->encoder)
+            ->value('作業員CD');
     }
 
     public function render()
@@ -37,26 +37,27 @@ class Operatordash extends Component
 
 
     #[On('LoadDash')]
-   public function LoadPPF()
-{
-    $ppfrecord = PRInsp::where('InspectorID', $this->inspectorID)
-        ->orderBy('DateEncode', 'desc')
-        ->get();
+    public function LoadPPF()
+    {
+        $ppfrecord = PRInsp::where('InspectorID', $this->inspectorID)
+            ->orderBy('DateEncode', 'desc')
+            ->get();
 
-    $this->ppfrecord = $ppfrecord->isNotEmpty() ? $ppfrecord : [];
-}
+        $this->ppfrecord = $ppfrecord->isNotEmpty() ? $ppfrecord : [];
+    }
 
-    public function editPPF($ppf) {
+    public function editPPF($ppf)
+    {
         $this->dispatch("dash-ppf", [
             'ppf' => $ppf,
             'actiondash' => 'edit',
             'encoder' => $this->inspectorID
-            ]);
-             $this->dispatch('ClearFormDropdown');
+        ]);
+        $this->dispatch('ClearFormDropdown');
     }
 
-     public function deletePPF($ppf){
-       $this->dispatch('DeletePPFPren', [ 'ppf' => $ppf]);
-
+    public function deletePPF($ppf)
+    {
+        $this->dispatch('DeletePPFPren', ['ppf' => $ppf]);
     }
 }

@@ -15,8 +15,8 @@ class Defect extends Model
         'hf_id',
         'defect',
         'qty',
-        'created_at',
         'updated_by',
-        'ppfno'
+        'ppfno',
+        'inspect_REC'
     ];
 }

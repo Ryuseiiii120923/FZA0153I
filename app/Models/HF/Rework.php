@@ -18,8 +18,7 @@ class Rework extends Model
         'rework_type',
         'totalinsp',
         'qty',
-        'created_at',
         'updated_by',
-        'ppfno'
+        'inspect_REC'
     ];
 }

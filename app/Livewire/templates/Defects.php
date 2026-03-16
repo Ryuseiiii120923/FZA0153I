@@ -213,7 +213,7 @@ class Defects extends Component
         $this->defects[] = [
             'type' => trim($this->newDefect),
             'category' => $category,
-            'qty' => $this->newQuan
+            'qty' => $this->newQuan,
         ];
 
         $this->TotalNg = collect($this->defects)->sum('qty');
@@ -336,6 +336,7 @@ class Defects extends Component
 
         // Trigger recalculation of good / ng quantities
         $this->dispatch('TriggerGoodNg');
+        $this->sendDefect();
     }
 
     public function deleteDefectSmall($type)

@@ -66,7 +66,7 @@
                              <p id="userid-error" class="hidden text-xs text-blue-500 mt-1 mb-1">
                                 UserId must be exactly 4 digits
                             </p>
-                            <input type="text" name="userid" id="userid" maxlength="4" inputmode="numeric" pattern="\d{4}"
+                            <input type="text" name="userid" id="userid" maxlength="4" inputmode="numeric"
                                 class="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5" placeholder="xxxx" value="{{ old('userid') }}" required>
                             @error('userid')
                             <p class="text-xs text-red-500 font-semibold">{{ $message }}</p>

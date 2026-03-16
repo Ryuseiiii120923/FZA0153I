@@ -853,9 +853,6 @@ select {
 .hidden {
   display: none;
 }
-.h-16 {
-  height: 4rem;
-}
 .h-3 {
   height: 0.75rem;
 }
@@ -955,9 +952,6 @@ select {
 .grid-cols-1 {
   grid-template-columns: repeat(1, minmax(0, 1fr));
 }
-.flex-row {
-  flex-direction: row;
-}
 .flex-col {
   flex-direction: column;
 }
@@ -966,9 +960,6 @@ select {
 }
 .items-center {
   align-items: center;
-}
-.justify-end {
-  justify-content: flex-end;
 }
 .justify-center {
   justify-content: center;
@@ -1540,6 +1531,11 @@ input[type=number]::-webkit-outer-spin-button {
   box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
 }
 
+.focus\:border-blue-500:focus {
+  --tw-border-opacity: 1;
+  border-color: rgb(59 130 246 / var(--tw-border-opacity, 1));
+}
+
 .focus\:outline-none:focus {
   outline: 2px solid transparent;
   outline-offset: 2px;
@@ -1565,6 +1561,11 @@ input[type=number]::-webkit-outer-spin-button {
 .focus\:ring-blue-300:focus {
   --tw-ring-opacity: 1;
   --tw-ring-color: rgb(147 197 253 / var(--tw-ring-opacity, 1));
+}
+
+.focus\:ring-blue-500:focus {
+  --tw-ring-opacity: 1;
+  --tw-ring-color: rgb(59 130 246 / var(--tw-ring-opacity, 1));
 }
 
 .focus\:ring-green-300:focus {
@@ -1687,10 +1688,6 @@ input[type=number]::-webkit-outer-spin-button {
 
   .md\:w-36 {
     width: 9rem;
-  }
-
-  .md\:justify-center {
-    justify-content: center;
   }
 
   .md\:space-y-6 > :not([hidden]) ~ :not([hidden]) {

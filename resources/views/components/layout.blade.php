@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en"></html>
 
 <head>
     <meta charset="UTF-8">
@@ -16,14 +16,9 @@
 
 <body class="overflow-x-hidden font-sans">
     <nav class="bg-white shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex h-16 items-center justify-between">
-                <!-- Logo -->
-                <div class="flex-shrink-0 flex items-center">
-                    <img src="{{ asset('images/fuji_logo.png') }}" alt="Logo"
-                        class="h-8 sm:h-10 md:h-12 lg:h-14 w-auto " />
-                </div>
-            </div>
+        <div class="flex-shrink-0 flex items-center mx-5 py-5">
+            <img src="{{ asset('images/fuji_logo.png') }}" alt="Logo"
+                class="h-8 sm:h-10 md:h-12 lg:h-14 w-auto " />
         </div>
     </nav>
 
@@ -55,10 +50,10 @@
         <div class="mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 text-gray-800 text-center sm:text-left">
                 Welcome, {{
-    Auth::user()?->employeeName?->名前
-    ?? Auth::guard('worker')->user()?->employee?->名前
-    ?? 'User'
-}}!
+                Auth::user()?->employeeName?->名前
+                ?? Auth::guard('worker')->user()?->employee?->名前
+                ?? 'User'
+                }}!
             </h1>
 
             @include('components.modals')

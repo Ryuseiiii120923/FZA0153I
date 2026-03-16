@@ -157,7 +157,7 @@
         <div class="flex-col w-11/12 sm:w-1/3 mx-5 sm:mx-2 mt-3 ">
             <label for="HfNo" class="block text-sm font-medium text-black">Total NG Rework</label>
             <input type="text" id="TotalNgRework" class="my-2 block w-full border border-black rounded-md px-2 py-1"
-                placeholder=" " required wire:model="totalngrework.{{ $formId }}" readonly>
+                placeholder="" required wire:model="totalngrework.{{ $formId }}" readonly>
         </div>
     </div>
     @error('hfno.' . $formId)

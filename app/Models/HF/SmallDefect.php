@@ -16,8 +16,8 @@ class SmallDefect extends Model
         'large_defect',
         'small_defect',
         'qty',
-        'created_at',
         'updated_by',
-        'ppfno'
+        'ppfno',
+        'inspect_REC'
     ];
 }

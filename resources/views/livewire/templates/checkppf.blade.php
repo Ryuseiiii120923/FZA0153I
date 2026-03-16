@@ -1,41 +1,45 @@
     <div class="bg-white">
-        <div class="flex flex-col sm:flex-row justify-center gap-4 mt-4 ">
-            <div class="w-11/12 sm:w-1/3 mx-5 sm:mx-2 flex flex-col items-">
-                <label for="PPF" class="block text-md font-medium text-black">PPF</label>
-                <input type="number" id="PPF" class="mt-1 block w-full border border-black rounded-md px-2 py-1"
-                    placeholder=" " wire:model.lazy="ppf" wire:keydown.enter="EnterPPF">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
 
-            </div>
-            <div class="w-full sm:w-1/2">
-                @if($errorexisting)
-                <p class="text-red-500 text-sm">
-                    {{ $errorexisting }}
-                </p>
-                @endif
+            <!-- PPF Input (smaller width) -->
+            <div class="flex flex-col mx-5 sm:mx-2">
+                <label for="PPF" class="block text-md font-medium text-black mb-1">PPF</label>
+                <input
+                    type="number"
+                    id="PPF"
+                    class="w-40 border border-gray-300 w-full rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter PPF"
+                    wire:model.lazy="ppf"
+                    wire:keydown.enter="EnterPPF">
 
-                @error('ppf')
-                <p class="text-red-500 text-sm mt-1">
-                    {{ $message }}
-                </p>
-                @enderror
-            </div>
-
-            <!-- Button Section -->
-            <div class="w-full flex flex-row items-center">
-                <div class="flex-1 flex justify-end md:justify-center">
-                    <button
-                        data-modal-target="static-modal-scanner"
-                        data-modal-toggle="static-modal-scanner"
-                        type="button" style="width:15vw; height: 40px; margin-top: 5px;"
-                        id="scan-ppf"
-                        class="bg-[#0F3C89] hover:bg-blue-800 
-           text-white font-medium rounded-lg text-sm 
-           px-6 py-1 transition duration-200 
-           focus:ring-4 focus:ring-blue-300">
-                        Scan PPF
-                    </button>
+                <!-- Error Messages -->
+                @if($errorexisting || $errors->has('ppf'))
+                <div class="mt-1">
+                    @if($errorexisting)
+                    <p class="text-red-500 text-sm">{{ $errorexisting }}</p>
+                    @endif
+                    @error('ppf')
+                    <p class="text-red-500 text-sm">{{ $message }}</p>
+                    @enderror
                 </div>
+                @endif
             </div>
+
+            <!-- Button -->
+            <div class="flex-shrink-0 mx-5 sm:mx-2 ">
+                <button
+                    data-modal-target="static-modal-scanner"
+                    data-modal-toggle="static-modal-scanner"
+                    type="button"
+                    id="scan-ppf" style="height: 45px;"
+                    class="bg-[#0F3C89] hover:bg-blue-800 
+                   text-white font-medium rounded-lg text-sm 
+                   px-6 py-2 w-full transition duration-200 
+                   focus:ring-4 focus:ring-blue-300">
+                    Scan PPF
+                </button>
+            </div>
+
         </div>
 
         <div class="flex flex-col sm:flex-row justify-center gap-4 mt-4 items-center">

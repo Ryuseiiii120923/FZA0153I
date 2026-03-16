@@ -139,6 +139,7 @@ class Rework extends Component
         $this->totalngrework[$formId] = collect($formReworks)
             ->sum(fn($x) => (int) ($x['quan'] ?? 0));
 
+        $this->totalngrework[$formId] = $this->totalngrework[$formId] ?? 0;
         $this->dispatch('FetchNgDropdown', [
             'formId' => $formId,
             'totalReworkNg' => $this->totalngrework[$formId]
@@ -282,7 +283,7 @@ class Rework extends Component
         // Sum only the reworks belonging to    this form
         $this->totalngrework[$formId] = collect($this->reworkss)
             ->filter(fn($r) => $r['hfno'] === ($this->hfno[$formId] ?? ''))
-            ->sum(fn($x) => (int) $x['quan']);
+            ->sum(fn($x) => (int) $x['quan'] ?? 0);
 
         $this->dispatch('FetchNgReworkDropdown', [
             'formId' => $formId,
