@@ -26,7 +26,7 @@
     </div>
 
 
-    <div id="OuterPanel" class="bg-gray-100 shadow-md py-5 w-full">
+    <div id="OuterPanel" >
         <div class="w-full px-2 sm:px-6">
             <div @if($currentAction !='Add' ) class="hidden" @endif>
                 <livewire:templates.ppfdashboard>
@@ -44,6 +44,7 @@
                     <livewire:glcomponents.reworks />
                 </div>
             </div>
+            <livewire:glcomponents.done-rework />
             <livewire:templates.goodng />
             <livewire:templates.add />
         </div>

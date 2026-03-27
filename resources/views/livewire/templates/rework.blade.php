@@ -103,7 +103,7 @@
                                                 <label class="block text-sm font-medium text-black">Quantity</label>
 
                                                 <input
-                                                    type="text"
+                                                    type="number"
                                                     class="my-2 block w-full border border-black rounded-md px-2 py-1 text-black"
                                                     wire:model.defer="newQuan">
 
@@ -115,7 +115,7 @@
                                                 <label class="block text-sm font-medium text-black">Total Insp</label>
 
                                                 <input
-                                                    type="text"
+                                                    type="number"
                                                     class="my-2 block w-full border border-black rounded-md px-2 py-1 text-black"
                                                     wire:model.defer="totalInsp.{{ $formId }}">
 

@@ -9,6 +9,10 @@ use Livewire\Component;
 class TotalInspection extends Component
 {
     public $inspections = [];
+    public $locked;
+      public $listeners = [
+        'locked' => 'locked',
+    ];
 
     public function render()
     {
@@ -21,5 +25,9 @@ class TotalInspection extends Component
        $this->inspections = PRInsp::with(['worker.employeeName'])
     ->where('PPFNo', $ppf)
     ->get();
+    }
+     public function locked($data)
+    {
+        $this->locked = $data;
     }
 }

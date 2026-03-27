@@ -27,6 +27,7 @@ class Rework extends Component
 
     public array $hfno = [];
     public array $totalInsp = [];
+    public $dispatchPrefix;
 
 
     public $listeners = [
@@ -45,9 +46,10 @@ class Rework extends Component
     ];
 
 
-    public function mount($formId = null, $loadedRework = [])
+    public function mount($dispatchPrefix = null,$formId = null, $loadedRework = [])
     {
         $this->formId = $formId;
+        $this->dispatchPrefix = $dispatchPrefix;
         $this->setReworks($loadedRework);
     }
 
@@ -140,7 +142,7 @@ class Rework extends Component
             ->sum(fn($x) => (int) ($x['quan'] ?? 0));
 
         $this->totalngrework[$formId] = $this->totalngrework[$formId] ?? 0;
-        $this->dispatch('FetchNgDropdown', [
+        $this->dispatch($this->dispatchPrefix . '.FetchNgDropdown', [
             'formId' => $formId,
             'totalReworkNg' => $this->totalngrework[$formId]
         ]);
@@ -203,7 +205,7 @@ class Rework extends Component
 
 
 
-        $this->dispatch('defects-updated', [
+        $this->dispatch($this->dispatchPrefix . '.defects-updated', [
             'reworksData' => $this->reworkss,
             'formId'      => $this->formId,
             'action'      => 'add'
@@ -261,7 +263,7 @@ class Rework extends Component
         // Send to the other component
         // $this->dispatch('FromReworks', reworksData: $reworksData);
 
-        $this->dispatch('defects-updated', [
+        $this->dispatch($this->dispatchPrefix . '.defects-updated', [
             'reworksData' => [[
                 'hfno' => $hfno,
                 'type' => $type,
@@ -285,7 +287,7 @@ class Rework extends Component
             ->filter(fn($r) => $r['hfno'] === ($this->hfno[$formId] ?? ''))
             ->sum(fn($x) => (int) $x['quan'] ?? 0);
 
-        $this->dispatch('FetchNgReworkDropdown', [
+        $this->dispatch($this->dispatchPrefix . '.FetchNgReworkDropdown', [
             'formId' => $formId,
             'totalReworkNg' => $this->totalngrework[$formId],
         ]);
@@ -303,7 +305,7 @@ class Rework extends Component
         }
 
 
-        $this->dispatch('defects-updated', [
+        $this->dispatch($this->dispatchPrefix . '.defects-updated', [
             'reworksData' => [[
                 'hfno' => $this->hfno[$this->formId] ?? null,
                 'type' => $this->editingType,

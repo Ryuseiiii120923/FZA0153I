@@ -15,6 +15,8 @@ use App\Models\WorkerName;
 use Carbon\Carbon;
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth as UserAuth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\On;
 
 class Prencode extends Component
@@ -44,6 +46,8 @@ class Prencode extends Component
     public $forms = [];
     public $isCheckPPF;
     public $methodSave;
+    public $needToDeleteForm = [];
+
 
     public $listeners = [
         'FromCheckppf' => 'Checkppf',
@@ -241,6 +245,11 @@ class Prencode extends Component
         $this->hasError = $error;
     }
 
+    #[On('removeError')]
+    public function removeError()
+    {
+        $this->hasError = false;
+    }
 
     //from the dropdown
     #[On('dropdown-updated')]
@@ -275,7 +284,7 @@ class Prencode extends Component
                 form_id: $formId
             );
         }
-        $this->forms = $data['forms'];
+        $this->dropdownForms = $data['forms'];
     }
 
     //To Fetch Rework
@@ -407,19 +416,75 @@ class Prencode extends Component
         HF::where('ppfno', $this->ppf)->where('updated_by', $this->inspectorID)->delete();
         session()->flash('success', 'Delete successfully!');
     }
+
+    #[On('NeedToDeleteForm')]
+    public function deleteForm(array $data)
+    {
+        $this->needToDeleteForm = $data;
+    }
+
     public function editPrencode()
     {
+        DB::beginTransaction();
+        try {
+            $ppfno = $this->ppf;
+            DB::table('hf_forms')
+                ->where('ppfno', $ppfno)
+                ->where('updated_by', $this->inspectorID)
+                ->delete();
 
-        DefectInsp::where('InspectorID', $this->inspectorID)->where('PPFNo', $this->ppf)->delete();
-        ReworkInsp::where('InspectorID', $this->inspectorID)->where('PPFNo', $this->ppf)->delete();
-        SmallInsp::where('InspectorID', $this->inspectorID)->where('PPFNo', $this->ppf)->delete();
-        PRInsp::where('InspectorID', $this->inspectorID)->where('PPFNo', $this->ppf)->delete();
-        // Defect::where('ppfno', $this->ppf)->where('updated_by', $this->inspectorID)->delete();
-        // Rework::where('ppfno', $this->ppf)->where('updated_by', $this->inspectorID)->delete();
-        // SmallDefect::where('ppfno', $this->ppf)->where('updated_by', $this->inspectorID)->delete();
-        // HF::where('ppfno', $this->ppf)->where('updated_by', $this->inspectorID)->delete();
-        $this->methodSave = 'edit';
-        $this->submitPrencode();
+            DB::table('hf_defect')
+                ->where('ppfno', $ppfno)
+                ->where('updated_by', $this->inspectorID)
+                ->delete();
+
+            DB::table('hf_rework')
+                ->where('ppfno', $ppfno)
+                ->where('updated_by', $this->inspectorID)
+                ->delete();
+
+            DB::table('hf_small')
+                ->where('ppfno', $ppfno)
+                ->where('updated_by', $this->inspectorID)
+                ->delete();
+
+            // 🔴 DELETE SUMMARY TABLES (1 query each)
+            DB::table('Inspector_Defect')
+                ->where('InspectorID', $this->inspectorID)
+                ->where('PPFNo', $this->ppf)
+                ->delete();
+
+            DB::table('Inspector_Rework')
+                ->where('InspectorID', $this->inspectorID)
+                ->where('PPFNo', $this->ppf)
+                ->delete();
+
+            DB::table('Inspector_Small')
+                ->where('InspectorID', $this->inspectorID)
+                ->where('PPFNo', $this->ppf)
+                ->delete();
+
+            DB::table('Inspector_PR')
+                ->where('InspectorID', $this->inspectorID)
+                ->where('PPFNo', $this->ppf)
+                ->delete();
+
+            // 🔵 RE-SAVE USING OPTIMIZED METHOD
+            $this->methodSave = 'edit';
+            $this->submitPrencode();
+
+            DB::commit();
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            Log::error('Edit PR Encode Error', [
+                'message' => $e->getMessage(),
+                'line'    => $e->getLine()
+            ]);
+
+            session()->flash('failed', 'Edit failed!');
+        }
     }
 
     #[On('fetchTotalInspection')]
@@ -447,302 +512,225 @@ class Prencode extends Component
 
     public function submitPrencode()
     {
-        $this->totalInspection = collect($this->forms)
-            ->sum(fn($form) => (int) ($form['total_inspect'] ?? 0));
-
         if (empty($this->ppf) || $this->ppf === "0") {
             session()->flash('failed', 'Please Enter PPF!');
             return;
         }
+        $totalGoodQty = 0;
+        $totalNg = 0;
+        $totalRework = 0;
 
-        $mergedDefects = [];
-        $mergedSmallDefects = [];
-        $mergedReworks = [];
+        DB::beginTransaction();
 
-        if ($this->methodSave === 'edit') {
+        try {
+
+            $now = now();
+
+            $hfRows = [];
+            $defectRows = [];
+            $smallRows = [];
+            $reworkRows = [];
+
+            $mergedDefects = [];
+            $mergedSmallDefects = [];
+            $mergedReworks = [];
+
+            // 🔵 LOOP FORMS
             foreach ($this->dropdownForms as $formData) {
-                if (!empty($formData['id'])) {
-                    HF::updateOrCreate(
-                        [
-                            'inspect_REC' => $formData['id']
-                        ],
-                        [
-                            'total_inspect' => $formData['total_inspect'] ?? null,
-                            'updated_date' => now(),
-                            'created_at' => $formData['created_at'] ?? now()
-
-                        ]
-                    );
-                } else {
-                    $newHf =   HF::create(attributes: [
-                        'hf_id' => isset($formData['hf_id']) ? (int)$formData['hf_id'] : null,
-                        'total_inspect' => $formData['total_inspect'] ?? null,
-                        'created_at' => now(),
-                        'updated_by' => $this->inspectorID,
-                        'ppfno' => $this->ppf,
-                        'inspect_REC' => $formData['inspect_REC']
-                    ]);
-                }
-
-                // 🔵 ;MERGE LARGE DEFECTS
-                foreach ($formData['defects'] ?? [] as $defect) {
-                    Defect::updateOrCreate(
-                        [
-                            'inspect_REC' => $formData['inspect_REC']
-                        ],
-                        [
-                            'hf_id' => isset($formData['hf_id']) ? (int)$formData['hf_id'] : null,
-                            'defect' => $defect['type'] ?? null,
-                            'qty' => $defect['qty'] ?? null,
-                            'created_at' => now(),
-                            'updated_by' => $this->inspectorID,
-                            'ppfno' => $this->ppf,
-                            'inspect_REC' => $formData['inspect_REC']
-                        ]
-                    );
-
-                    $type = $defect['type'] ?? null;
-                    $qty  = (float)($defect['qty'] ?? 0);
-
-                    if (!$type || $qty <= 0) continue;
-
-                    if (!isset($mergedDefects[$type])) {
-                        $mergedDefects[$type] = 0;
-                    }
-
-                    $mergedDefects[$type] += $qty;
-                }
-
-                // 🔵 MERGE SMALL DEFECTS
-                foreach ($formData['smallDefects'] ?? [] as $large => $smalls) {
-
-                    foreach ($smalls as $small) {
-                        SmallDefect::updateOrCreate(
-                            [
-                                'inspect_REC' => $formData['inspect_REC']
-                            ],
-                            [
-                                'hf_id' => isset($formData['hf_id']) ? (int)$formData['hf_id'] : null,
-                                'large_defect' => $large ?? null,
-                                'small_defect' => $small['type'] ?? $small['small_defect'] ?? null,
-                                'qty' => $small['qty'] ?? null,
-                                'created_at' => now(),
-                                'updated_by' => $this->inspectorID,
-                                'ppfno' => $this->ppf
-                            ]
-                        );
-
-                        $type = $small['type'] ?? null;
-                        $qty  = (float)($small['qty'] ?? 0);
-
-                        if (!$type || $qty <= 0) continue;
-
-                        if (!isset($mergedSmallDefects[$large][$type])) {
-                            $mergedSmallDefects[$large][$type] = 0;
-                        }
-
-                        $mergedSmallDefects[$large][$type] += $qty;
-                    }
-                }
 
 
-                // 🔵 MERGE REWORKS
-                foreach ($formData['rework'] ?? [] as $rework) {
+                $hf_id = isset($formData['hf_id']) ? (int)$formData['hf_id'] : null;
+                $goodQty = $formData['GoodQty'] ?? 0;
+                $totalGoodQty += $goodQty;
 
-                    Rework::updateOrCreate(
-                        [
-                            'inspect_REC' => $formData['inspect_REC']
-                        ],
-                        [
-                            'hf_id' => isset($formData['hf_id']) ? (int)$formData['hf_id'] : null,
-                            'hfno' => $rework['hfno'] ?? null,
-                            'rework_type' => $rework['type'] ?? null,
-                            'qty' => $rework['quan'] ?? null,
-                            'created_at' => now(),
-                            'totalinsp' => $rework['totalinsp'] ?? null,
-                            'updated_by' => $this->inspectorID,
-                            'ppfno' => $this->ppf
-                        ]
-                    );
-
-
-                    $type = $rework['type'] ?? null;
-                    $qty  = (float)($rework['quan'] ?? 0);
-                    $hfno = $rework['hfno'] ?? '';
-
-                    if (!$type || $qty <= 0) continue;
-
-                    $key = $hfno . '_' . $type;
-
-                    if (!isset($mergedReworks[$key])) {
-                        $mergedReworks[$key] = [
-                            'hfno' => $hfno,
-                            'type' => $type,
-                            'totalinsp' => $rework['totalinsp'] ?? null,
-                            'qty' => 0
-                        ];
-                    }
-
-                    $mergedReworks[$key]['qty'] += $qty;
-                }
-            }
-        } else {
-            foreach ($this->dropdownForms as $formData) {
-                HF::create(attributes: [
-                    'hf_id' => isset($formData['hf_id']) ? (int)$formData['hf_id'] : null,
+                // ✅ HF TABLE
+                $hfRows[] = [
+                    'hf_id'         => $hf_id,
                     'total_inspect' => $formData['total_inspect'] ?? null,
-                    'created_at' => now(),
-                    'updated_by' => $this->inspectorID,
-                    'ppfno' => $this->ppf,
-                    'inspect_REC' => $formData['id'],
-                ]);
-                // 🔵 MERGE LARGE DEFECTS
-                foreach ($formData['defects'] ?? [] as $defect) {
+                    'updated_by'    => $this->inspectorID,
+                    'ppfno'         => $this->ppf,
+                    'inspect_REC'   => $formData['inspect_REC'],
+                    'created_at'    => $now,
+                    'updated_date'    => $now,
+                    'IsDoneRework' =>  0,
+                    'ForRework' => !empty($formData['isRework']) ? 1 : 0,
+                    'GoodQty' => $goodQty
+                ];
 
-                    Defect::create(
-                        [
-                            'hf_id' => isset($formData['hf_id']) ? (int)$formData['hf_id'] : null,
-                            'defect' => $defect['type'] ?? null,
-                            'qty' => $defect['qty'] ?? null,
-                            'updated_by' => $this->inspectorID,
-                            'ppfno' => $this->ppf,
-                            'inspect_REC' => $formData['id'],
-                        ]
-                    );
+                // 🔵 DEFECTS
+                foreach ($formData['defects'] ?? [] as $defect) {
 
                     $type = $defect['type'] ?? null;
                     $qty  = (float)($defect['qty'] ?? 0);
 
+                    $totalNg += $qty;
+
                     if (!$type || $qty <= 0) continue;
 
-                    if (!isset($mergedDefects[$type])) {
-                        $mergedDefects[$type] = 0;
-                    }
+                    $defectRows[] = [
+                        'hf_id'       => $hf_id,
+                        'defect'      => $type,
+                        'qty'         => $qty,
+                        'updated_by'  => $this->inspectorID,
+                        'ppfno'       => $this->ppf,
+                        'inspect_REC' => $formData['inspect_REC'],
+                    ];
 
-                    $mergedDefects[$type] += $qty;
+                    // merge
+                    $mergedDefects[$type] = ($mergedDefects[$type] ?? 0) + $qty;
                 }
 
-                // 🔵 MERGE SMALL DEFECTS
+                // 🔵 SMALL DEFECTS
                 foreach ($formData['smallDefects'] ?? [] as $large => $smalls) {
-
                     foreach ($smalls as $small) {
 
-                        SmallDefect::create([
-                            'hf_id' => isset($formData['hf_id']) ? (int)$formData['hf_id'] : null,
-                            'large_defect' => $large ?? null,
-                            'small_defect' => $small['type'] ?? $small['small_defect'] ?? null,
-                            'qty' => $small['qty'] ?? null,
-                            'updated_by' => $this->inspectorID,
-                            'ppfno' => $this->ppf,
-                            'inspect_REC' => $formData['id'],
-                        ]);
                         $type = $small['type'] ?? null;
                         $qty  = (float)($small['qty'] ?? 0);
 
                         if (!$type || $qty <= 0) continue;
 
-                        if (!isset($mergedSmallDefects[$large][$type])) {
-                            $mergedSmallDefects[$large][$type] = 0;
-                        }
+                        $smallRows[] = [
+                            'hf_id'         => $hf_id,
+                            'large_defect'  => $large,
+                            'small_defect'  => $type,
+                            'qty'           => $qty,
+                            'updated_by'    => $this->inspectorID,
+                            'ppfno'         => $this->ppf,
+                            'inspect_REC'   => $formData['inspect_REC'],
+                        ];
 
-                        $mergedSmallDefects[$large][$type] += $qty;
+                        $mergedSmallDefects[$large][$type] =
+                            ($mergedSmallDefects[$large][$type] ?? 0) + $qty;
                     }
                 }
 
-                // 🔵 MERGE REWORKS
+                // 🔵 REWORKS
                 foreach ($formData['rework'] ?? [] as $rework) {
-                    Rework::create([
-                        'hf_id' => isset($formData['hf_id']) ? (int)$formData['hf_id'] : null,
-                        'hfno' => $rework['hfno'] ?? null,
-                        'rework_type' => $rework['type'] ?? null,
-                        'qty' => $rework['quan'] ?? null,
-                        'totalinsp' => $rework['totalinsp'] ?? null,
-                        'updated_by' => $this->inspectorID,
-                        'ppfno' => $this->ppf,
-                        'inspect_REC' => $formData['id'],
-                    ]);
+
                     $type = $rework['type'] ?? null;
                     $qty  = (float)($rework['quan'] ?? 0);
                     $hfno = $rework['hfno'] ?? '';
+                    $totalRework += $qty;
 
                     if (!$type || $qty <= 0) continue;
+
+                    $reworkRows[] = [
+                        'hf_id'       => $hf_id,
+                        'hfno'        => $hfno,
+                        'rework_type' => $type,
+                        'qty'         => $qty,
+                        'totalinsp'   => $rework['totalinsp'] ?? null,
+                        'updated_by'  => $this->inspectorID,
+                        'ppfno'       => $this->ppf,
+                        'inspect_REC' => $formData['inspect_REC'],
+                    ];
 
                     $key = $hfno . '_' . $type;
 
                     if (!isset($mergedReworks[$key])) {
                         $mergedReworks[$key] = [
-                            'hfno' => $hfno,
-                            'type' => $type,
+                            'hfno'      => $hfno,
+                            'type'      => $type,
                             'totalinsp' => $rework['totalinsp'] ?? null,
-                            'qty' => 0
+                            'qty'       => 0
                         ];
                     }
 
                     $mergedReworks[$key]['qty'] += $qty;
                 }
             }
-        }
+            DB::table('hf_forms')->insert($hfRows);
+            DB::table('hf_defect')->insert($defectRows);
+            DB::table('hf_small')->insert($smallRows);
+            DB::table('hf_rework')->insert($reworkRows);
 
-        // ✅ SAVE MAIN RECORD ONCE
-        PRInsp::create([
-            'InspectorID'   => $this->inspectorID,
-            'insp_name'     => $this->username,
-            'PPFNo'         => $this->ppf,
-            'total_inspect' => $this->totalInspection,
-            'DateEncode'    => now(),
-            'Process'       => $this->process
-        ]);
+            // 🚀 BULK UPSERTS
 
-        // ✅ SAVE MERGED LARGE DEFECTS
-        foreach ($mergedDefects as $type => $qty) {
-            DefectInsp::create([
-                'PPFNo'       => (float)$this->ppf,
-                'Defect'      => $type,
-                'Quantity'    => $qty,
-                'DateEncode'  => now(),
-                'InspectorID' => $this->inspectorID,
-                'insp_name'   => $this->username,
-                'Process'     => $this->process
+            $totalInspect = array_sum(
+                array_column(
+                    array_filter($hfRows, function ($row) {
+                        return $row['IsDoneRework'] == 0;
+                    }),
+                    'total_inspect'
+                )
+            );
+
+            // ✅ MAIN RECORD
+            DB::table('Inspector_PR')->insert([
+                'InspectorID'   => $this->inspectorID,
+                'PPFNo'         => $this->ppf,
+                'total_inspect' => $totalInspect,
+                'DateEncode'    => $now,
+                'Process'       => $this->process,
+                'TotalNg' => $totalNg,
+                'TotalRework' => $totalRework,
+                'TotalGood' => $totalGoodQty
+
             ]);
-        }
 
-        // ✅ SAVE MERGED SMALL DEFECTS
-        foreach ($mergedSmallDefects as $large => $smalls) {
-            foreach ($smalls as $type => $qty) {
-                SmallInsp::create([
-                    'InspectorID' => $this->inspectorID,
+            // 🔵 MERGED DEFECTS
+            $defectInspRows = [];
+            foreach ($mergedDefects as $type => $qty) {
+                $defectInspRows[] = [
                     'PPFNo'       => $this->ppf,
-                    'LargeDefect' => $large,
-                    'SmallDefect' => $type,
-                    'Qty'         => $qty,
+                    'Defect'      => $type,
+                    'Quantity'    => $qty,
+                    'DateEncode'  => $now,
+                    'InspectorID' => $this->inspectorID,
                     'Process'     => $this->process
-                ]);
+                ];
             }
-        }
 
-        // ✅ SAVE MERGED REWORKS
-        foreach ($mergedReworks as $rework) {
+            DB::table('Inspector_Defect')->insert($defectInspRows);
 
-            $hfno = $rework['hfno'];
+            // 🔵 MERGED SMALL DEFECTS
+            $smallInspRows = [];
+            foreach ($mergedSmallDefects as $large => $smalls) {
+                foreach ($smalls as $type => $qty) {
+                    $smallInspRows[] = [
+                        'InspectorID' => $this->inspectorID,
+                        'PPFNo'       => $this->ppf,
+                        'LargeDefect' => $large,
+                        'SmallDefect' => $type,
+                        'Qty'         => $qty,
+                        'Process'     => $this->process
+                    ];
+                }
+            }
 
-            ReworkInsp::create([
-                'HFNo'         => $hfno,
-                'HFNo1'        => $hfno[0] ?? null,
-                'HFNo2'        => $hfno[1] ?? null,
-                'HFNo3'        => $hfno[2] ?? null,
-                'HFNo4'        => $hfno[3] ?? null,
-                'HFNo5'        => $hfno[4] ?? null,
-                'InspectorID'  => $this->inspectorID,
-                'insp_name'    => $this->username,
-                'PPFNo'        => $this->ppf,
-                'Defect'       => $rework['type'],
-                'Quantity'     => $rework['qty'],
-                'DateEncode'   => now(),
-                'TotalInspQty' => $rework['totalinsp'],
-                'Process'      => $this->process
+            DB::table('Inspector_Small')->insert($smallInspRows);
+
+            // 🔵 MERGED REWORKS
+            $reworkInspRows = [];
+            foreach ($mergedReworks as $r) {
+
+                $hfno = $r['hfno'];
+                $reworkInspRows[] = [
+                    'HFNo'         => $hfno,
+                    'InspectorID'  => $this->inspectorID,
+                    'PPFNo'        => $this->ppf,
+                    'Defect'       => $r['type'],
+                    'Quantity'     => $r['qty'],
+                    'DateEncode'   => $now,
+                    'TotalInspQty' => $r['totalinsp'],
+                    'Process'      => $this->process
+                ];
+            }
+
+            DB::table('Inspector_Rework')->insert($reworkInspRows);
+
+            DB::commit();
+
+            session()->flash('successAdd', 'Data inserted successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('PR Encode Error', [
+                'message' => $e->getMessage(),
+                'line'    => $e->getLine()
             ]);
-        }
 
-        session()->flash('successAdd', 'Data inserted successfully!');
+            session()->flash('failed', 'Something went wrong!');
+        }
     }
 }

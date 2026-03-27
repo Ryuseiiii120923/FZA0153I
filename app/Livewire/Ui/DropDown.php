@@ -41,6 +41,7 @@ class DropDown extends Component
     public array $reworkNg = [];
     public array $defectNg = [];
     public $modalMode;
+    public $needToDeleteForm = [];
 
     public function mount()
     {
@@ -62,6 +63,28 @@ class DropDown extends Component
             'defects' => [],
             'smallDefects' => [],
             'rework' => [],
+            'isRework' => false,
+            'TotalNg' => [],
+            'GoodQty' => [],
+            'TotalRework' => []
+        ];
+        $this->modalOpen[$formId] = true;
+    }
+
+    public function addNewDoneRework()
+    {
+        $this->toggles = true;
+        $formId = (string) Str::uuid();
+        $this->forms[$formId] = [
+            'hf_id' => '',
+            'inspect_REC' => uniqid(),
+            'hf_name' => '',
+            'total_inspect' => '',
+            'open' => false, // start expanded by default
+            'defects' => [],
+            'smallDefects' => [],
+            'rework' => [],
+            'isRework' => true,
         ];
         $this->modalOpen[$formId] = true;
     }
@@ -230,6 +253,7 @@ class DropDown extends Component
                 'smallDefects' => $operatorSmallDefects,
                 'selectedLargeDefect' => $selectedLarge,
                 'rework' => $operatorRework,
+                'isRework' => (bool) $h->IsDoneRework,
             ];
             $this->CheckHf($uniqueId);
             $this->CalcGoodQty($uniqueId);
@@ -331,141 +355,83 @@ class DropDown extends Component
         }
     }
 
-    #[On('defects-updated')]
+    private function syncCollection(array $existing, array $incoming, string $action, callable $keyBuilder)
+    {
+        $map = collect($existing)
+            ->keyBy($keyBuilder)
+            ->toArray();
+
+        foreach ($incoming as $item) {
+
+            $key = $keyBuilder($item);
+
+            if (!$key) continue;
+
+            switch ($action) {
+                case 'delete':
+                    unset($map[$key]);
+                    break;
+
+                case 'update':
+                case 'add':
+                    $map[$key] = $item;
+                    break;
+            }
+        }
+
+        return array_values($map);
+    }
+
+
+    #[On('operator.defects-updated')]
     public function updateDefectsFromChild($data = [])
     {
-        $this->isSaved = false; // Mark as unsaved when defects are updated
+        $this->isSaved = false;
+
         $formId = $data['formId'] ?? null;
         if (!$formId) return;
 
         $action = $data['action'] ?? 'add';
 
-        // Ensure structure exists
         $this->forms[$formId]['defects'] ??= [];
         $this->forms[$formId]['smallDefects'] ??= [];
         $this->forms[$formId]['rework'] ??= [];
 
-        $normalized = [];
-
-
-        // Start from existing defects
-        foreach ($this->forms[$formId]['defects'] as $def) {
-
-            $type = strtolower(trim($def['type'] ?? ''));
-            $qty  = (float)($def['qty'] ?? 0);
-            $size  = strtolower(trim($def['category'] ?? 'large'));
-
-            if ($type === '') continue;
-
-            $key = $type . '_' . $size;
-            if (!isset($normalized[$key])) {
-                $normalized[$key] = [
-                    'type' => $def['type'],
-                    'category' => $size,
-                    'qty'  => $qty
-                ];
-            } else {
-                $normalized[$key]['qty'] += $qty;
+        $this->forms[$formId]['defects'] = $this->syncCollection(
+            $this->forms[$formId]['defects'],
+            $data['defects'] ?? [],
+            $action,
+            function ($d) {
+                $type = strtolower(trim($d['type'] ?? ''));
+                $size = strtolower(trim($d['category'] ?? 'large'));
+                return $type ? "{$type}_{$size}" : null;
             }
-        }
-
-        $map = collect($this->forms[$formId]['defects'])
-            ->keyBy(fn($d) => strtolower(trim($d['type'])) . '_' . strtolower(trim($d['category'] ?? 'large')))
-            ->toArray();
-
-        foreach ($data['defects'] ?? [] as $incoming) {
-
-            $type = strtolower(trim($incoming['type'] ?? ''));
-            $size = strtolower(trim($incoming['category'] ?? 'large'));
-            $qty  = (float)($incoming['qty'] ?? 0);
-            $date_created = $incoming['date_created'] ?? null;
-
-            if ($type === '') continue;
-
-            $key = $type . '_' . $size;
-
-            switch ($action) {
-
-                case 'delete':
-                    unset($map[$key]);
-                    break;
-
-                case 'update':
-                case 'add':
-                    $map[$key] = [
-                        'type' => $incoming['type'],
-                        'category' => $size,
-                        'qty' => $qty,
-                        'date_created' => $date_created
-
-
-                    ];
-                    break;
-            }
-        }
-
-        $this->forms[$formId]['defects'] = array_values($map);
+        );
 
         foreach ($data['smallDefects'] ?? [] as $large => $smalls) {
 
-            // Create map from existing small defects
-            $map = collect($this->forms[$formId]['smallDefects'][$large] ?? [])
-                ->keyBy(fn($s) => strtolower(trim($s['type'] ?? '')))
-                ->toArray();
-
-            foreach ($smalls as $incoming) {
-
-                $type = strtolower(trim($incoming['type'] ?? ''));
-                $qty  = (float)($incoming['qty'] ?? 0);
-
-                if ($type === '') continue;
-
-                switch ($action) {
-
-                    case 'delete':
-                        unset($map[$type]);
-                        break;
-
-                    case 'update':
-                    case 'add':
-                        $map[$type] = [
-                            'type' => $incoming['type'],
-                            'qty'  => $qty
-                        ];
-                        break;
+            $this->forms[$formId]['smallDefects'][$large] = $this->syncCollection(
+                $this->forms[$formId]['smallDefects'][$large] ?? [],
+                $smalls,
+                $action,
+                function ($s) {
+                    $type = strtolower(trim($s['type'] ?? ''));
+                    return $type ?: null;
                 }
-            }
-
-            $this->forms[$formId]['smallDefects'][$large] = array_values($map);
+            );
         }
 
-        $map = collect($this->forms[$formId]['rework'] ?? [])
-            ->keyBy(fn($r) => strtolower(trim($r['type'])) . '_' . (int)$r['hfno'])
-            ->toArray();
-
-        foreach ($data['reworksData'] ?? [] as $incoming) {
-
-            $type = strtolower(trim($incoming['type'] ?? ''));
-            $hfno = (int)($incoming['hfno'] ?? 0);
-
-            if ($type === '') continue;
-
-            $key = $type . '_' . $hfno;
-
-            switch ($action) {
-
-                case 'delete':
-                    unset($map[$key]);
-                    break;
-
-                case 'update':
-                case 'add':
-                    $map[$key] = $incoming;
-                    break;
+        $this->forms[$formId]['rework'] = $this->syncCollection(
+            $this->forms[$formId]['rework'] ?? [],
+            $data['reworksData'] ?? [],
+            $action,
+            function ($r) {
+                $type = strtolower(trim($r['type'] ?? ''));
+                $hfno = (int)($r['hfno'] ?? 0);
+                return $type ? "{$type}_{$hfno}" : null;
             }
-        }
+        );
 
-        $this->forms[$formId]['rework'] = array_values($map);
         $this->receiveDropdownData($this->forms);
     }
 
@@ -477,12 +443,10 @@ class DropDown extends Component
                 $this->dropdownForms[$formId] = [];
             }
 
-            // Just replace with the normalized data
             $this->dropdownForms[$formId]['defects'] = $formData['defects'] ?? [];
             $this->dropdownForms[$formId]['smallDefects'] = $formData['smallDefects'] ?? [];
             $this->dropdownForms[$formId]['rework'] = $formData['rework'] ?? [];
 
-            // keep other fields
             foreach ($formData as $key => $value) {
                 if (!in_array($key, ['defects', 'smallDefects', 'rework'])) {
                     $this->dropdownForms[$formId][$key] = $value;
@@ -493,7 +457,7 @@ class DropDown extends Component
         $this->dispatch('dropdown-updated', ['forms' => $this->dropdownForms]);
     }
 
-    #[On('FetchNgReworkDropdown')]
+    #[On('operator.FetchNgReworkDropdown')]
     public function FetchNgRework($data)
     {
         $formId = $data['formId'];
@@ -501,7 +465,7 @@ class DropDown extends Component
         $this->CalcGoodQty($formId);
     }
 
-    #[On('FetchNgDefectDropdown')]
+    #[On('operator.FetchNgDefectDropdown')]
     public function FetchNgDefect($data)
     {
         $formId = $data['formId'];
@@ -524,8 +488,10 @@ class DropDown extends Component
         $this->reworkNg[$formId] = $reworkQty;
 
         $this->forms[$formId]['GoodQty'] = ($form['total_inspect'] ?? 0) - $totalNg;
+        $this->forms[$formId]['TotalNg'] = $totalNg;
+        $this->forms[$formId]['TotalRework'] = $reworkQty;
 
-        return $this->forms[$formId]['GoodQty'];
+        return [$this->forms[$formId]['GoodQty'],$this->forms[$formId]['TotalNg'] ];
     }
 
 
@@ -548,6 +514,7 @@ class DropDown extends Component
         $this->dispatch('dropdown-updated', [
             'forms' => $this->forms
         ]);
+        $this->dispatch('removeError');
     }
     public function render()
     {

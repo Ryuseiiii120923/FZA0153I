@@ -129,7 +129,7 @@
                 wire:click="addPrencode"
                 @endif>
                 @if ($actiondash === 'edit')
-                Edit
+                Save
                 @elseif ($actiondash === 'delete')
                 Delete
                 @else

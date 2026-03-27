@@ -384,11 +384,11 @@ class Checkppf extends Component
     #[On('post-ppf')]
     public function checkPPF()
     {
-        if ($this->ppfLoaded) {
-            return;
-        }
+        // if ($this->ppfLoaded) {
+        //     return;
+        // }
 
-        $this->ppfLoaded = true;
+        // $this->ppfLoaded = true;
         $this->validate();
         $ppf = $this->ppf; // fallback
         if ($this->ppf === null) {
@@ -428,6 +428,7 @@ class Checkppf extends Component
                     $this->isPPF = true; //enable the inspection Progress
                     $this->dispatch('LoadDefectsGL', $ppf);
                     $this->dispatch('LoadReworksGL', $ppf);
+                    $this->dispatch('FetchDoneRework', $ppf);
                 }
             } elseif ($this->action === 'Edit') {
                 $this->resetErrorBag();

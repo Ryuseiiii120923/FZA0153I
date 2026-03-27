@@ -21,6 +21,7 @@ class Defects extends Component
     public $newDefect = '';
     public $newQuan;
     public $TotalNg = 0;
+    public $lastTotalNg = 0;
     public $selectedLargeDefect = null;
     public $smalldefectData;
     public $defectData;
@@ -224,6 +225,16 @@ class Defects extends Component
     {
         $value = $this->TotalNg;
         $this->dispatch('sendNg', $value);
+        $this->dispatch('GoodNg');
+    }
+
+    #[On('FromDoneRework')]
+    public function fromDoneRework($data){
+
+        $diff =  $data - $this->lastTotalNg;
+        $this->TotalNg += $diff;
+        $this->lastTotalNg = $data;
+        $this->sendDefect();
     }
 
     public function sendDispatch()

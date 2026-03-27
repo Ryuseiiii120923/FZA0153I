@@ -58,6 +58,7 @@ class Add extends Component
 
     public $encoder, $username;
     public $Largedefects = [];
+    public $dropdownForms = [];
     public $SmallDef;
     public $showParent = true;
     public $showChild = false;
@@ -111,99 +112,6 @@ class Add extends Component
         $this->submitMethod = $data;
     }
 
-    // public function Reworks(array $reworksData)
-    // {
-    //     $type = $reworksData['newtype'] ?? $reworksData['type'] ?? null;
-    //     if (!$type) return;
-
-    //     // Normalize once
-    //     $normalized = [
-    //         'hfno'      => $reworksData['newhfno'] ?? $reworksData['hfno'] ?? '',
-    //         'type'      => strtoupper(trim($type)),
-    //         'quan'      => (int) ($reworksData['newquan'] ?? $reworksData['quan'] ?? 0),
-    //         'totalinsp' => (int) ($reworksData['totalinsp'] ?? 0),
-    //     ];
-
-    //     if (($reworksData['action'] ?? '') === 'delete') {
-    //         // DELETE only matching hfno + type
-    //         $this->rework = collect($this->rework)
-    //             ->reject(
-    //                 fn($r) =>
-    //                 $r['hfno'] === $normalized['hfno'] &&
-    //                     $r['type'] === $normalized['type']
-    //             )
-    //             ->values()
-    //             ->toArray();
-    //     } else {
-    //         // ADD or UPDATE based on hfno + type
-    //         $this->rework = collect($this->rework)
-    //             ->reject(
-    //                 fn($r) =>
-    //                 $r['hfno'] === $normalized['hfno'] &&
-    //                     $r['type'] === $normalized['type']
-    //             )
-    //             ->push($normalized)
-    //             ->values()
-    //             ->toArray();
-    //     }
-
-    //     // Recalculate
-    //     $this->totalngrework = collect($this->rework)->sum('quan');
-    // }
-
-    // public function Reworks(array $reworksData)
-    // {
-    //     // If the data is nested under 'reworksData', use it
-    //     $data = $reworksData['reworksData'] ?? $reworksData;
-
-
-    //     $type = $data['newtype'] ?? $data['type'] ?? null;
-    //     if (!$type) return;
-    //     // Normalize
-    //     $normalized = [
-    //         'hfno'      => $data['newhfno'] ?? $data['hfno'] ?? '',
-    //         'type'      => strtoupper(trim($type)),
-    //         'quan'      => (int) ($data['newquan'] ?? $data['quan'] ?? 0),
-    //         'totalinsp' => (int) ($data['totalinsp'] ?? 0),
-    //     ];
-
-    //     // Ensure $this->rework is an array
-    //     $this->rework = $this->rework ?? [];
-
-    //     if (($data['action'] ?? '') === 'delete') {
-    //         // Remove matching rework
-    //         $this->rework = collect($this->rework)
-    //             ->reject(
-    //                 fn($r) =>
-    //                 $r['hfno'] === $normalized['hfno'] &&
-    //                     $r['type'] === $normalized['type']
-    //             )
-    //             ->values()
-    //             ->toArray();
-    //     } else {
-    //         // Add or update
-    //         $this->rework = collect($this->rework)
-    //             ->reject(
-    //                 fn($r) =>
-    //                 $r['hfno'] === $normalized['hfno'] &&
-    //                     $r['type'] === $normalized['type']
-    //             )
-    //             ->push($normalized)
-    //             ->values()
-    //             ->toArray();
-    //     }
-
-    //     // Recalculate total quantity
-    //     $this->totalngrework = collect($this->rework)->sum('quan');
-
-    //     $hfnos = array_column($this->rework, 'hfno');
-    //     $this->hfno1 = $hfnos[0] ?? '';
-    //     $this->hfno2 = $hfnos[1] ?? '';
-    //     $this->hfno3 = $hfnos[2] ?? '';
-    //     $this->hfno4 = $hfnos[3] ?? '';
-    //     $this->hfno5 = $hfnos[4] ?? '';
-
-    // }
 
     public function Reworks(array $reworksData)
     {
@@ -484,6 +392,11 @@ class Add extends Component
         $this->sampleqty = $data['sampleqty'];
     }
 
+    #[On('UpdatedGood')]
+    public function UpdatedGood($data){
+        $this->goodqty = $data;
+    }
+
     public function onInspectorsValidated($payload)
     {
         $this->canAdd = $payload['isValid'];
@@ -649,12 +562,16 @@ class Add extends Component
         }
     }
 
+    #[On('saveDropdown-GL')]
+    public function DropdownData($data){
+        $this->dropdownForms = $data;
+    }   
 
 
     #[On('LoadMainRecord')]
     public function loadMainRecord($ppf)
     {
-        $record = AddDefect::select('PPFNo', 'PartNo', 'Lotno', 'MatNo', 'MDNo', 'PressNo', 'Shift', 'Operator', 'Total', 'Good', 'HFNo1', 'HFNo2', 'HFNo3', 'HFNo4', 'HFNo5', 'InspNo1', 'InspNo2', 'InspNo3', 'InspNo4', 'ExcessQty', 'LackingQty', 'ReworkQty', 'SampleQty', 'AutoMachine', 'Details', 'Encoder')->where('PPFNo', $ppf)->first();
+        $record = AddDefect::select('PPFNo', 'PartNo', 'Lotno', 'MatNo', 'MDNo', 'PressNo', 'Shift', 'Operator', 'Total', 'Good', 'HFNo1', 'HFNo2', 'HFNo3', 'HFNo4', 'HFNo5', 'InspNo1', 'InspNo2', 'InspNo3', 'InspNo4', 'ExcessQty', 'LackingQty', 'ReworkQty', 'SampleQty','InspectionDate', 'AutoMachine', 'Details', 'Encoder')->where('PPFNo', $ppf)->first();
         $getexpct = CheckHF::where('流動NO', $ppf)->first();
 
         if ($record) {

@@ -1,4 +1,7 @@
 import "./bootstrap.js";
+import flatpickr from "flatpickr";
+import "flatpickr/dist/flatpickr.min.css";
+import "flatpickr/dist/themes/material_blue.css";
 
 document.addEventListener("DOMContentLoaded", () => {
     const codeReader = new ZXing.BrowserMultiFormatReader();
@@ -6,6 +9,11 @@ document.addEventListener("DOMContentLoaded", () => {
     let scanning = false;
     const ppf = document.getElementById("PPF");
     const inspectorInputs = document.querySelectorAll("#inspectors input");
+
+    flatpickr("#inspectDate", {
+        dateFormat: "Y-m-d",  // matches wire:model format
+        allowInput: true,      // allows typing manually
+    });
 
     lockFormFields();
     lockbuttons();

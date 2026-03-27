@@ -1,5 +1,7 @@
 <!DOCTYPE html>
-<html lang="en"></html>
+<html lang="en">
+
+</html>
 
 <head>
     <meta charset="UTF-8">
@@ -15,25 +17,23 @@
 </head>
 
 <body class="overflow-x-hidden font-sans">
-    <nav class="bg-white shadow-sm">
-        <div class="flex-shrink-0 flex items-center mx-5 py-5">
-            <img src="{{ asset('images/fuji_logo.png') }}" alt="Logo"
-                class="h-8 sm:h-10 md:h-12 lg:h-14 w-auto " />
-        </div>
-    </nav>
 
     <header class="relative bg-blue-500 after:pointer-events-none after:absolute after:inset-x-0 after:inset-y-0 after:border-y after:border-white/10">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex items-center justify-between">
+        <div class="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex items-center justify-between">
 
-            <!-- Placeholder for spacing / optional icon -->
-            <div class="flex-shrink-0 w-12 sm:w-16"></div>
+            <!-- Logo (Far Left, Responsive) -->
+            <div class="flex-shrink-0 flex items-center">
+                <img src="{{ asset('images/fuji_logo.png') }}"
+                    alt="Logo"
+                    class="h-8 sm:h-10 md:h-12 lg:h-14 xl:h-16 2xl:h-20 w-auto drop-shadow-lg transition-all duration-300" />
+            </div>
 
             <!-- Title -->
             <h1 id="title" class="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white text-center flex-1">
                 VI Defect
             </h1>
 
-            <!-- Logout Button -->
+            <!-- Logout (Far Right) -->
             <div class="flex-shrink-0">
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
@@ -43,6 +43,7 @@
                     </button>
                 </form>
             </div>
+
         </div>
     </header>
 

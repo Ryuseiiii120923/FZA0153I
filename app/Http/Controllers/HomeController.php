@@ -44,4 +44,8 @@ class HomeController extends Controller
     public function ppfdash(){
         return view ('pages.ppfdashboard');
     }
+
+    public function hfreworkdash(){
+        return view('pages.hfdashboard');
+    }
 }

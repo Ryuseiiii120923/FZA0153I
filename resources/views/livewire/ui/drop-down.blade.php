@@ -1,7 +1,7 @@
 <div>
     <div class="space-y-4">
         <!-- Add Operator Button -->
-        <div class="px-5 py-5">
+        <div class="px-5 py-5 flex flex-row gap-3">
             <button
                 @if (!$isCheckPPF)
                 disabled
@@ -9,6 +9,14 @@
                 wire:click="addNew"
                 class="bg-blue-600 text-white px-4 py-2 rounded-md">
                 + Add Worker
+            </button>
+            <button
+                @if (!$isCheckPPF)
+                disabled
+                @endif
+                wire:click="addNewDoneRework" style="background-color: #0b9af3;"
+                class="text-white px-4 py-2 rounded-md">
+                + Add Worker For Rework
             </button>
         </div>
 
@@ -19,12 +27,13 @@
             x-data="{ open: {{ $form['open'] ? 'true' : 'false' }} }">
 
             <!-- Header: Click to Toggle -->
-            <div class="flex justify-between items-center cursor-pointer px-4 py-2 bg-gray-100"
-                @click="open = !open; $wire.toggle('{{ $formId }}')">
+            <div class="flex justify-between items-center cursor-pointer px-4 py-2"
+     x-bind:class="{'bg-cyan-400': @js($form['isRework']), 'bg-gray-100': !@js($form['isRework'])}"
+     @click="open = !open; $wire.toggle('{{ $formId }}')">
 
                 <span class="font-medium">Worker Form #{{ $form['hf_id'] ?? 'Unknown' }}</span>
-                 <span class="font-medium">Date Created: {{  $form['created_at'] ?? now()->format('Y-m-d') }}</span>
-                  <span class="font-medium">Date Updated: {{  $form['updated_date'] ?? 'Not Yet Updated' }}</span>
+                <span class="font-medium">Date Created: {{ $form['created_at'] ?? now()->format('Y-m-d') }}</span>
+                <span class="font-medium">Date Updated: {{ $form['updated_date'] ?? 'Not Yet Updated' }}</span>
                 <div class="flex items-center gap-2">
                     <!--Edit Button-->
 
@@ -132,12 +141,14 @@
                                 :formId="$formId"
                                 :loadedDefects="$form['defects']"
                                 :loadedSmallDefects="$form['smallDefects']"
+                                :dispatchPrefix="'operator'"
                                 :key="'defects-'.$formId" />
                         </div>
                         <div class="w-full sm:w-1/2 flex justify-center">
                             <livewire:templates.rework
                                 :formId="$formId"
                                 :loadedRework="$form['rework']"
+                                :dispatchPrefix="'operator'"
                                 :key="'reworks-'.$formId" />
                         </div>
                     </div>

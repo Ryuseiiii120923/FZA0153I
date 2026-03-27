@@ -1,4 +1,4 @@
-    <div class="bg-white">
+    <div class="bg-white shadow-lg px-3 py-4">
         <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
 
             <!-- PPF Input (smaller width) -->
@@ -7,7 +7,7 @@
                 <input
                     type="number"
                     id="PPF"
-                    class="w-40 border border-gray-300 w-full rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    class="w-40 border border-black   w-full rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter PPF"
                     wire:model.lazy="ppf"
                     wire:keydown.enter="EnterPPF">
@@ -45,7 +45,7 @@
         <div class="flex flex-col sm:flex-row justify-center gap-4 mt-4 items-center">
             <div class="flex-col w-11/12 sm:w-1/3 mx-5 sm:mx-2 ">
                 <label for="PartNo" class="block text-sm font-medium text-black">Part No</label>
-                <input type="text" id="PartNo" class="mt-1 block w-full border border-[#0F3C89] rounded-md px-2 py-1"
+                <input type="text" id="PartNo" class="mt-1 block w-full border border-black  rounded-md px-2 py-1"
                     placeholder=" " value="" required wire:model="partno" readonly>
             </div>
             <div class="flex-col w-11/12 sm:w-1/3 mx-5 sm:mx-2 ">

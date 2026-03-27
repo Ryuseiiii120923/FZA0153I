@@ -1,4 +1,4 @@
-<div id="OuterPanel" class="outer-panel">
+<div id="OuterPanel" class="outer-panel bg-white shadow-lg px-3 py-4">
     @if (session()->has('success'))
     <div
         x-data="{ open: true }"
@@ -81,8 +81,8 @@
         </div>
     </div>
     @endif
-    <div class=" flex flex-col sm:flex-row justify-center gap-4 mt-4 items-center">
-        <div class="w-11/12 sm:w-1/3 mx-5 sm:mx-2">
+    <div class=" flex flex-row gap-2 mt-4 items-center mx-6 sm:mx-2">
+        <div class="w-full mx-auto">
             <label for="automach" class="block text-sm font-medium text-gray-700">
                 Auto Machine
             </label>
@@ -102,7 +102,7 @@
             </select>
         </div>
 
-        <div class="w-11/12 sm:w-1/3 mx-5 sm:mx-2">
+        <div class="w-full mx-auto">
             <label for="plant" class="block text-sm font-medium text-gray-700">
                 Plant
             </label>
@@ -122,13 +122,31 @@
         </div>
     </div>
 
-    <div class=" flex flex-col gap-4 mt-4 items-center mx-6 sm:mx-2">
-        <div class="w-full">
+    <div class=" flex flex-row gap-2 mt-4 items-center mx-6 sm:mx-2">
+        <!-- <div class="w-full">
             <label for="inspectDate" class="block text-sm font-medium text-gray-700">Inspection Date</label>
-            <input type="date" id="inspectDate" class="mt-1 block w-full border border-black rounded-md px-2 py-1 @if($locked)  cursor-not-allowed @endif" @if($locked) readonly @endif
-                placeholder=" " required  wire:model="InspectDates">
-        </div>
+            <input type="text" id="inspectDate"
+                class="text-center appearance-none mt-1 block w-full border border-black rounded-md px-2 py-1 @if($locked) cursor-not-allowed @endif"
+                @if($locked) readonly @endif
+                placeholder=" " required wire:model="InspectDates">
+        </div> -->
 
+        <div class="w-full mx-auto">
+            <label for="inspectDate" class="block text-sm font-medium text-gray-700 text-center">Inspection Date</label>
+            <input type="text" id="inspectDate"
+                class="text-center mt-1 block w-full border border-black rounded-md px-2 py-1"
+                placeholder="Select a date"
+                required
+                wire:model="InspectDates">
+        </div>
+        <div class="w-full mx-auto">
+            <label for="upd" class="block text-sm font-medium text-gray-700 text-center">Update Date</label>
+            <input type="text" id="upd" class=" text-center mt-1 block w-full border border-black rounded-md px-2 py-1 @if($locked)  cursor-not-allowed @endif" @if($locked) readonly @endif
+                placeholder=" " value="{{ now()->format('Y-m-d') }}" required readonly>
+        </div>
+    </div>
+
+    <div class=" flex flex-row gap-4 mt-4 items-center mx-6 sm:mx-2">
         <div class="w-full">
             <label for="details" class="block text-sm font-medium text-gray-700">Details</label>
             <input type="text" id="details" class=" text-center mt-1 block w-full border border-black rounded-md px-2 py-1 @if($locked)  cursor-not-allowed @endif" @if($locked) readonly @endif
@@ -137,12 +155,6 @@
     </div>
 
     <div class=" flex flex-col gap-4 mt-4 items-center mx-6 sm:mx-2">
-        <div class="w-full">
-            <label for="upd" class="block text-sm font-medium text-gray-700">Update Date</label>
-            <input type="date" id="upd" class=" text-center mt-1 block w-full border border-black rounded-md px-2 py-1 @if($locked)  cursor-not-allowed @endif" @if($locked) readonly @endif
-                placeholder=" " value="{{ now()->format('Y-m-d') }}" required readonly>
-        </div>
-
         <div class="w-full">
             <label for="registrant" class="block text-sm font-medium text-gray-700">Registrant</label>
             <input type="text" id="registrant" class="text-center mt-1 block w-full border border-black rounded-md px-2 py-1"
@@ -154,8 +166,7 @@
                 class=" w-40 rounded-lg px-6 py-3.5 text-white font-medium text-sm px-5 py-2.5 text-center me-2 mb-2"
                 wire:model="submitMethod"
                 wire:click="submitAction"
-                id="SubmitBtn"
-                >
+                id="SubmitBtn">
             </button>
         </div>
 

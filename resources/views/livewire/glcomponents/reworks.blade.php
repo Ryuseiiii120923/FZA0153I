@@ -1,4 +1,4 @@
-<div x-data="{ openAddRework: false }" class="bg-white rounded-lg w-full max-w-1xl mx-auto py-4 @if($locked) opacity-50 cursor-not-allowed @endif">
+<div x-data="{ openAddRework: false }" class="bg-white shadow-lg px-3 py-4 rounded-lg w-full max-w-1xl mx-auto @if($locked) opacity-50 cursor-not-allowed @endif">
     <div class="bg-gray-700 w-full">
         <p class="text-4xl font-extrabold  text-center text-white p-4 ">Rework</p>
     </div>

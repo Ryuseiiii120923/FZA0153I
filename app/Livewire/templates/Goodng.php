@@ -16,6 +16,7 @@ class Goodng extends Component
     public $sampleqty = 0;
     public $goodqty = 0;
     public $ngratioqty = 0;
+    public $lastGoodQty = 0;
     public $locked = false;
     public $locklack = false;
     public $action;
@@ -93,7 +94,7 @@ class Goodng extends Component
     }
 
     #[On('UpdateQty')]
-     public function UpdateQty($data)
+    public function UpdateQty($data)
     {
         $this->excssqty   = (int) ($data['excssqty']   ?? $this->excssqty   ?? 0);
         $this->lackqty    = (int) ($data['lackqty']    ?? $this->lackqty    ?? 0);
@@ -208,6 +209,7 @@ class Goodng extends Component
                 - (float)$this->sampleqty;
         }
 
+
         // $this->ngratioqty = number_format(($this->TotalNg / ($this->goodqty + $this->TotalNg)) * 100, 2);
         $denominator = $this->goodqty + $this->TotalNg;
 
@@ -226,4 +228,22 @@ class Goodng extends Component
             'sampleqty' => $this->sampleqty
         ]);
     }
+
+    #[On('UpdateGoodQty')]
+public function UpdateGoodQty($data)
+{
+    $diff = $data - $this->lastGoodQty;
+    $this->goodqty += $diff;
+
+    $this->lastGoodQty = $data;
+
+    $this->dispatch('FromGoodNg', [
+            'goodqty' => $this->goodqty,
+            'ngratioqty' => $this->ngratioqty,
+            'excssqty' => $this->excssqty,
+            'lackqty' => $this->lackqty,
+            'reworkqty' => $this->reworkqty,
+            'sampleqty' => $this->sampleqty
+        ]);
+}
 }

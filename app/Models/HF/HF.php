@@ -2,12 +2,13 @@
 
 namespace App\Models\HF;
 
+use App\Models\Worker;
 use Illuminate\Database\Eloquent\Model;
 
 class HF extends Model
 {
-     protected $table = "hf_forms";
-     public $incrementing = false;
+    protected $table = "hf_forms";
+    public $incrementing = false;
     public $timestamps = false;
     protected $primaryKey = 'RECNO';
     protected $keyType = 'string';
@@ -20,4 +21,19 @@ class HF extends Model
         'updated_date',
         'inspect_REC'
     ];
+
+    public function worker()
+    {
+        return $this->belongsTo(Worker::class, 'hf_id', '作業員CD');
+    }
+
+    public function updatedByWorker()
+    {
+        return $this->belongsTo(Worker::class, 'updated_by', '作業員CD');
+    }
+
+    public function defects()
+    {
+        return $this->hasMany(Defect::class, 'updated_by', 'updated_by');
+    }
 }
