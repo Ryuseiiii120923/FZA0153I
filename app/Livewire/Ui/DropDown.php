@@ -63,7 +63,7 @@ class DropDown extends Component
             'defects' => [],
             'smallDefects' => [],
             'rework' => [],
-            'isRework' => false,
+            'ForRework' => false,
             'TotalNg' => [],
             'GoodQty' => [],
             'TotalRework' => []
@@ -84,7 +84,7 @@ class DropDown extends Component
             'defects' => [],
             'smallDefects' => [],
             'rework' => [],
-            'isRework' => true,
+            'ForRework' => true,
         ];
         $this->modalOpen[$formId] = true;
     }
@@ -254,6 +254,7 @@ class DropDown extends Component
                 'selectedLargeDefect' => $selectedLarge,
                 'rework' => $operatorRework,
                 'isRework' => (bool) $h->IsDoneRework,
+                'ForRework' => (bool) $h->ForRework
             ];
             $this->CheckHf($uniqueId);
             $this->CalcGoodQty($uniqueId);
@@ -432,6 +433,10 @@ class DropDown extends Component
             }
         );
 
+        $this->reworkNg[$formId] = collect($this->forms[$formId]['rework'])->sum('quan');
+
+        $this->CalcGoodQty($formId);
+
         $this->receiveDropdownData($this->forms);
     }
 
@@ -457,41 +462,45 @@ class DropDown extends Component
         $this->dispatch('dropdown-updated', ['forms' => $this->dropdownForms]);
     }
 
-    #[On('operator.FetchNgReworkDropdown')]
-    public function FetchNgRework($data)
-    {
-        $formId = $data['formId'];
-        $this->reworkNg[$formId] = $data['totalReworkNg'];
-        $this->CalcGoodQty($formId);
-    }
+    // #[On('operator.FetchNgReworkDropdown')]
+    // public function FetchNgRework($data)
+    // {
+    //     $formId = $data['formId'];
+    //     $this->reworkNg[$formId] = $data['totalReworkNg'];
+    //     $this->CalcGoodQty($formId);
+    // }
 
-    #[On('operator.FetchNgDefectDropdown')]
-    public function FetchNgDefect($data)
-    {
-        $formId = $data['formId'];
-        $this->defectNg[$formId] = (int) $data['defectNg'];
-        $this->CalcGoodQty($formId);
-    }
+    // #[On('operator.FetchNgDefectDropdown')]
+    // public function FetchNgDefect($data)
+    // {
+    //     $formId = $data['formId'];
+    //     $this->defectNg[$formId] = (int) $data['defectNg'];
+    //     $this->CalcGoodQty($formId);
+    // }
     public function CalcGoodQty($formId)
     {
         if (!isset($this->forms[$formId])) return;
 
         $form = $this->forms[$formId];
 
-        $defectQty = collect($form['defects'] ?? [])->sum('qty');
-        $reworkQty = collect($form['rework'] ?? [])->sum('quan');
+        $defectQty = isset($this->defectNg[$formId])
+            ? $this->defectNg[$formId]
+            : collect($form['defects'] ?? [])->sum('qty');
+
+        $reworkQty = isset($this->reworkNg[$formId])
+            ? $this->reworkNg[$formId]
+            : collect($form['rework'] ?? [])->sum('quan');
 
         $totalNg = $defectQty + $reworkQty;
-
-        // Store NG per form
-        $this->defectNg[$formId] = $defectQty;
-        $this->reworkNg[$formId] = $reworkQty;
 
         $this->forms[$formId]['GoodQty'] = ($form['total_inspect'] ?? 0) - $totalNg;
         $this->forms[$formId]['TotalNg'] = $totalNg;
         $this->forms[$formId]['TotalRework'] = $reworkQty;
 
-        return [$this->forms[$formId]['GoodQty'],$this->forms[$formId]['TotalNg'] ];
+        return [
+            $this->forms[$formId]['GoodQty'],
+            $this->forms[$formId]['TotalNg']
+        ];
     }
 
 

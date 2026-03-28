@@ -28,7 +28,7 @@
 
             <!-- Header: Click to Toggle -->
             <div class="flex justify-between items-center cursor-pointer px-4 py-2"
-     x-bind:class="{'bg-cyan-400': @js($form['isRework']), 'bg-gray-100': !@js($form['isRework'])}"
+     x-bind:class="{'bg-cyan-400': @js($form['ForRework']), 'bg-gray-100': !@js($form['ForRework'])}"
      @click="open = !open; $wire.toggle('{{ $formId }}')">
 
                 <span class="font-medium">Worker Form #{{ $form['hf_id'] ?? 'Unknown' }}</span>

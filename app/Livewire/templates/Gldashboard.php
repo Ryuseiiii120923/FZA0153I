@@ -528,7 +528,7 @@ class Gldashboard extends Component
 
     public function LoadReworksGL($ppf)
     {
-        $reworkss = ReworkInsp::select('InspectorID','insp_name', 'HFNo', 'TotalInspQty', 'Defect', 'Quantity', 'DateEncode')->where('PPFNo', $ppf)->get();
+        $reworkss = ReworkInsp::select('InspectorID', 'insp_name', 'HFNo', 'TotalInspQty', 'Defect', 'Quantity', 'DateEncode')->where('PPFNo', $ppf)->get();
 
         if ($reworkss) {
             $this->rework = $reworkss->map(function ($item) {
@@ -566,7 +566,7 @@ class Gldashboard extends Component
         $this->totalngrework = collect($this->rework)
             ->sum(fn($x) => (int) $x['quan']);
 
-        $this->dispatch('GoodNg');
+        $this->dispatch('fetchGoodQty', $ppf);
     }
 
 

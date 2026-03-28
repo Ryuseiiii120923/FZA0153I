@@ -150,4 +150,8 @@ class PPFService
 
 
     }
+
+    public function fetchGoodQty($ppf){
+        return $this->ppfRepo->FetchGoodQty($ppf);
+    }
 }

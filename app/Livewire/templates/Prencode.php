@@ -649,7 +649,7 @@ class Prencode extends Component
             $totalInspect = array_sum(
                 array_column(
                     array_filter($hfRows, function ($row) {
-                        return $row['IsDoneRework'] == 0;
+                        return $row['ForRework'] == 0;
                     }),
                     'total_inspect'
                 )

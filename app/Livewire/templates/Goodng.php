@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Templates;
 
+use App\Services\PPFService;
 use Livewire\Component;
 use Livewire\Attributes\On;
 
@@ -20,6 +21,13 @@ class Goodng extends Component
     public $locked = false;
     public $locklack = false;
     public $action;
+    public $ppfService;
+    public $ppf;
+
+    private function ppfService(): PPFService
+    {
+        return $this->ppfService ?? app(PPFService::class);
+    }
 
     protected $listeners = [
         'sendExcpt' => 'receiveExcpt',
@@ -83,14 +91,26 @@ class Goodng extends Component
 
     public function Fetch($data)
     {
+        dd('here');
+        $this->ppf = (int) $data['ppfno'];
         $this->excssqty   = (int) ($data['excssqty']   ?? $this->excssqty   ?? 0);
         $this->lackqty    = (int) ($data['lackqty']    ?? $this->lackqty    ?? 0);
         $this->reworkqty  = (int) ($data['reworkqty']  ?? $this->reworkqty  ?? 0);
         $this->sampleqty  = (int) ($data['sampleqty']  ?? $this->sampleqty  ?? 0);
         $this->ngratioqty = (int) ($data['ngratioqty'] ?? $this->ngratioqty ?? 0);
         $this->expct      = (int) ($data['expct']      ?? $this->expct      ?? 0);
+        $this->goodqty = $this->ppfService()->fetchGoodQty($this->ppf);
+        dd($this->goodqty);
+        // $this->GoodNg();
+        // $this->fetchGoodQty($this->ppf);
+    }
 
+    #[On('fetchGoodQty')]
+    public function fetchGoodQty($data){
+        $ppf = $data;
+        $this->goodqty = $this->ppfService()->fetchGoodQty($ppf);
         $this->GoodNg();
+
     }
 
     #[On('UpdateQty')]
@@ -201,8 +221,7 @@ class Goodng extends Component
 
         $this->validate();
         if ($this->action === 'Add') {
-            $this->goodqty = (float)$this->expct
-                - (float)$this->TotalNg
+            $this->goodqty = (float)$this->goodqty 
                 + (float)$this->excssqty
                 - (float)$this->lackqty
                 - (float)$this->reworkqty

@@ -46,7 +46,7 @@ class Rework extends Component
     ];
 
 
-    public function mount($dispatchPrefix = null,$formId = null, $loadedRework = [])
+    public function mount($dispatchPrefix = null, $formId = null, $loadedRework = [])
     {
         $this->formId = $formId;
         $this->dispatchPrefix = $dispatchPrefix;
@@ -210,13 +210,6 @@ class Rework extends Component
             'formId'      => $this->formId,
             'action'      => 'add'
         ]);
-
-        $this->dispatch('FromReworksData', [
-            'totalngrework' => $this->totalngrework
-        ]);
-
-        $this->UpdatedNgRework($this->formId);
-        // Clear input fields
         $this->newRework = '';
         $this->newQuan   = '';
     }
@@ -258,7 +251,7 @@ class Rework extends Component
             ->values()
             ->toArray();
 
-        $this->UpdatedNgRework($this->formId);
+
 
         // Send to the other component
         // $this->dispatch('FromReworks', reworksData: $reworksData);
@@ -271,9 +264,7 @@ class Rework extends Component
             'formId' => $this->formId,
             'action' => 'delete'
         ]);
-        $this->dispatch('FromReworksData', [
-            'totalngrework' => $this->totalngrework
-        ]);
+        $this->UpdatedNgRework($this->formId);
     }
 
 
@@ -284,8 +275,8 @@ class Rework extends Component
 
         // Sum only the reworks belonging to    this form
         $this->totalngrework[$formId] = collect($this->reworkss)
-            ->filter(fn($r) => $r['hfno'] === ($this->hfno[$formId] ?? ''))
-            ->sum(fn($x) => (int) $x['quan'] ?? 0);
+            ->filter(fn($r) => ($r['hfno'] ?? null) == ($this->hfno[$formId] ?? null))
+            ->sum(fn($x) => (int) ($x['quan'] ?? 0));
 
         $this->dispatch($this->dispatchPrefix . '.FetchNgReworkDropdown', [
             'formId' => $formId,
@@ -305,6 +296,7 @@ class Rework extends Component
         }
 
 
+
         $this->dispatch($this->dispatchPrefix . '.defects-updated', [
             'reworksData' => [[
                 'hfno' => $this->hfno[$this->formId] ?? null,
@@ -315,12 +307,9 @@ class Rework extends Component
             'formId' => $this->formId,
             'action' => 'update'
         ]);
+        // $this->UpdatedNgRework($this->formId);
 
 
-        $this->dispatch('FromReworksData', [
-            'totalngrework' => $this->totalngrework
-        ]);
-        $this->UpdatedNGRework();
         $this->editingType = null;
         $this->newQuan = '';
         $this->totalInsp[$this->formId] = '';

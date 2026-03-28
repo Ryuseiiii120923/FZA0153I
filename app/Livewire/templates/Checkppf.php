@@ -197,7 +197,7 @@ class Checkppf extends Component
         $totalinsp = PRInsp::where('PPFNo', $this->ppf)->where('InspectorID', $this->inspectorID)->first();
         $this->dispatch('GoodNg');
         if ($this->actiondash != 'edit') {
- 
+
             if ($this->systemname === 'ProcessRecord') {
                 if ($ppfrecord) {
                     $this->errorexisting = 'This PPF is already encoded. Kindly review the table below for details.';

@@ -12,7 +12,6 @@ class Defects extends Component
 {
     public Collection $Largedefects;
     public Collection $SmallDefectsForModal;
-    //public $SmallDefectsForModal = [];
     public $smallDefects = [];
     public $newSmallDefect = '';
     public $newSmallQuan = '';
@@ -228,7 +227,7 @@ class Defects extends Component
             'formId' => $this->formId
         ]);
 
-        $this->dispatch('TriggerGoodNg');
+        
         $this->sendDefect();
     }
 
@@ -244,7 +243,6 @@ class Defects extends Component
 
             $this->TotalNg = collect($this->defects)->sum('qty');
         }
-        $this->dispatch('TriggerGoodNg');
     }
 
 
@@ -270,29 +268,9 @@ class Defects extends Component
 
     public function sendDispatch()
     {
-        // $this->dispatch('FromDefects', [
-        //     'newDefect' => $this->newDefect,
-        //     'newQuan'   => $this->newQuan,
-        // ]);
-
-        // $this->dispatch('FromSmallDefects', [
-        //     'SelectedLargeDefect' => $this->selectedLargeDefect,
-        //     'newSmallDefect' => $this->newSmallDefect,
-        //     'newSmallQuan'   => $this->newSmallQuan,
-        // ]);
-        // dd($this->selectedLargeDefect);
 
         $this->dispatch('FromDefects');
         $this->dispatch('FromSmallDefects');
-
-        // dd(
-        //     [
-        // $this->smallDefects,
-        // $this->newSmallQuan,
-        // $this->selectedLargeDefect
-
-        //     ]);
-
         $this->dispatch('sendNg', $this->TotalNg);
     }
 
@@ -335,7 +313,6 @@ class Defects extends Component
         ]);
 
         // Trigger recalculation of good / ng quantities
-        $this->dispatch('TriggerGoodNg');
         $this->sendDefect();
     }
 
@@ -424,7 +401,7 @@ class Defects extends Component
             'qty'  => (int) $this->newSmallQuan,
         ];
 
-        // Optionally update total
+
         $this->TotalSmallQuan += $this->newSmallQuan;
 
         $this->smalldefectData[] = [
@@ -433,48 +410,16 @@ class Defects extends Component
             'newSmallQuan'   => $this->newSmallQuan,
         ];
 
-        // Reset input fields
         $this->newSmallDefect = '';
         $this->newSmallQuan = '';
         $smallDefectsForDispatch = $this->smallDefects;
 
-        // Dispatch events if needed
-        // $this->dispatch('FromSmallDefects', smalldefectData: $this->smalldefectData);
         $this->dispatch($this->dispatchPrefix . '.defects-updated', [
             'smallDefects' => $smallDefectsForDispatch,
             'selectedLargeDefect' => $this->selectedLargeDefect,
             'formId' => $this->formId
         ]);
     }
-
-    // public function updateDefectArray()
-    // {
-    //     foreach ($this->defects as &$defect) {
-    //         if ($defect['type'] === $this->editingType) {
-    //             $defect['qty'] = $this->newQuan;
-
-    //             break;
-    //         }
-    //     }
-
-
-    //     $this->defectData[] = [
-    //         'type' => trim($this->editingType),
-    //         'qty'   => $this->newQuan,
-    //     ];
-
-    //     $this->dispatch('defects-updated', [
-    //         'defects' => [[
-    //             'type' => trim($this->editingType),
-    //             'qty'   => $this->newQuan,
-    //         ]],
-    //         'formId' => $this->formId,
-    //         'action' => 'update'
-    //     ]);
-    //     $this->sendDefect();
-    //     $this->editingType = null;
-    //     $this->newQuan = '';
-    // }
 
     public function updateDefectArray()
     {
@@ -546,18 +491,6 @@ class Defects extends Component
         }
     }
 
-    // public function startEditSmall($type)
-    // {
-    //     $this->editingTypeSmall = $type;
-
-    //     // Find the rework by type
-    //     $large = $this->selectedLargeDefect ?? array_key_first($this->smallDefects ?? []);
-    //     $smalldefects = collect($this->smallDefects[$large] ?? [])->firstWhere('type', $type);
-    //     dd($this->smallDefects[$large]);
-    //     if ($smalldefects) {
-    //         $this->newSmallQuan = $smalldefects['qty'];
-    //     }
-    // }
 
     public function startEditSmall($large, $type)
     {

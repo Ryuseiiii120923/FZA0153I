@@ -71,4 +71,12 @@ class PPFRepository
         ->get();
     }
 
+    public function FetchGoodQty($ppf){
+        $sum1 = DB::table('hf_forms')
+        ->where('ppfno', $ppf)
+        ->sum('GoodQty');
+
+        return $sum1;
+    }
+
 }
