@@ -49,7 +49,7 @@ class Defects extends Component
     ];
 
     public $listeners = [
-        'FetchDefect' => 'fetchdefect',
+        'FetchDefect' => 'fetchDefect',
         'FetchDefectDashboard' => 'FetchDefectDashboard',
         'locked' => 'locked',
         'ClearForm' => 'ClearForm',
@@ -122,6 +122,21 @@ class Defects extends Component
                 ];
             })->toArray();
         })->toArray();
+
+        // $collection = collect($data['smallDefects'] ?? [])
+        //     ->mapWithKeys(function ($items, $large) {
+        //         $large = trim($large); // normalize key
+        //         return [
+        //             $large => collect($items)->map(function ($item) {
+        //                 return [
+        //                     'type' => trim($item['type'] ?? ''),
+        //                     'qty'  => (int) ($item['qty'] ?? 0),
+        //                 ];
+        //             })->toArray()
+        //         ];
+        //     });
+
+        // $this->smallDefects = $collection->toArray();
 
         $lastLarge = array_key_last($this->smallDefects);
         $this->selectedLargeDefect = $lastLarge;
@@ -227,7 +242,7 @@ class Defects extends Component
             'formId' => $this->formId
         ]);
 
-        
+
         $this->sendDefect();
     }
 
@@ -301,7 +316,7 @@ class Defects extends Component
         ];
 
 
-        $this->dispatch( $this->dispatchPrefix . '.defects-updated', [
+        $this->dispatch($this->dispatchPrefix . '.defects-updated', [
             'defects' => [
                 [
                     'type' => $type,
@@ -312,14 +327,14 @@ class Defects extends Component
             'formId' => $this->formId
         ]);
 
+        $this->dispatch('NeedToDeleteDefect', ['formId' => $this->formId, 'type' => $type]);
+
         // Trigger recalculation of good / ng quantities
         $this->sendDefect();
     }
 
-    public function deleteDefectSmall($type)
+    public function deleteDefectSmall($largeDefect, $type)
     {
-        $largeDefect = $this->selectedLargeDefect ?? array_key_first($this->smallDefects);
-
         if (!isset($this->smallDefects[$largeDefect])) {
             return;
         }
@@ -343,7 +358,7 @@ class Defects extends Component
             'formId' => $this->formId,
             'action' => 'delete'
         ]);
-
+        $this->dispatch('NeedToDeleteSmall', ['formId' => $this->formId, 'type' => $type, 'largeDefect' => $largeDefect ]);
         // Reset inputs
         $this->newSmallDefect = '';
         $this->newSmallQuan = '';
@@ -526,7 +541,7 @@ class Defects extends Component
 
             if ($defect['type'] === $this->editingTypeSmall) {
 
-     
+
                 $defect['qty'] = min((float)$this->newSmallQuan, $remaining);
 
                 break;

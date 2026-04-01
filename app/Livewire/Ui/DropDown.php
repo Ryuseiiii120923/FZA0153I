@@ -8,6 +8,8 @@ use App\Models\HF\Rework;
 use App\Models\HF\SmallDefect;
 use App\Models\Worker;
 use App\Models\WorkerName;
+use App\Services\ForReworkService;
+use App\Services\PPFService;
 use Illuminate\Testing\Fluent\Concerns\Has;
 use Livewire\Component;
 use Livewire\Attributes\On;
@@ -28,7 +30,7 @@ class DropDown extends Component
     public $hasErrorForm = [];
     public $isSaved = false;
 
-    public $hf_id = '';
+    public $hf_id = '', $ppf;
     public $total_inspect = '';
     public $modalOpen = [];
 
@@ -42,6 +44,15 @@ class DropDown extends Component
     public array $defectNg = [];
     public $modalMode;
     public $needToDeleteForm = [];
+
+
+    public function ppfService(): PPFService
+    {
+        return $this->ppfService ?? app(PPFService::class);
+    }
+    public function forReworkService(): ForReworkService{
+        return app(ForReworkService::class);
+    }
 
     public function mount()
     {
@@ -71,22 +82,38 @@ class DropDown extends Component
         $this->modalOpen[$formId] = true;
     }
 
+    #[On('fetchppf')]
+    public function fetchppf($data){
+        $this->ppf = $data;
+    }
+
+
     public function addNewDoneRework()
     {
-        $this->toggles = true;
-        $formId = (string) Str::uuid();
-        $this->forms[$formId] = [
-            'hf_id' => '',
-            'inspect_REC' => uniqid(),
-            'hf_name' => '',
-            'total_inspect' => '',
-            'open' => false, // start expanded by default
-            'defects' => [],
-            'smallDefects' => [],
-            'rework' => [],
-            'ForRework' => true,
-        ];
-        $this->modalOpen[$formId] = true;
+
+        $result = $this->forReworkService()->fetchIfFlgDone($this->ppf);
+        $flgDone = $result['FlgDone'] ?? false;
+        $ProceedToRework = $result['ProceedToRework'] ?? false;
+
+        if ($flgDone && $ProceedToRework) {
+            $this->toggles = true;
+            $formId = (string) Str::uuid();
+            $this->forms[$formId] = [
+                'hf_id' => '',
+                'inspect_REC' => uniqid(),
+                'hf_name' => '',
+                'total_inspect' => '',
+                'open' => false, // start expanded by default
+                'defects' => [],
+                'smallDefects' => [],
+                'rework' => [],
+                'ForRework' => true,
+            ];
+            $this->modalOpen[$formId] = true;
+        } else {
+            $this->dispatch('errorExisting', 'The rework of this PPF is not done yet.');
+            return;
+        }
     }
     public function updatedForms()
     {
@@ -144,7 +171,9 @@ class DropDown extends Component
             total_inspect: (int) $this->forms[$formId]['total_inspect'],
             form_id: $formId
         );
+    
         $this->CalcGoodQty($formId);
+            $this->receiveDropdownData($this->forms);
         // Reset modal fields
         $this->hf_id = '';
         $this->total_inspect = '';
@@ -434,7 +463,6 @@ class DropDown extends Component
         );
 
         $this->reworkNg[$formId] = collect($this->forms[$formId]['rework'])->sum('quan');
-
         $this->CalcGoodQty($formId);
 
         $this->receiveDropdownData($this->forms);
@@ -442,6 +470,7 @@ class DropDown extends Component
 
     public function receiveDropdownData($data)
     {
+
         foreach ($data as $formId => $formData) {
 
             if (!isset($this->dropdownForms[$formId])) {
@@ -458,7 +487,6 @@ class DropDown extends Component
                 }
             }
         }
-
         $this->dispatch('dropdown-updated', ['forms' => $this->dropdownForms]);
     }
 
@@ -491,9 +519,9 @@ class DropDown extends Component
             ? $this->reworkNg[$formId]
             : collect($form['rework'] ?? [])->sum('quan');
 
-        $totalNg = $defectQty + $reworkQty;
+        $totalNg = $defectQty ?? 0 + $reworkQty ?? 0;
 
-        $this->forms[$formId]['GoodQty'] = ($form['total_inspect'] ?? 0) - $totalNg;
+        $this->forms[$formId]['GoodQty'] = ($form['total_inspect'] ?? 0) - $totalNg - $reworkQty;
         $this->forms[$formId]['TotalNg'] = $totalNg;
         $this->forms[$formId]['TotalRework'] = $reworkQty;
 
@@ -512,6 +540,7 @@ class DropDown extends Component
 
     public function remove($formId)
     {
+        $this->dispatch('NeedToDeleteForm', $this->forms[$formId]); 
         unset($this->forms[$formId]);
         unset($this->modalOpen[$formId]);
         $this->resetErrorBag('forms.' . $formId);
@@ -524,6 +553,7 @@ class DropDown extends Component
             'forms' => $this->forms
         ]);
         $this->dispatch('removeError');
+        
     }
     public function render()
     {

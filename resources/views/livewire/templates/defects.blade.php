@@ -143,8 +143,18 @@
                                 class="text-white bg-green-700 px-4 py-2 rounded"
                                 wire:click="startEditSmall('{{ $defect['type'] }}','{{ $sDefect['type'] ?? $sDefect['small_defect'] }}')"
                                 @if($locked) disabled @endif>Edit</button>
-                            <button class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded" @click.prevent="if(confirm('Are you sure you want to delete this record?')) $wire.deleteDefectSmall(@js($sDefect['type'] ?? $sDefect['small_defect']))" @if($locked) disabled @endif>Delete</button>
-
+                            <button
+                                class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded"
+                                @click.prevent="
+        if(confirm('Are you sure you want to delete this record?')) 
+            $wire.deleteDefectSmall(
+                @js($selectedLargeDefect ?? $defect['type']), 
+                @js($sDefect['type'] ?? $sDefect['small_defect'])
+            )
+    "
+                                @if($locked) disabled @endif>
+                                Delete
+                            </button>
                             <div x-show="openSmallEdit" x-transition.opacity class="fixed inset-0 bg-black bg-opacity-40 z-40" style="display:none"></div>
                             <div x-show="openSmallEdit" x-transition class="fixed inset-0 flex items-center justify-center z-50" style="display:none">
                                 <div class="relative bg-white rounded-lg shadow p-6 w-full max-w-md">

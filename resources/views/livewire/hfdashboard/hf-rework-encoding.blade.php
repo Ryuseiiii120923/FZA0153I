@@ -40,7 +40,6 @@
                 <tr>
                     <th class="px-4 py-2">PPFNO</th>
                     <th class="px-4 py-2">Total Rework</th>
-                    <th class="px-4 py-2">Date Encode</th>
                     <th class="px-4 py-2">Action</th>
                 </tr>
             </thead>
@@ -50,7 +49,6 @@
                 <tr>
                     <td class="px-4 py-2">{{ (int) $data['ppfno'] ?? '' }}</td>
                     <td class="px-4 py-2">{{ $data['total_rework'] ?? '' }}</td>
-                    <td class="px-4 py-2">{{ $data['date'] ?? '' }}</td>
                     <td class="px-4 py-2 flex justify-start">
                         <button
                             class="text-white bg-green-700 px-4 py-2 rounded"

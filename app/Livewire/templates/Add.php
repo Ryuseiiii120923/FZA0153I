@@ -259,73 +259,81 @@ class Add extends Component
     // }
 
     public function Defects($payload = [])
-    {
-        if (!$payload) return;
+{
+    if (!$payload) return;
 
-        // Get defectData; it might be a single defect or an array of defects
-        $defectData = $payload['defectData'] ?? $payload;
+    $defectData = $payload['defectData'] ?? $payload;
 
-        // Ensure we have an array of defects
-        if (isset($defectData['newDefect'])) {
-            $defectData = [$defectData]; // single defect → array
+    if (isset($defectData['newDefect'])) {
+        $defectData = [$defectData];
+    }
+
+    $normalized = [];
+
+    // ✅ Step 1: Normalize existing (include process)
+    foreach ($this->defects as $def) {
+        $type = trim($def['type'] ?? '');
+        $qty  = (float)($def['qty'] ?? 0);
+        $process = $def['process'] ?? null;
+
+        if ($type === '') continue;
+
+        $key = strtolower($type . '_' . $process);
+
+        if (isset($normalized[$key])) {
+            $normalized[$key]['qty'] += $qty;
+        } else {
+            $normalized[$key] = [
+                'type'    => $type,
+                'qty'     => $qty,
+                'process' => $process
+            ];
         }
+    }
 
-        // Step 1: Normalize existing defects (sum same types)
-        $normalized = [];
-        foreach ($this->defects as $def) {
-            $type = trim($def['type'] ?? '');
-            $qty  = (float)($def['qty'] ?? 0);
-            if ($type === '') continue;
+    // ✅ Step 2: Apply new data
+    foreach ($defectData as $data) {
+        $newDefect = trim($data['newDefect'] ?? '');
+        $newQuan   = (float)($data['newQuan'] ?? 0);
+        $process   = $data['process'] ?? null;
+        $action    = $data['action'] ?? 'add';
 
-            $key = strtolower($type);
+        if (!$newDefect) continue;
+
+        $key = strtolower($newDefect . '_' . $process);
+
+        if ($action === 'delete') {
+            unset($normalized[$key]);
+
+        } elseif ($action === 'update') {
+            $normalized[$key] = [
+                'type'    => $newDefect,
+                'qty'     => $newQuan,
+                'process' => $process
+            ];
+
+        } elseif ($action === 'add') {
             if (isset($normalized[$key])) {
-                $normalized[$key]['qty'] += $qty;
+                $normalized[$key]['qty'] += $newQuan;
             } else {
                 $normalized[$key] = [
-                    'type' => $type,
-                    'qty'  => $qty
+                    'type'    => $newDefect,
+                    'qty'     => $newQuan,
+                    'process' => $process
                 ];
             }
+
+        } else { // initial load
+            $normalized[$key] = [
+                'type'    => $newDefect,
+                'qty'     => $newQuan,
+                'process' => $process
+            ];
         }
-
-        // Step 2: Apply all new defects on top
-        foreach ($defectData as $data) {
-            $newDefect = trim($data['newDefect'] ?? '');
-            $newQuan   = (float)($data['newQuan'] ?? 0);
-            $action    = $data['action'] ?? 'add';
-
-            if (!$newDefect) continue;
-
-            $key = strtolower($newDefect);
-
-
-            if ($action === 'delete') {
-                unset($normalized[$key]);
-            } elseif ($action === 'update') {
-                $normalized[$key] = [
-                    'type' => $newDefect,
-                    'qty'  => $newQuan
-                ];
-            } elseif ($action === 'add') {
-                if (isset($normalized[$key])) {
-                    $normalized[$key]['qty'] += $newQuan;
-                } else {
-                    $normalized[$key] = [
-                        'type' => $newDefect,
-                        'qty'  => $newQuan
-                    ];
-                }
-            } else { // initial load → just set it without adding
-                $normalized[$key] = [
-                    'type' => $newDefect,
-                    'qty'  => $newQuan
-                ];
-            }
-        }
-
-        // Step 3: Save back
-        $this->defects = array_values($normalized);
     }
+
+    $this->defects = array_values($normalized);
+}
 
 
     public function SmallDefects($smalldefectData)
@@ -402,7 +410,6 @@ class Add extends Component
         $this->canAdd = $payload['isValid'];
         $this->haserror = !$this->canAdd;
     }
-
 
     public function submitAction()
     {
@@ -769,6 +776,14 @@ class Add extends Component
         $totalInspected = PRInsp::where('PPFNo', $this->ppf)
             ->sum('total_inspect');
 
+        $hasRework = DB::table('Inspector_Rework')
+            ->where('PPFNo', $this->ppf)
+            ->Where('ProceedToRework', 0)
+            ->exists();
+        $hasReworkHf = DB::table('dr_forms')
+            ->where('PPFNo', $this->ppf)
+            ->exists();
+
         if ((int)$totalInspected === (int)$this->expct) {
             $this->isAdd = false;
         }
@@ -795,6 +810,14 @@ class Add extends Component
         }
         if ($this->isAdd) {
             $this->dispatch('haserror', ['message' => 'Please accept first the quantity']);
+            return;
+        }
+        if ($hasRework) {
+            $this->dispatch('haserror', ['message' => 'There are pending reworks for this PPF. Please resolve them before Saving.']);
+            return;
+        }
+        if(!$hasReworkHf){
+            $this->dispatch('haserror', ['message' => 'There are pending reworks in HF for this PPF. Please resolve them before Saving.']);
             return;
         }
 

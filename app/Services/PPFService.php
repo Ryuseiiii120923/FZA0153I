@@ -5,23 +5,25 @@ namespace App\Services;
 use App\Models\CheckHF;
 use App\Models\CheckPPF;
 use App\Models\Operator\PRInsp;
+use App\Repositories\DefectRepository;
 use App\Repositories\DoneReworkRepository;
 use App\Repositories\PPFRepository;
 use Illuminate\Support\Facades\DB;
 
 class PPFService
 {
-    protected $ppfRepo, $doneReworkRepo;
+    protected $ppfRepo, $doneReworkRepo, $defectRepo;
 
-    public function __construct(PPFRepository $ppfRepo, DoneReworkRepository $doneReworkRepo)
+    public function __construct(PPFRepository $ppfRepo, DoneReworkRepository $doneReworkRepo, DefectRepository $defectRepo)
     {
         $this->ppfRepo = $ppfRepo;
+        $this->defectRepo = $defectRepo;
         $this->doneReworkRepo = $doneReworkRepo;
     }
 
     public function loadProcessRecord($ppf, $inspectorID, $systemname, $actiondash)
     {
-        $ppfexisting = $this->ppfRepo->getAddDefect($ppf);
+        $ppfexisting = $this->defectRepo->fetchAddDefect($ppf);
         $ppfrecordExist = $this->ppfRepo->checkPPFExistForInspector($ppf, $inspectorID);
         $check = $this->ppfRepo->getCheckPPF($ppf);
         $hf = $this->ppfRepo->getHF($ppf);
@@ -80,9 +82,6 @@ class PPFService
     public function totalInspectedProgress($ppf, $expectedQuantity)
     {
         $totalInspected = $this->ppfRepo->getTotalInspected($ppf);
-
-
-
         return [
             'totalInspection' => $totalInspected,
             'progressInsp' => $totalInspected . "/" . $expectedQuantity
@@ -92,7 +91,6 @@ class PPFService
     public function totalInspectedProgressFetch($ppf, $inspectorID, $expectedQuantity)
     {
         $totalInspected = $this->ppfRepo->getTotalInspectionPerInspector($ppf, $inspectorID);
-
         return [
             'totalInspection' => $totalInspected,
             'progressInsp' => $totalInspected . "/" . $expectedQuantity
@@ -116,42 +114,7 @@ class PPFService
         }
     }
 
-    public function calculateGoodQtyForm(array $form): array
-    {
-        $defectQty = collect($form['defects'] ?? [])->sum('qty');
-        $reworkQty = collect($form['rework'] ?? [])->sum('quan');
-
-        $totalNg = $defectQty + $reworkQty;
-
-        $goodQty = ($form['total_inspect'] ?? 0) - $totalNg;
-
-        return [
-            'goodQty' => $goodQty,
-            'defectNg' => $defectQty,
-            'reworkNg' => $reworkQty,
-        ];
-    }
-
-    public function FetchForRework()
-    {
-        return $this->ppfRepo->getTotalReworkPending();
-    }
-
-    public function saveDoneRework($data)
-    {
-        return DB::transaction(function () use ($data) {
-            $hfId = $data['hf_id'];
-             $this->doneReworkRepo->saveMainForm($data);
-            $this->doneReworkRepo->saveDefects($hfId, $data['defects'] ?? [], $data['ppfno'], $data['encoder']);
-            $this->doneReworkRepo->saveReworks($hfId, $data['reworks'] ?? [], $data['ppfno'], $data['encoder']);
-            $this->doneReworkRepo->saveSmallDefects($hfId, $data['smalldefects'] ?? [], $data['ppfno'], $data['encoder']);
-            $this->doneReworkRepo->updateFlag($data['ppfno']);
-        });
-
-
-    }
-
-    public function fetchGoodQty($ppf){
-        return $this->ppfRepo->FetchGoodQty($ppf);
+    public function checkIfPPFExist($ppf){
+        return $this->ppfRepo->getPPF($ppf);
     }
 }

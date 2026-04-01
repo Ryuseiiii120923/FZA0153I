@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Glcomponents;
 
+use App\Models\DoneRework\Forms;
 use App\Models\HF\HF;
 use App\Models\Worker;
 use App\Services\PPFService;
@@ -17,7 +18,7 @@ class DoneRework extends Component
 {
     use CalculatesGoodQty;
     public $locked = false, $hasErrorForm = false, $toggle = false;
-    public $hf_id, $total_inspect, $goodQty, $modalMode;
+    public $hf_id, $total_inspect, $goodQty, $modalMode, $ppf;
     public $forms = [];
     public $doneReworks = [];
     public $dropdownForms = [];
@@ -60,30 +61,6 @@ class DoneRework extends Component
             'TotalNg' => 0,
         ];
         $this->modalOpen[$formId] = true;
-    }
-    public function CalcGoodQty($formId)
-    {
-        if (!isset($this->forms[$formId])) return;
-
-        $form = $this->forms[$formId];
-
-        $defectQty = collect($form['defects'] ?? [])->sum('qty');
-        $reworkQty = collect($form['rework'] ?? [])->sum('quan');
-
-        $totalNg = $defectQty + $reworkQty;
-
-        // Store NG per form
-        $this->defectNg[$formId] = $defectQty;
-        $this->reworkNg[$formId] = $reworkQty;
-
-        $this->forms[$formId]['GoodQty'] = ($form['total_inspect'] ?? 0) - $totalNg;
-
-        // ✅ 👉 ADD THIS LINE (sync to dropdownForms)
-        if (isset($this->dropdownForms[$formId])) {
-            $this->dropdownForms[$formId]['GoodQty'] = $this->forms[$formId]['GoodQty'];
-        }
-
-        return $this->forms[$formId]['GoodQty'];
     }
 
     public function NGQty($formId)
@@ -318,12 +295,11 @@ class DoneRework extends Component
 
 
     #[On('FetchDoneRework')]
-   public function FetchDoneRework($ppf)
-{
-    $this->doneReworks = HF::with(['worker.employeeName']) // eager load inspector/worker
-        ->where('ppfno', $ppf)
-        ->where('IsDoneRework', 1)
-        ->withSum('defects as total_defect', 'qty')
-        ->get();
-}
+    public function FetchDoneRework($ppf)
+    {
+        $this->doneReworks = Forms::with(['worker', 'updatedByWorker'])
+            ->select('hf_id', 'total_inspect', 'updated_by', 'ppfno', 'GoodQty', 'created_at')
+            ->where('ppfno', $ppf)
+            ->get();
+    }
 }

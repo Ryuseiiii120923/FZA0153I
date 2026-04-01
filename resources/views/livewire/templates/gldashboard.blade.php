@@ -26,7 +26,7 @@
     </div>
 
 
-    <div id="OuterPanel" >
+    <div id="OuterPanel">
         <div class="w-full px-2 sm:px-6">
             <div @if($currentAction !='Add' ) class="hidden" @endif>
                 <livewire:templates.ppfdashboard>
@@ -44,7 +44,16 @@
                     <livewire:glcomponents.reworks />
                 </div>
             </div>
-            <livewire:glcomponents.done-rework />
+
+            <div class="flex flex-col sm:flex-row gap-6 mt-4 items-start justify-center w-full">
+                <div class="w-11/12 sm:w-1/2 flex justify-center">
+                    <livewire:glcomponents.for-rework />
+                </div>
+
+                <div class="w-11/12 sm:w-1/2 flex justify-center">
+                    <livewire:glcomponents.done-rework />
+                </div>
+            </div>
             <livewire:templates.goodng />
             <livewire:templates.add />
         </div>

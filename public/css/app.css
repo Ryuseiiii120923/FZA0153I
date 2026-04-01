@@ -822,6 +822,9 @@ select {
 .mt-1 {
   margin-top: 0.25rem;
 }
+.mt-10 {
+  margin-top: 2.5rem;
+}
 .mt-2 {
   margin-top: 0.5rem;
 }
@@ -867,6 +870,9 @@ select {
 .h-8 {
   height: 2rem;
 }
+.h-\[500px\] {
+  height: 500px;
+}
 .h-\[calc\(100\%-1rem\)\] {
   height: calc(100% - 1rem);
 }
@@ -875,6 +881,9 @@ select {
 }
 .max-h-0 {
   max-height: 0px;
+}
+.max-h-\[300px\] {
+  max-height: 300px;
 }
 .max-h-full {
   max-height: 100%;
@@ -914,6 +923,9 @@ select {
 }
 .max-w-2xl {
   max-width: 42rem;
+}
+.max-w-3xl {
+  max-width: 48rem;
 }
 .max-w-lg {
   max-width: 32rem;

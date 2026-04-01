@@ -1,24 +1,53 @@
-<div>
-    <div class="space-y-4">
+
+<div x-data="{ showFixed: false }"
+     x-init="
+        window.addEventListener('scroll', () => {
+            showFixed = window.scrollY > 470;
+        })
+     ">
+
+    <!-- NORMAL BUTTON (in page) -->
+    <div class="px-5 py-5 flex gap-3 bg-white shadow-md">
+        <button
+            @if (!$isCheckPPF) disabled @endif
+            wire:click="addNew"
+            class="bg-blue-600 text-white px-4 py-2 rounded-md">
+            + Add Worker
+        </button>
+
+        <button
+            @if (!$isCheckPPF) disabled @endif
+            wire:click="addNewDoneRework"
+            class="text-white px-4 py-2 rounded-md"
+            style="background-color:#0b9af3;">
+            + Add Worker For Rework
+        </button>
+    </div>
+
+    <!-- FLOATING BUTTON (appears on scroll) -->
+    <div x-show="showFixed"
+         x-transition
+         class="fixed top-0 left-0 w-full z-50 bg-white shadow-lg px-5 py-5 flex gap-3">
+
+        <button
+            @if (!$isCheckPPF) disabled @endif
+            wire:click="addNew"
+            class="bg-blue-600 text-white px-4 py-2 rounded-md">
+            + Add Worker
+        </button>
+
+        <button
+            @if (!$isCheckPPF) disabled @endif
+            wire:click="addNewDoneRework"
+            class="text-white px-4 py-2 rounded-md"
+            style="background-color:#0b9af3;">
+            + Add Worker For Rework
+        </button>
+    </div>
+
+    <!-- CONTENT -->
+     <div class="space-y-4 mt-10">
         <!-- Add Operator Button -->
-        <div class="px-5 py-5 flex flex-row gap-3">
-            <button
-                @if (!$isCheckPPF)
-                disabled
-                @endif
-                wire:click="addNew"
-                class="bg-blue-600 text-white px-4 py-2 rounded-md">
-                + Add Worker
-            </button>
-            <button
-                @if (!$isCheckPPF)
-                disabled
-                @endif
-                wire:click="addNewDoneRework" style="background-color: #0b9af3;"
-                class="text-white px-4 py-2 rounded-md">
-                + Add Worker For Rework
-            </button>
-        </div>
 
         @foreach($forms as $formId => $form)
         <div
@@ -28,8 +57,8 @@
 
             <!-- Header: Click to Toggle -->
             <div class="flex justify-between items-center cursor-pointer px-4 py-2"
-     x-bind:class="{'bg-cyan-400': @js($form['ForRework']), 'bg-gray-100': !@js($form['ForRework'])}"
-     @click="open = !open; $wire.toggle('{{ $formId }}')">
+                x-bind:class="{'bg-cyan-400': @js($form['ForRework']), 'bg-gray-100': !@js($form['ForRework'])}"
+                @click="open = !open; $wire.toggle('{{ $formId }}')">
 
                 <span class="font-medium">Worker Form #{{ $form['hf_id'] ?? 'Unknown' }}</span>
                 <span class="font-medium">Date Created: {{ $form['created_at'] ?? now()->format('Y-m-d') }}</span>

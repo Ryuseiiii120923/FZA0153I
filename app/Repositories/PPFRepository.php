@@ -22,11 +22,6 @@ class PPFRepository
         return CheckHF::where('流動NO', $ppf)->first();
     }
 
-    public function getAddDefect($ppf)
-    {
-        return AddDefect::where('PPFNo', $ppf)->first();
-    }
-
     public function getTotalInspectionPerInspector($ppf, $inspectorID)
     {
         return PRInsp::where('PPFNo', $ppf)->where('InspectorID', $inspectorID)->value('total_inspect') ?? 0;
@@ -63,20 +58,20 @@ class PPFRepository
             ->get();
     }
 
-    public function getTotalReworkPending(){
-        return DB::table('Inspector_Rework')
-        ->select('PPFNo',DB::raw('SUM(Quantity) as total_rework'), 'DateEncode')
-        ->where('FlgDone', 0)
-        ->groupBy('PPFNo', 'DateEncode')
-        ->get();
-    }
-
     public function FetchGoodQty($ppf){
         $sum1 = DB::table('hf_forms')
         ->where('ppfno', $ppf)
         ->sum('GoodQty');
 
+        // $sum2 = DB::table('hf_forms')
+        // ->where('ppfno', $ppf)
+        // ->sum('GoodQty');
+
         return $sum1;
+    }
+
+    public function getPPF($ppf){
+        return DB::table('Defect')->where('PPFNo', $ppf)->first();
     }
 
 }

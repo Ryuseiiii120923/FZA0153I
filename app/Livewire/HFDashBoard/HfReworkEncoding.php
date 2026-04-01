@@ -4,6 +4,8 @@ namespace App\Livewire\HFDashBoard;
 
 use App\Models\Worker;
 use App\Models\WorkerName;
+use App\Services\DoneReworkService;
+use App\Services\ForReworkService;
 use App\Services\PPFService;
 use Carbon\Carbon;
 use Livewire\Attributes\On;
@@ -28,14 +30,22 @@ class HfReworkEncoding extends Component
         return $this->ppfService ?? app(PPFService::class);
     }
 
+    private function forReworkService(): ForReworkService
+    {
+        return app(ForReworkService::class);
+    }
+    private function doneReworkService(): DoneReworkService
+    {
+        return app(DoneReworkService::class);
+    }
+
     public function mount()
     {
-        $pending = $this->ppfService()->FetchForRework();
+        $pending = $this->forReworkService()->FetchForAllRework();
          $this->pendingRework = $pending->map(function($item) {
         return [
             'ppfno' => $item->PPFNo,
             'total_rework' => (int) $item->total_rework,
-            'date' => $item->DateEncode,
         ];
     })->toArray();
     
@@ -308,7 +318,7 @@ class HfReworkEncoding extends Component
                 'smalldefects' => $this->smalldefects ?? [],
             ];
 
-            $this->ppfService()->saveDoneRework($data);
+            $this->doneReworkService()->saveDoneRework($data);
 
             $this->resetModal();
            session()->flash('success', 'Saved Successfully!');

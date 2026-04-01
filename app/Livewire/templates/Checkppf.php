@@ -121,6 +121,11 @@ class Checkppf extends Component
         $this->dispatch('IsAdd');
     }
 
+    #[On('errorExisting')]
+    public function hasError($data){
+        $this->errorexisting = $data;
+    }
+
 
     // public function totalInspectedProgress()
     // {
@@ -420,6 +425,7 @@ class Checkppf extends Component
                     inspectorId: $this->inspectorID
                 );
                 $this->dispatch('IsCheckPPF', true);
+                $this->dispatch('fetchppf', $this->ppf);
             }
         } elseif ($this->systemname === 'GLDashboard') {
             $this->dispatch('FetchTotalInspectionTable', $ppf);
@@ -429,6 +435,7 @@ class Checkppf extends Component
                     $this->dispatch('LoadDefectsGL', $ppf);
                     $this->dispatch('LoadReworksGL', $ppf);
                     $this->dispatch('FetchDoneRework', $ppf);
+                    $this->dispatch('fetchForRework',$ppf);
                 }
             } elseif ($this->action === 'Edit') {
                 $this->resetErrorBag();

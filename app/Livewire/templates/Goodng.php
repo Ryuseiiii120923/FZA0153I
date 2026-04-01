@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Templates;
 
+use App\Services\ForReworkService;
 use App\Services\PPFService;
 use Livewire\Component;
 use Livewire\Attributes\On;
@@ -23,10 +24,15 @@ class Goodng extends Component
     public $action;
     public $ppfService;
     public $ppf;
+    public $lastexcssqty = 0;
+    public $lastlackqty = 0;
+    public $lastreworkqty = 0;
+    public $lastsampleqty = 0;
+    public $initialGoodQty = 0;
 
-    private function ppfService(): PPFService
+    private function ForReworkService(): ForReworkService
     {
-        return $this->ppfService ?? app(PPFService::class);
+        return $this->ppfService ?? app(ForReworkService::class);
     }
 
     protected $listeners = [
@@ -91,26 +97,24 @@ class Goodng extends Component
 
     public function Fetch($data)
     {
-        dd('here');
-        $this->ppf = (int) $data['ppfno'];
+        $this->ppf = (int) $data['ppf'];
         $this->excssqty   = (int) ($data['excssqty']   ?? $this->excssqty   ?? 0);
         $this->lackqty    = (int) ($data['lackqty']    ?? $this->lackqty    ?? 0);
         $this->reworkqty  = (int) ($data['reworkqty']  ?? $this->reworkqty  ?? 0);
         $this->sampleqty  = (int) ($data['sampleqty']  ?? $this->sampleqty  ?? 0);
         $this->ngratioqty = (int) ($data['ngratioqty'] ?? $this->ngratioqty ?? 0);
         $this->expct      = (int) ($data['expct']      ?? $this->expct      ?? 0);
-        $this->goodqty = $this->ppfService()->fetchGoodQty($this->ppf);
-        dd($this->goodqty);
+        $this->goodqty = $this->ForReworkService()->fetchGoodQty($this->ppf);
         // $this->GoodNg();
         // $this->fetchGoodQty($this->ppf);
     }
 
     #[On('fetchGoodQty')]
-    public function fetchGoodQty($data){
-        $ppf = $data;
-        $this->goodqty = $this->ppfService()->fetchGoodQty($ppf);
+    public function fetchGoodQty($ppf)
+    {
+        $this->initialGoodQty = (float) $this->ForReworkService()->fetchGoodQty($ppf);
+        $this->goodqty = $this->initialGoodQty;
         $this->GoodNg();
-
     }
 
     #[On('UpdateQty')]
@@ -198,45 +202,66 @@ class Goodng extends Component
 
     public function GoodNg()
     {
+        // Convert empty strings to 0
+        $this->excssqty  = $this->excssqty ?: 0;
+        $this->lackqty   = $this->lackqty ?: 0;
+        $this->reworkqty = $this->reworkqty ?: 0;
+        $this->sampleqty = $this->sampleqty ?: 0;
 
-        if ($this->excssqty === "") {
-            $this->excssqty = 0;
-        }
-        if ($this->lackqty === "") {
-            $this->lackqty = 0;
-        }
-        if ($this->reworkqty === "") {
-            $this->reworkqty = 0;
-        }
-        if ($this->sampleqty === "") {
-            $this->sampleqty = 0;
-        }
-
-        if ($this->excssqty <> 0) {
+        // Lock lack if excess exists
+        if ($this->excssqty != 0) {
             $this->locklack = true;
             $this->lackqty = 0;
         } else {
             $this->locklack = false;
         }
 
-        $this->validate();
-        if ($this->action === 'Add') {
-            $this->goodqty = (float)$this->goodqty 
-                + (float)$this->excssqty
-                - (float)$this->lackqty
-                - (float)$this->reworkqty
-                - (float)$this->sampleqty;
+        // Skip recalculation if nothing changed
+        if (
+            $this->lastexcssqty == $this->excssqty &&
+            $this->lastlackqty == $this->lackqty &&
+            $this->lastreworkqty == $this->reworkqty &&
+            $this->lastsampleqty == $this->sampleqty
+        ) {
+            return;
         }
 
+        // Save last values
+        $this->lastexcssqty  = $this->excssqty;
+        $this->lastlackqty   = $this->lackqty;
+        $this->lastreworkqty = $this->reworkqty;
+        $this->lastsampleqty = $this->sampleqty;
 
-        // $this->ngratioqty = number_format(($this->TotalNg / ($this->goodqty + $this->TotalNg)) * 100, 2);
+        // ✅ Always compute from DB base
+        $this->goodqty = $this->initialGoodQty
+            + $this->excssqty
+            - $this->lackqty
+            - $this->reworkqty
+            - $this->sampleqty;
+
+        // NG ratio
         $denominator = $this->goodqty + $this->TotalNg;
+        $this->ngratioqty = $denominator == 0
+            ? 0
+            : number_format(($this->TotalNg / $denominator) * 100, 2);
 
-        if ((float) $denominator == 0) {
-            $this->ngratioqty = 0;
-        } else {
-            $this->ngratioqty = number_format(($this->TotalNg / $denominator) * 100, 2);
-        }
+        $this->dispatch('FromGoodNg', [
+            'goodqty'    => $this->goodqty,
+            'ngratioqty' => $this->ngratioqty,
+            'excssqty'   => $this->excssqty,
+            'lackqty'    => $this->lackqty,
+            'reworkqty'  => $this->reworkqty,
+            'sampleqty'  => $this->sampleqty
+        ]);
+    }
+
+    #[On('UpdateGoodQty')]
+    public function UpdateGoodQty($data)
+    {
+        $diff = $data - $this->lastGoodQty;
+        $this->goodqty += $diff;
+
+        $this->lastGoodQty = $data;
 
         $this->dispatch('FromGoodNg', [
             'goodqty' => $this->goodqty,
@@ -247,22 +272,4 @@ class Goodng extends Component
             'sampleqty' => $this->sampleqty
         ]);
     }
-
-    #[On('UpdateGoodQty')]
-public function UpdateGoodQty($data)
-{
-    $diff = $data - $this->lastGoodQty;
-    $this->goodqty += $diff;
-
-    $this->lastGoodQty = $data;
-
-    $this->dispatch('FromGoodNg', [
-            'goodqty' => $this->goodqty,
-            'ngratioqty' => $this->ngratioqty,
-            'excssqty' => $this->excssqty,
-            'lackqty' => $this->lackqty,
-            'reworkqty' => $this->reworkqty,
-            'sampleqty' => $this->sampleqty
-        ]);
-}
 }

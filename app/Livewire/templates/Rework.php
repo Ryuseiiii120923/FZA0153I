@@ -203,8 +203,6 @@ class Rework extends Component
 
         $this->reworkss[] = $newRework;
 
-
-
         $this->dispatch($this->dispatchPrefix . '.defects-updated', [
             'reworksData' => $this->reworkss,
             'formId'      => $this->formId,
@@ -255,6 +253,11 @@ class Rework extends Component
 
         // Send to the other component
         // $this->dispatch('FromReworks', reworksData: $reworksData);
+        $this->dispatch('NeedToDeleteRework', [
+             'hfno' => $hfno,
+             'type' => $type,
+             'formId' => $this->formId
+        ]);
 
         $this->dispatch($this->dispatchPrefix . '.defects-updated', [
             'reworksData' => [[

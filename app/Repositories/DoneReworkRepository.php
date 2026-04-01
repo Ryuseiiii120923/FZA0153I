@@ -6,6 +6,11 @@ use Illuminate\Support\Facades\DB;
 
 class DoneReworkRepository
 {
+      protected $workerRepo;
+     public function __construct(WorkerRepository $workerRepo)
+    {
+      $this->workerRepo = $workerRepo;
+    }
     public function saveMainForm(array $data)
     {
         try {
@@ -49,6 +54,17 @@ class DoneReworkRepository
                     'qty' => $defect['qty'],
                     'updated_by' => $encoder,
                     'ppfno' => $ppfno,
+                ]);
+
+                DB::table('Inspector_Defect')->insert([
+                    'PPFNo' => $ppfno,
+                    'InspectorID' => $hfId,
+                    'insp_name' => $this->workerRepo->getWorkerName($hfId)->名前 ?? 'Unknown',
+                    'Defect' => $defect['type'],
+                    'Quantity' => $defect['qty'],
+                    'DateEncode' => now(),
+                    'Process' => 'HF',
+                    'EncodeProcess' => 'reRework',
                 ]);
             }
         } catch (\Throwable $e) {
@@ -108,6 +124,17 @@ class DoneReworkRepository
                         'updated_by' => $encoder,
                         'ppfno' => $ppfno,
                     ]);
+
+                    DB::table('Inspector_SmallDefect')->insert([
+                        'PPFNo' => $ppfno,
+                        'InspectorID' => $encoder,
+                        'LargeDefect' => $large,
+                        'SmallDefect' => $small['type'],
+                        'Quantity' => $small['qty'],
+                        'DateEncode' => now(),
+                        'Process' => 'HF',
+                        'EncodeProcess' => 'reRework',
+                    ]);
                 }
             }
         } catch (\Throwable $e) {
@@ -118,13 +145,32 @@ class DoneReworkRepository
     public function updateFlag($ppf)
     {
         try {
-            Db::table('Inspector_Rework')
+            Db::table('hf_rework')
                 ->where('ppfno', $ppf)
                 ->update([
                     'FlgDone' => 1
                 ]);
         } catch (\Throwable $e) {
             throw new \Exception("Update to update Flag: " . $e->getMessage());
+        }
+    }
+
+    public function fetchFlag($ppf){
+        try{
+           $flgDone =  DB::table('hf_rework')
+            ->where('PPFNo', $ppf)
+             ->value('FlgDone');
+
+             $proceedToRework = DB::table('hf_rework')
+             ->where('PPFNo', $ppf)
+                ->value('ProceedToRework');
+
+            return [
+                'FlgDone' => (bool) $flgDone,
+                'ProceedToRework' => (bool) $proceedToRework
+            ];
+        }catch (\Throwable $e){
+            throw new \Exception("Failed to Fetch: " . $e->getMessage());
         }
     }
 }
