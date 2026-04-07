@@ -38,11 +38,12 @@ class DefectService
             $smalls = $this->repo->getSmallDefects(
                 $ppf,
                 $row->InspectorID,
-                $row->Defect
+                $row->Defect,
+                $row->EncodeProcess // ✅ NEW
             );
 
             foreach ($smalls as $s) {
-                $smallDefects[$row->Defect][$row->InspectorID][] = [
+                $smallDefects[$row->Defect][$row->EncodeProcess][$row->InspectorID][] = [
                     'type' => $s->SmallDefect,
                     'qty'  => (int)$s->total_qty,
                 ];

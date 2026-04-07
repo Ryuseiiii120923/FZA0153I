@@ -88,6 +88,12 @@ class Gldashboard extends Component
         $this->actiondash = $data['actiondash'];
     }
 
+    // temporary function to navigate to hf rework encoding page
+    public function GoToHF()
+    {
+        return redirect()->route('hf.dashboard');
+    }
+
 
     #[On('actionTable')]
     public function actioninTable($data)

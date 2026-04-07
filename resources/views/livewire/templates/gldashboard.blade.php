@@ -23,6 +23,11 @@
             wire:click.debounce.500ms="setAction('View')" wire:loading.attr="disabled">
             Inquire
         </button>
+          <button type="button" id="HFDash"
+            class="w-full sm:w-32 md:w-36 lg:w-40 px-4 py-2 text-white bg-yellow-700 hover:bg-yellow-800 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-black"
+            wire:click="GoToHF" wire:loading.attr="disabled">
+            HF Dashboard
+        </button>
     </div>
 
 

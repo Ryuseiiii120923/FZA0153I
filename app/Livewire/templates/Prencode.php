@@ -33,7 +33,7 @@ class Prencode extends Component
     public $totalInspection;
 
     public $actiondash;
-
+    public $hasErrorForm = [];
     public $defects = [];
     public $smalldefects = [];
     public $rework = [];
@@ -41,7 +41,8 @@ class Prencode extends Component
     public $totalngrework;
     public $hfno1, $hfno2, $hfno3, $hfno4, $hfno5;
     public $process;
-    public $hasError = false;
+    public $hasError = [];
+    public $hasAnyError = false;
     public $isReceive = false;
     public $dropdownFinal = [];
     public $forms = [];
@@ -76,19 +77,29 @@ class Prencode extends Component
     {
         $this->actiondash = $data['actiondash'];
     }
+    #[On('hasErrorPren')]
+    public function hasError($data)
+    {
+        $this->hasErrorForm = $data['hasErrorForm'] ?? [];
+        $this->hasError = $data['hasError'] ?? [];
+        $this->hasAnyError = in_array(true, $this->hasError, true);
+    }
 
-     public function Reworks(array $reworksData)
+    #[On('removeError')]
+    public function removeError($formId)
+    {
+
+        unset($this->hasErrorForm[$formId]);
+        $this->hasError = $this->hasErrorForm;
+
+        $this->hasAnyError = in_array(true, $this->hasError, true);
+    }
+
+    public function Reworks(array $reworksData)
     {
         $result = $this->prencodeService()->handleReworks($this->rework, $reworksData);
         $this->rework = $result['reworks'];
         $this->totalngrework = $result['total'];
-    }
-
-
-    //From Adding Reworks
-    public function ReworksData($data)
-    {
-        $this->totalngrework = $data['totalngrework'];
     }
 
     public function Checkppf($data)
@@ -103,61 +114,7 @@ class Prencode extends Component
     //From adding defects
     public function Defects($payload = [])
     {
-        if (!$payload) return;
-
-        $defectData = $payload['defectData'] ?? $payload;
-
-        $newDefect = trim($defectData['newDefect'] ?? '');
-        $newQuan   = (float)($defectData['newQuan'] ?? '');
-        $action    = $defectData['action'] ?? 'add';
-
-        if (!$newDefect) return;
-
-        $normalized = [];
-        foreach ($this->defects as $def) {
-            $type = $def['type'] ?? $def['newDefect'] ?? '';
-            $qty  = (float)($def['qty'] ?? $def['newQuan'] ?? '');
-
-            if ($type === '') continue;
-
-            if (isset($normalized[strtolower($type)])) {
-                $normalized[strtolower($type)]['qty'] += $qty;
-            } else {
-                $normalized[strtolower($type)] = [
-                    'type' => $type,
-                    'qty'  => (int) $qty
-                ];
-            }
-        }
-
-
-        $key = strtolower($newDefect);
-
-        if ($action === 'delete') {
-            unset($normalized[$key]);
-            $this->defects = array_values($normalized);
-            return;
-        }
-
-
-        if ($action === 'update') {
-
-            if (isset($normalized[$key])) {
-                $normalized[$key]['qty'] = $newQuan;
-            }
-        } else {
-
-            if (isset($normalized[$key])) {
-                $normalized[$key]['qty'] += $newQuan;
-            } else {
-                $normalized[$key] = [
-                    'type' => $newDefect,
-                    'qty'  => $newQuan
-                ];
-            }
-        }
-
-        $this->defects = array_values($normalized);
+        $this->defects = $this->prencodeService()->handleDefect($this->defects, $payload);
     }
 
 
@@ -165,62 +122,35 @@ class Prencode extends Component
     #[On('LoadDefectsPren')]
     public function LoadDefectsPren($ppf)
     {
-        $defect = DefectInsp::select('Defect', 'Quantity')->where('PPFNo', $ppf)->where('InspectorID', $this->inspectorID)->get();
+        $result = $this->prencodeService()->LoadDefectsPrencode($ppf, $this->inspectorID);
 
-        if ($defect) {
-            // Main defect list
-            $this->defects = $defect->map(function ($item) {
-                return [
-                    'type' => $item->Defect,
-                    'qty'  => (int) $item->Quantity
-                ];
-            })->filter(fn($d) => $d['qty'] > 0)
-                ->values()
-                ->toArray();
+        $this->defects = $result['defects'];
+        $this->smalldefects = $result['smallDefects'];
+        $this->lastdef = $result['lastdef'];
+        $this->lastqty = $result['lastqty'];
 
-            $last = end($this->defects);
-            $this->lastdef = $last['type'] ?? null;
-            $this->lastqty = $last['qty'] ?? null;
-
-            // Group small defects by large defect
-            foreach ($defect as $item) {
-                $large = $item->Defect;
-
-                $smallDef = SmallInsp::select('LargeDefect', 'SmallDefect', 'Qty')->where('LargeDefect', $large)
-                    ->where('PPFNo', $ppf)
-                    ->where('InspectorID', $this->inspectorID)
-                    ->get();
-
-                $this->smalldefects[$large] = $smallDef->map(function ($s) {
-                    return [
-                        'SelectedLargeDefect' => $s->LargeDefect,
-                        'type' => $s->SmallDefect,
-                        'qty'  => $s->Qty
-                    ];
-                })->toArray();
-            }
-
-            if ($this->defects) {
-                $this->dispatch('DefectFromUpdate', [
-                    'defects'       => $this->defects,
-                    'smallDefects' => $this->smalldefects,
-                ]);
-            }
+        if (isset($result['defects']) || isset($result['smallDefects'])) {
+            $this->dispatch('DefectFromUpdate', [
+                'defects'       => $this->defects,
+                'smallDefects' => $this->smalldefects,
+            ]);
         }
     }
 
-
-
-    #[On('hasErrorPren')]
-    public function hasError($error)
+    //To Fetch Rework
+    #[On('LoadReworksPren')]
+    public function LoadReworksPren($ppf)
     {
-        $this->hasError = $error;
-    }
+        $result = $this->prencodeService()->LoadReworksPrencode($ppf, $this->inspectorID);
 
-    #[On('removeError')]
-    public function removeError()
-    {
-        $this->hasError = false;
+        $this->rework = $result['reworks'];
+        $this->totalngrework = $result['totalNgRework'];
+
+        if (isset($result['reworks'])) {
+            $this->dispatch('ReworkFromUpdate', [
+                'reworks' => $this->rework
+            ]);
+        }
     }
 
     //from the dropdown
@@ -258,33 +188,7 @@ class Prencode extends Component
         $this->dropdownForms = $data['forms'];
     }
 
-    //To Fetch Rework
-    #[On('LoadReworksPren')]
-    public function LoadReworksPren($ppf)
-    {
-        $reworkss = ReworkInsp::select('HFNo', 'TotalInspQty', 'Defect', 'Quantity')->where('PPFNo', $ppf)->where('InspectorID', $this->inspectorID)->get();
 
-        if ($reworkss) {
-            $this->rework = $reworkss->map(function ($item) {
-                return [
-                    'hfno' => $item->HFNo,
-                    'totalinsp' => $item->TotalInspQty,
-                    'type' => $item->Defect,
-                    'quan' => $item->Quantity
-                ];
-            });
-
-            if ($this->rework) {
-                $this->dispatch('ReworkFromUpdate', [
-                    'reworks' => $this->rework
-                ]);
-            }
-        }
-
-
-        $this->totalngrework = collect($this->rework)
-            ->sum(fn($x) => (int) $x['quan']);
-    }
 
     public function SmallDefects($smalldefectData)
     {
@@ -621,8 +525,8 @@ class Prencode extends Component
                     'ppfno'         => $this->ppf,
                     'inspect_REC'   => $formData['inspect_REC'],
                     'created_at'    => $now,
-                    'updated_date'    => $now,
-                    'IsDoneRework' =>  0,
+                    'updated_date'  => $now,
+                    'IsDoneRework'  =>  0,
                     'ForRework' => !empty($formData['ForRework']) ? 1 : 0,
                     'GoodQty' => $goodQty
                 ];
@@ -661,7 +565,6 @@ class Prencode extends Component
                 }
 
                 // 🔵 SMALL DEFECTS
-                // 🔵 SMALL DEFECTS
                 foreach ($formData['smallDefects'] ?? [] as $large => $smalls) {
                     // Skip large defects that were deleted
                     if (isset($this->needToDeleteDefect[$formId]) && in_array($large, $this->needToDeleteDefect[$formId])) {
@@ -693,8 +596,21 @@ class Prencode extends Component
                             'inspect_REC'   => $formData['inspect_REC'],
                         ];
 
-                        $mergedSmallDefects[$large][$type] =
-                            ($mergedSmallDefects[$large][$type] ?? 0) + $qty;
+                        $key = $type . '_' . ($formData['ForRework'] ? 1 : 0);
+
+                        // ✅ Merge ONLY if NOT ForRework
+                        $key = $large . '_' . $type . '_' . ($formData['ForRework'] ? 1 : 0);
+
+                        if (!isset($mergedSmallDefects[$key])) {
+                            $mergedSmallDefects[$key] = [
+                                'large'     => $large,
+                                'type'      => $type,
+                                'qty'       => 0,
+                                'ForRework' => $formData['ForRework'] ? 1 : 0
+                            ];
+                        }
+
+                        $mergedSmallDefects[$key]['qty'] += $qty;
                     }
                 }
 
@@ -788,17 +704,21 @@ class Prencode extends Component
 
             // 🔵 MERGED SMALL DEFECTS
             $smallInspRows = [];
-            foreach ($mergedSmallDefects as $large => $smalls) {
-                foreach ($smalls as $type => $qty) {
-                    $smallInspRows[] = [
-                        'InspectorID' => $this->inspectorID,
-                        'PPFNo'       => $this->ppf,
-                        'LargeDefect' => $large,
-                        'SmallDefect' => $type,
-                        'Qty'         => $qty,
-                        'Process'     => $this->process,
-                    ];
-                }
+            foreach ($mergedSmallDefects as $s) {
+
+                $encodeProcess = ($s['ForRework'] == 1)
+                    ? 'ReRework'
+                    : 'iniInspect';
+
+                $smallInspRows[] = [
+                    'InspectorID'   => $this->inspectorID,
+                    'PPFNo'         => $this->ppf,
+                    'LargeDefect'   => $s['large'],
+                    'SmallDefect'   => $s['type'],
+                    'Qty'           => $s['qty'],
+                    'Process'       => $this->process,
+                    'EncodeProcess' => $encodeProcess,
+                ];
             }
 
             DB::table('Inspector_Small')->insert(

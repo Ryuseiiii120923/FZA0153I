@@ -56,13 +56,14 @@ class DefectRepository
             ->value('insp_name');
     }
 
-    public function getSmallDefects($ppf, $encoder, $defectName)
+    public function getSmallDefects($ppf, $encoder, $defectName,$encodeProcess)
     {
         return DB::table('Inspector_Small')
             ->selectRaw('SmallDefect, SUM(Qty) as total_qty')
             ->where('PPFNo', $ppf)
             ->where('InspectorID', $encoder)
             ->where('LargeDefect', $defectName)
+            ->where('EncodeProcess', $encodeProcess) // ✅ NEW
             ->groupBy('SmallDefect')
             ->get();
     }

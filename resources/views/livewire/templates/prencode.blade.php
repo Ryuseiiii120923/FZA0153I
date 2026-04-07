@@ -111,33 +111,37 @@
 
     <div id="OuterPanel">
         <livewire:templates.checkppf :systemname="request()->input('systemname')" />
-        <livewire:ui.drop-down />
-        <div class="flex items-center gap-2 justify-center p-6" id="buttons-action">
-            <button
-                @if (!$isCheckPPF)
-                disabled
-                @endif
-                type="button"
-                id="SubmitBtns"
-                class="w-40 rounded-lg bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 text-white font-medium text-sm text-center me-2 mb-2 px-6 py-3.5"
-                @if($hasError) disabled class="opacity-50 cursor-not-allowed" @endif
-                @if($actiondash==='edit' )
-                wire:click="editPrencode"
-                @elseif($actiondash==='delete' )
-                wire:click="deletePrencode"
-                @else
-                wire:click="addPrencode"
-                @endif>
-                @if ($actiondash === 'edit')
-                Save
-                @elseif ($actiondash === 'delete')
-                Delete
-                @else
-                Add
-                @endif
+        <div @if($actiondash=='view' ) class="pointer-events-none opacity-50 " @endif>
+            <livewire:ui.drop-down />
+            <div class="flex items-center gap-2 justify-center p-6" id="buttons-action">
+                <button
+                    @if (!$isCheckPPF || ($hasAnyError ?? false))
+                    disabled
+                    @endif
+                    type="button"
+                    id="SubmitBtns"
+                    class="w-40 rounded-lg bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 text-white font-medium text-sm text-center me-2 mb-2 px-6 py-3.5 @if ($actiondash == 'view') hidden @endif"
+                    @class([ 'opacity-50 cursor-not-allowed'=> !$isCheckPPF || ($hasAnyError ?? false)
+                    ])
+                    @if($actiondash==='edit' )
+                    wire:click="editPrencode"
+                    @elseif($actiondash==='delete' )
+                    wire:click="deletePrencode"
+                    @else
+                    wire:click="addPrencode"
+                    @endif>
+                    @if ($actiondash === 'edit')
+                    Save
+                    @elseif ($actiondash === 'delete')
+                    Delete
+                    @else
+                    Add
+                    @endif
 
-            </button>
+                </button>
+            </div>
         </div>
+
     </div>
     <div class="mt-3">
         <livewire:templates.operatordash />

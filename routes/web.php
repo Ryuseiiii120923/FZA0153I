@@ -12,6 +12,7 @@ Route::get('/', function () {
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+
 // Authenticated routes
 Route::middleware('auth')->group(function () {
 

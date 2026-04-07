@@ -201,7 +201,7 @@ class Checkppf extends Component
         $hf = CheckHF::where('流動NO', $this->ppf)->first();
         $totalinsp = PRInsp::where('PPFNo', $this->ppf)->where('InspectorID', $this->inspectorID)->first();
         $this->dispatch('GoodNg');
-        if ($this->actiondash != 'edit') {
+        if ($this->actiondash != 'edit' && $this->actiondash != 'view') {
 
             if ($this->systemname === 'ProcessRecord') {
                 if ($ppfrecord) {
@@ -233,7 +233,7 @@ class Checkppf extends Component
             }
         }
 
-        if ($ppfexisting) {
+        if ($ppfexisting && $this->actiondash != 'view') {
             $this->errorexisting = 'Already Registered';
             $this->dispatch('ppf-error', error: true, message: 'Already Registered');
             return false;

@@ -60,4 +60,13 @@ class Operatordash extends Component
     {
         $this->dispatch('DeletePPFPren', ['ppf' => $ppf]);
     }
+    public function viewPPF($ppf)
+    {
+        $this->dispatch("dash-ppf", [
+            'ppf' => $ppf,
+            'actiondash' => 'view',
+            'encoder' => $this->inspectorID
+        ]);
+        $this->dispatch('ClearFormDropdown');
+    }
 }

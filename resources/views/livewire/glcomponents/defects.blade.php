@@ -33,8 +33,12 @@
 
 
                     <!-- SMALL DEFECT ROWS -->
-                    @if(isset($smallDefects[$defect['type']][$defect['operatorid']]))
-                    @foreach($smallDefects[$defect['type']][$defect['operatorid']] as $sDefect)
+                    @if(isset($smallDefects[$defect['type']]))
+                    @php
+                    $processKey = strtolower(trim($defect['encodeProcess'] ?? ''));
+                    @endphp
+                    @if(isset($smallDefects[$defect['type']][$processKey]))
+                    @foreach($smallDefects[$defect['type']][$processKey][$defect['operatorid']] ?? [] as $sDefect)
                     <tr class="bg-gray-500" wire:key="smalldefect-{{ $sDefect['type']}}">
                         <td class="px-8 py-1"></td>
                         <td class="px-8 py-1"></td>
@@ -62,6 +66,7 @@
                         <td class="px-8 py-1"></td>
                     </tr>
                     @endforeach
+                    @endif
                     @endif
 
                     @empty

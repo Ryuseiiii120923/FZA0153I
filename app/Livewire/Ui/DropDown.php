@@ -50,7 +50,8 @@ class DropDown extends Component
     {
         return $this->ppfService ?? app(PPFService::class);
     }
-    public function forReworkService(): ForReworkService{
+    public function forReworkService(): ForReworkService
+    {
         return app(ForReworkService::class);
     }
 
@@ -83,7 +84,8 @@ class DropDown extends Component
     }
 
     #[On('fetchppf')]
-    public function fetchppf($data){
+    public function fetchppf($data)
+    {
         $this->ppf = $data;
     }
 
@@ -171,9 +173,9 @@ class DropDown extends Component
             total_inspect: (int) $this->forms[$formId]['total_inspect'],
             form_id: $formId
         );
-    
+
         $this->CalcGoodQty($formId);
-            $this->receiveDropdownData($this->forms);
+        $this->receiveDropdownData($this->forms);
         // Reset modal fields
         $this->hf_id = '';
         $this->total_inspect = '';
@@ -312,11 +314,12 @@ class DropDown extends Component
     }
     public function CheckHf($formId)
     {
-        $currentHfId = $this->forms[$formId]['hf_id'];
-        $currentDate = now()->format('Y-m-d');
         if (!$formId || !isset($this->forms[$formId])) {
             return;
         }
+
+        $currentHfId = $this->forms[$formId]['hf_id'];
+        $currentDate = now()->format('Y-m-d');
 
         if (empty($currentHfId)) {
 
@@ -327,17 +330,21 @@ class DropDown extends Component
                 'HF ID cannot be empty'
             );
 
-            $this->hasError = true;
-            $this->dispatch('hasErrorPren', $this->hasError);
+            $this->hasErrorForm[$formId] = true;
+            $this->hasError = $this->hasErrorForm;
+
+            $this->dispatch('hasErrorPren', [
+                'hasError' => $this->hasError,
+                'hasErrorForm' => $this->hasErrorForm
+            ]);
+
             return;
         }
 
-        // 2️⃣ Format HF ID for search
         $searchValue = strlen($currentHfId) === 2
             ? ' ' . $currentHfId
             : $currentHfId;
 
-        // 3️⃣ Check if worker exists
         $hf = Worker::where('作業員CD', $searchValue)
             ->where('区分', 1)
             ->first();
@@ -351,38 +358,62 @@ class DropDown extends Component
 
             $this->forms[$formId]['hf_name'] = null;
             $this->hasErrorForm[$formId] = true;
+            $this->hasError = $this->hasErrorForm;
+
+            $this->dispatch('hasErrorPren', [
+                'hasError' => $this->hasError,
+                'hasErrorForm' => $this->hasErrorForm
+            ]);
 
             return;
         }
 
-        // Get worker name
+        // 4️⃣ Get worker name
         $name = WorkerName::where('社員CD', $hf->社員CD)->first();
 
         $this->forms[$formId]['hf_name'] = $name?->名前;
+
         $this->resetErrorBag('forms.' . $formId . '.hf_id');
         $this->hasErrorForm[$formId] = false;
 
-
-        // 4️⃣ Check duplicates in other forms
+   
         foreach ($this->forms as $id => $form) {
 
             if ($id === $formId) continue;
+
             $otherDate = isset($form['created_at'])
                 ? Carbon::parse($form['created_at'])->format('Y-m-d')
                 : null;
-            if ($form['hf_id'] === $currentHfId && $currentDate === $otherDate) {
+
+            if (
+                isset($form['hf_id']) &&
+                $form['hf_id'] === $currentHfId &&
+                $currentDate === $otherDate
+            ) {
 
                 $this->addError(
                     'forms.' . $formId . '.hf_id',
                     'This Operator is already used in another form with the same date'
                 );
 
-                $this->hasError = true;
-                $this->dispatch('hasErrorPren', $this->hasError);
+                $this->hasErrorForm[$formId] = true;
+                $this->hasError = $this->hasErrorForm;
+
+                $this->dispatch('hasErrorPren', [
+                    'hasError' => $this->hasError,
+                    'hasErrorForm' => $this->hasErrorForm
+                ]);
 
                 return;
             }
         }
+
+        // 6️⃣ Final: update global error array after all checks
+        $this->hasError = $this->hasErrorForm;
+        $this->dispatch('hasErrorPren', [
+            'hasError' => $this->hasError,
+            'hasErrorForm' => $this->hasErrorForm
+        ]);
     }
 
     private function syncCollection(array $existing, array $incoming, string $action, callable $keyBuilder)
@@ -540,7 +571,9 @@ class DropDown extends Component
 
     public function remove($formId)
     {
-        $this->dispatch('NeedToDeleteForm', $this->forms[$formId]); 
+        if (!isset($this->forms[$formId])) return;
+         $this->dispatch('removeError', $formId);
+        $this->dispatch('NeedToDeleteForm', $this->forms[$formId]);
         unset($this->forms[$formId]);
         unset($this->modalOpen[$formId]);
         $this->resetErrorBag('forms.' . $formId);
@@ -552,8 +585,7 @@ class DropDown extends Component
         $this->dispatch('dropdown-updated', [
             'forms' => $this->forms
         ]);
-        $this->dispatch('removeError');
-        
+       
     }
     public function render()
     {
