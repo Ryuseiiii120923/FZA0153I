@@ -107,6 +107,7 @@ class Goodng extends Component
         $this->goodqty = $this->ForReworkService()->fetchGoodQty($this->ppf);
         // $this->GoodNg();
         // $this->fetchGoodQty($this->ppf);
+        dd($this->ngratioqty);
     }
 
     #[On('fetchGoodQty')]
@@ -143,6 +144,7 @@ class Goodng extends Component
     public function receiveNg($value)
     {
         $this->TotalNg = $value;
+        $this->GoodNg();
     }
     public $rules = [
         'excssqty' => 'required|numeric',
@@ -207,7 +209,6 @@ class Goodng extends Component
         $this->lackqty   = $this->lackqty ?: 0;
         $this->reworkqty = $this->reworkqty ?: 0;
         $this->sampleqty = $this->sampleqty ?: 0;
-
         // Lock lack if excess exists
         if ($this->excssqty != 0) {
             $this->locklack = true;
@@ -216,15 +217,26 @@ class Goodng extends Component
             $this->locklack = false;
         }
 
+        if ($this->excssqty == 0 && $this->lackqty == 0 && $this->reworkqty == 0 && $this->sampleqty == 0) {
+            $this->goodqty = $this->initialGoodQty;
+            $denominator = $this->goodqty + $this->TotalNg;
+            $this->ngratioqty = $denominator == 0
+                ? 0
+                : number_format(($this->TotalNg / $denominator) * 100, 2);
+        }
+
         // Skip recalculation if nothing changed
         if (
             $this->lastexcssqty == $this->excssqty &&
             $this->lastlackqty == $this->lackqty &&
             $this->lastreworkqty == $this->reworkqty &&
             $this->lastsampleqty == $this->sampleqty
+
         ) {
             return;
         }
+
+
 
         // Save last values
         $this->lastexcssqty  = $this->excssqty;

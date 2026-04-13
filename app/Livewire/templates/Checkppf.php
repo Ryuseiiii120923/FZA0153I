@@ -426,6 +426,7 @@ class Checkppf extends Component
                 );
                 $this->dispatch('IsCheckPPF', true);
                 $this->dispatch('fetchppf', $this->ppf);
+                $this->dispatch('GoodNg');
             }
         } elseif ($this->systemname === 'GLDashboard') {
             $this->dispatch('FetchTotalInspectionTable', $ppf);

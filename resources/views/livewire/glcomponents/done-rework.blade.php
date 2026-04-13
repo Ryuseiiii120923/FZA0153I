@@ -19,7 +19,7 @@
                     @foreach ($doneReworks ?? [] as $data)
                     <tr>
                         <td class="px-4 py-2">{{ $data->updated_by ?? '' }}</td>
-                        <td class="px-4 py-2">{{ $data->updatedByWorker?->employeeName?->名前 ?? '' }}</td>
+                        <td class="px-4 py-2">{{ $workerNames[$data->updated_by] ?? '' }}</td>
                         <td class="px-4 py-2">{{ $data->hf_id  ?? '' }}</td>
                         <td class="px-4 py-2">{{ $data->worker?->employeeName?->名前 ?? '' }}</td>
                         <td class="px-4 py-2">{{ $data->total_inspect  ?? 0 }}</td>

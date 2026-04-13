@@ -82,36 +82,6 @@ class Defects extends Component
     public function fetchDefect($data)
     {
         $this->defects = $data['defects'] ?? [];
-
-        //         $newDefects = collect($data['defects'] ?? [])
-        //             ->map(function ($item) {
-        //                 return [
-        //                     'type' => $item['type'] ?? null,
-        //                     'qty'   => $item['qty'] ?? 0,
-        //                 ];
-        //             })
-        //             ->toArray();
-
-        //             // Merge with existing defects
-        // $this->defects = array_merge($this->defects, $newDefects);
-
-        // get the last newDefect
-        // $last = end($this->defects);
-
-        // $this->lastDefectType = $last['type'] ?? null;
-        // $this->lastDefectQty  = $last['qty'] ?? null;
-        // $this->smallDefects = $data['smallDefects'] ?? [];
-        // dd($this->defects,$this->smallDefects);
-
-        // $collection = collect($data['smallDefects'] ?? [])
-        //     ->map(function ($item) {
-        //         return [
-        //             'LargeDefect' => $item['LargeDefect'] ?? null,
-        //             'type'        => $item['type'] ?? null,
-        //             'qty'         => $item['qty'] ?? 0,
-        //         ];
-        //     });
-
         $collection = collect($data['smallDefects'] ?? [])
             ->mapWithKeys(function ($items, $large) {
                 return [
@@ -142,13 +112,8 @@ class Defects extends Component
         $this->newSmallDefect = $lastSmall['type'] ?? null;
         $this->newSmallQuan   = $lastSmall['qty'] ?? null;
 
-        //dd($this->smallDefects);
-        // Update totals
         $this->TotalNg = collect($this->defects)->sum('qty');
         $this->TotalSmallQuan = collect($this->smallDefects)->flatten(1)->sum('qty');
-
-        // Dispatch full arrays
-        //$this->sendDispatch();
     }
 
     public function mount()

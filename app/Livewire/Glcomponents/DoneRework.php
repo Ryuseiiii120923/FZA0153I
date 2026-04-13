@@ -18,7 +18,7 @@ class DoneRework extends Component
 {
     use CalculatesGoodQty;
     public $locked = false, $hasErrorForm = false, $toggle = false;
-    public $hf_id, $total_inspect, $goodQty, $modalMode, $ppf;
+    public $hf_id, $total_inspect, $goodQty, $modalMode, $ppf, $workerNames = [];
     public $forms = [];
     public $doneReworks = [];
     public $dropdownForms = [];
@@ -297,9 +297,15 @@ class DoneRework extends Component
     #[On('FetchDoneRework')]
     public function FetchDoneRework($ppf)
     {
-        $this->doneReworks = Forms::with(['worker', 'updatedByWorker'])
+        $this->doneReworks = Forms::with(['worker', 'updatedByWorker', 'updatedByEncoder'])
             ->select('hf_id', 'total_inspect', 'updated_by', 'ppfno', 'GoodQty', 'created_at')
             ->where('ppfno', $ppf)
             ->get();
+
+        foreach ($this->doneReworks as $rework) {
+            $this->workerNames[$rework->updated_by] = DB::table('社員')
+                ->where('社員CD', $rework->updated_by)
+                ->value('名前');
+        }
     }
 }

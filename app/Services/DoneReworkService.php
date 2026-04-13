@@ -21,6 +21,7 @@ class DoneReworkService
             $this->doneReworkRepo->saveDefects($hfId, $data['defects'] ?? [], $data['ppfno'], $data['encoder']);
             $this->doneReworkRepo->saveReworks($hfId, $data['reworks'] ?? [], $data['ppfno'], $data['encoder']);
             $this->doneReworkRepo->saveSmallDefects($hfId, $data['smalldefects'] ?? [], $data['ppfno'], $data['encoder']);
+            $this->doneReworkRepo->updateFlag($data['ppfno']);
         });
     }
 }

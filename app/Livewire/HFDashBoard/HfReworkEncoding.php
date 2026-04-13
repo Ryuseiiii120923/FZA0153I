@@ -6,6 +6,7 @@ use App\Models\Worker;
 use App\Models\WorkerName;
 use App\Services\DoneReworkService;
 use App\Services\ForReworkService;
+use App\Services\HfDashboardService;
 use App\Services\PPFService;
 use Carbon\Carbon;
 use Livewire\Attributes\On;
@@ -21,9 +22,12 @@ class HfReworkEncoding extends Component
     public $error;
     public $insp1, $insp2, $insp3, $insp4, $insp5;
     public $hfno1, $hfno2, $hfno3, $hfno4, $hfno5;
-    public $hfname,$hf_id, $total_inspect;
+    public $hfname, $hf_id, $total_inspect;
     public $encoder, $username, $successMessage, $errorMessage;
     public $defectNg, $reworkNg;
+    public $confirmingDelete = false;
+    public $ppfToDelete = null;
+    public $status;
 
     private function ppfService(): PPFService
     {
@@ -38,18 +42,17 @@ class HfReworkEncoding extends Component
     {
         return app(DoneReworkService::class);
     }
+    private function  HfdashboardService(): HfDashboardService
+    {
+        return app(HfDashboardService::class);
+    }
 
     public function mount()
     {
-        $pending = $this->forReworkService()->FetchForAllRework();
-         $this->pendingRework = $pending->map(function($item) {
-        return [
-            'ppfno' => $item->PPFNo,
-            'total_rework' => (int) $item->total_rework,
-        ];
-    })->toArray();
-    
-        foreach($this->pendingRework as $item){
+        $pending = $this->HfdashboardService()->fetchHfReworkData();
+        $this->pendingRework = $pending;
+        $this->status = collect($pending)->pluck('status', 'ppfno')->toArray();
+        foreach ($this->pendingRework as $item) {
             $this->total_inspect = $item['total_rework'];
         }
         $userencoder = UserAuth::user()->社員CD;
@@ -67,7 +70,49 @@ class HfReworkEncoding extends Component
     {
         $this->selectedPPF = $ppf;
         $this->open = true;
+        $this->dispatch('transferHf', [
+            'hf_id' => $this->hf_id ?? null,
+            'total_inspect' => $this->total_inspect ?? 0
+        ]);
     }
+    public function edit_ppf($ppf)
+    {
+        $this->selectedPPF = $ppf;
+
+        $defect = $this->HfdashboardService()->fetchDefectsByPPF($ppf);
+        $rework = $this->HfdashboardService()->fetchReworksByPPF($ppf);
+        $this->hf_id = $defect['hf_id'] ?? null;
+        $this->dispatch('FetchDefect', [
+            'defects' => $defect['defect'] ?? [],
+            'smallDefects' => $defect['smallDefects'] ?? []
+        ]);
+        $this->dispatch('FetchRework', [
+            'reworks' => $rework['reworks'] ?? []
+        ]);
+        $this->dispatch('transferHf', [
+            'hf_id' => $this->hf_id,
+            'total_inspect' => $this->total_inspect
+        ]);
+        $this->open = true;
+    }
+
+    public function delete_ppf($ppf)
+    {
+        try {
+            $this->HfdashboardService()->deleteDoneRework($ppf);
+            $this->resetModal();
+            session()->flash('success', 'Deleted Successfully!');
+        } catch (\Throwable $e) {
+            session()->flash('error', 'Failed to delete PPF.');
+        }
+    }
+
+    public function confirmDelete($ppf)
+    {
+        $this->ppfToDelete = $ppf;
+        $this->confirmingDelete = true;
+    }
+
 
     public function CloseModal()
     {
@@ -107,8 +152,6 @@ class HfReworkEncoding extends Component
             $this->hf_id = "";
             $this->hfname = null;
         }
-
-        
     }
 
     #[On('FromDefects')]
@@ -235,59 +278,117 @@ class HfReworkEncoding extends Component
         $this->totalngrework = $data['totalngrework'];
     }
 
+    // #[On('FromSmallDefects')]
+    // public function SmallDefects($smalldefectData)
+    // {
+    //     $large  = $smalldefectData['SelectedLargeDefect'];
+    //     $type   = $smalldefectData['type'] ?? $smalldefectData['newSmallDefect'];
+    //     $qty    = $smalldefectData['qty'] ?? $smalldefectData['newSmallQuan'];
+    //     $action = $smalldefectData['action'] ?? 'add';
+
+    //     $this->smalldefects[$large][$type] = [
+    //         'type' => $type,
+    //         'qty' => $qty
+    //     ];
+
+    //     if (!isset($this->smalldefects[$large])) {
+    //         $this->smalldefects[$large] = [];
+    //     }
+    //     dd($this->smalldefects[$large]);
+
+    //     // Normalize existing small defects by lowercase type
+    //     $normalized = [];
+    //     foreach ($this->smalldefects[$large] as $small) {
+    //         $smallType = strtolower($small['type'] ?? '');
+    //         if ($smallType === '') continue;
+
+    //         if (isset($normalized[$smallType])) {
+    //             $normalized[$smallType]['qty'] += $small['qty'];
+    //         } else {
+    //             $normalized[$smallType] = [
+    //                 'type' => $small['type'],
+    //                 'qty'  => $small['qty']
+    //             ];
+    //         }
+    //     }
+
+    //     $key = strtolower($type);
+
+    //     if ($action === 'delete') {
+    //         // Remove the small defect
+    //         //dd('here');
+    //         unset($normalized[$key]);
+    //     } elseif ($action === 'update') {
+    //         // Update the quantity if it exists
+    //         if (isset($normalized[$key])) {
+    //             $normalized[$key]['qty'] = $qty;
+    //         }
+    //     } else {
+    //         // Add new small defect
+    //         if (isset($normalized[$key])) {
+    //             $normalized[$key]['qty'] += $qty;
+    //         } else {
+    //             $normalized[$key] = [
+    //                 'type' => $type,
+    //                 'qty'  => $qty
+    //             ];
+    //         }
+    //     }
+
+    //     // Save back normalized array
+    //     $this->smalldefects[$large] = array_values($normalized);
+    // }
+
     #[On('FromSmallDefects')]
     public function SmallDefects($smalldefectData)
     {
         $large  = $smalldefectData['SelectedLargeDefect'];
-        $type   = $smalldefectData['type'] ?? $smalldefectData['newSmallDefect'];
-        $qty    = $smalldefectData['qty'] ?? $smalldefectData['newSmallQuan'];
+        $type   = $smalldefectData['type'] ?? $smalldefectData['newSmallDefect'] ?? null;
+        $qty    = $smalldefectData['qty'] ?? $smalldefectData['newSmallQuan'] ?? 0;
         $action = $smalldefectData['action'] ?? 'add';
+
+        if (!$type) {
+            throw new \Exception("Small defect type is required.");
+        }
+
+        $key = strtolower($type);
 
         if (!isset($this->smalldefects[$large])) {
             $this->smalldefects[$large] = [];
         }
 
-        // Normalize existing small defects by lowercase type
-        $normalized = [];
-        foreach ($this->smalldefects[$large] as $small) {
-            $smallType = strtolower($small['type'] ?? '');
-            if ($smallType === '') continue;
+        if ($action === 'add') {
 
-            if (isset($normalized[$smallType])) {
-                $normalized[$smallType]['qty'] += $small['qty'];
+            if (isset($this->smalldefects[$large][$key])) {
+                $this->smalldefects[$large][$key]['qty'] += $qty;
             } else {
-                $normalized[$smallType] = [
-                    'type' => $small['type'],
-                    'qty'  => $small['qty']
-                ];
-            }
-        }
-
-        $key = strtolower($type);
-
-        if ($action === 'delete') {
-            // Remove the small defect
-            //dd('here');
-            unset($normalized[$key]);
-        } elseif ($action === 'update') {
-            // Update the quantity if it exists
-            if (isset($normalized[$key])) {
-                $normalized[$key]['qty'] = $qty;
-            }
-        } else {
-            // Add new small defect
-            if (isset($normalized[$key])) {
-                $normalized[$key]['qty'] += $qty;
-            } else {
-                $normalized[$key] = [
+                $this->smalldefects[$large][$key] = [
                     'type' => $type,
-                    'qty'  => $qty
+                    'qty'  => $qty,
                 ];
             }
-        }
+        } elseif ($action === 'update') {
 
-        // Save back normalized array
-        $this->smalldefects[$large] = array_values($normalized);
+            if (isset($this->smalldefects[$large][$key])) {
+                $this->smalldefects[$large][$key]['qty'] = $qty;
+            } else {
+                // fallback: if not existing, create it
+                $this->smalldefects[$large][$key] = [
+                    'type' => $type,
+                    'qty'  => $qty,
+                ];
+            }
+        } elseif ($action === 'delete') {
+
+            unset($this->smalldefects[$large][$key]);
+
+            if (empty($this->smalldefects[$large])) {
+                unset($this->smalldefects[$large]);
+            }
+        }
+        foreach ($this->smalldefects as $largeKey => $items) {
+            $this->smalldefects[$largeKey] = array_values($items);
+        }
     }
 
     #[On('sendNg')]
@@ -305,7 +406,7 @@ class HfReworkEncoding extends Component
     public function saveHF($ppf)
     {
         try {
-           
+
             $goodQty = ($this->total_inspect ?? 0) - ($this->defectNg ?? 0) - ($this->reworkNg ?? 0);
             $data = [
                 'hf_id' => $this->hf_id ?? null,
@@ -321,9 +422,9 @@ class HfReworkEncoding extends Component
             $this->doneReworkService()->saveDoneRework($data);
 
             $this->resetModal();
-           session()->flash('success', 'Saved Successfully!');
+            session()->flash('success', 'Saved Successfully!');
         } catch (\Throwable $e) {
-           $this->errorMessage = $e->getMessage();
+            $this->errorMessage = $e->getMessage();
         }
     }
 }

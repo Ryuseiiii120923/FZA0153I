@@ -210,6 +210,7 @@ class Rework extends Component
         ]);
         $this->newRework = '';
         $this->newQuan   = '';
+        $this->UpdatedNgRework($this->formId);
     }
 
     public function CheckHf()

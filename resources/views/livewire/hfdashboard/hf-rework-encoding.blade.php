@@ -38,24 +38,62 @@
         <table class="table-auto w-full text-sm text-white bg-gray-800 rounded-lg overflow-hidden">
             <thead class="bg-gray-900 text-white text-left">
                 <tr>
-                    <th class="px-4 py-2">PPFNO</th>
-                    <th class="px-4 py-2">Total Rework</th>
-                    <th class="px-4 py-2">Action</th>
+                    <th class="px-4 py-2  text-center">PPFNO</th>
+                    <th class="px-4 py-2  text-center">Total Rework</th>
+                    <th class="px-4 py-2 text-center">Action</th>
+                    <th class="px-4 py-2  text-center">Status</th>
                 </tr>
             </thead>
 
             <tbody class="bg-gray-700">
                 @foreach ($pendingRework as $data )
                 <tr>
-                    <td class="px-4 py-2">{{ (int) $data['ppfno'] ?? '' }}</td>
-                    <td class="px-4 py-2">{{ $data['total_rework'] ?? '' }}</td>
-                    <td class="px-4 py-2 flex justify-start">
+                    <td class="px-4 py-2  text-center">{{ (int) $data['ppfno'] ?? '' }}</td>
+                    <td class="px-4 py-2 text-center">{{ $data['total_rework'] ?? '' }}</td>
+                    <td class=" py-2 flex justify-center gap-2">
+
                         <button
-                            class="text-white bg-green-700 px-4 py-2 rounded"
+                            class="text-white bg-green-700 px-4 py-2 rounded  @if (($status[$data['ppfno']] ?? '') == 'Confirmed') opacity-50  @endif"
+                            @if (($status[$data['ppfno']] ?? '' )=='Confirmed' ) disabled @endif
                             @click="open = true; $wire.confirm_ppf('{{ $data['ppfno'] }}')">
                             Confirm
                         </button>
+                        <button
+                            class="text-white bg-blue-700 px-4 py-2 rounded"
+                            @click="open = true; $wire.edit_ppf('{{ $data['ppfno'] }}')">
+                            Edit
+                        </button>
+                        <button
+                            wire:click="confirmDelete('{{ $ppf }}')"
+                            class="bg-red-500 text-white px-3 py-1 rounded">
+                            Delete
+                        </button>
+
+                        @if($confirmingDelete)
+                        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                            <div class="bg-white p-6 rounded shadow">
+
+                                <p class="text-black">Are you sure you want to delete this PPF?</p>
+
+                                <div class="flex justify-center gap-2 mt-4">
+                                    <button
+                                        class="bg-red-600 text-white px-4 py-2"
+                                        wire:click="delete_ppf">
+                                        Yes, Delete
+                                    </button>
+
+                                    <button
+                                        class="bg-blue-400 text-white px-4 py-2"
+                                        wire:click="$set('confirmingDelete', false)">
+                                        Cancel
+                                    </button>
+                                </div>
+
+                            </div>
+                        </div>
+                        @endif
                     </td>
+                    <td class="px-4 py-2 text-center">{{ $status[$data['ppfno']] ?? '' }}</td>
                 </tr>
                 @endforeach
             </tbody>
@@ -93,7 +131,7 @@
                         @error('hf_id') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
 
                     </div>
-                </div >
+                </div>
                 <div class="w-full">
                     <div class="flex-col w-full">
                         <label for="totalInspct" class="block text-sm font-medium text-black">Total Inspct Qty.</label>
