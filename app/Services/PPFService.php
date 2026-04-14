@@ -8,17 +8,20 @@ use App\Models\Operator\PRInsp;
 use App\Repositories\DefectRepository;
 use App\Repositories\DoneReworkRepository;
 use App\Repositories\PPFRepository;
+use App\Repositories\WorkerRepository;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class PPFService
 {
-    protected $ppfRepo, $doneReworkRepo, $defectRepo;
+    protected $ppfRepo, $doneReworkRepo, $defectRepo, $workerRepo;
 
-    public function __construct(PPFRepository $ppfRepo, DoneReworkRepository $doneReworkRepo, DefectRepository $defectRepo)
+    public function __construct(PPFRepository $ppfRepo, DoneReworkRepository $doneReworkRepo, DefectRepository $defectRepo, WorkerRepository $workerRepo)
     {
         $this->ppfRepo = $ppfRepo;
         $this->defectRepo = $defectRepo;
         $this->doneReworkRepo = $doneReworkRepo;
+        $this->workerRepo = $workerRepo;
     }
 
     public function loadProcessRecord($ppf, $inspectorID, $systemname, $actiondash)
@@ -55,8 +58,8 @@ class PPFService
             return ['error' => 'Already Registered'];
         }
 
-        $check = CheckPPF::where('流動NO', $ppf)->first();
-        $hf = CheckHF::where('流動NO', $ppf)->first();
+        $check = DB::table('成形実績')->where('流動NO', $ppf)->first();
+        $hf = DB::table('計量１')->where('流動NO', $ppf)->first();
 
         if (!$check) {
             return ['error' => 'PPF not Wfound in molding'];
@@ -114,7 +117,74 @@ class PPFService
         }
     }
 
-    public function checkIfPPFExist($ppf){
+    public function checkIfPPFExist($ppf)
+    {
         return $this->ppfRepo->getPPF($ppf);
+    }
+
+    public function loadMainRecord($ppf)
+    {
+        $record = $this->defectRepo->fetchAddDefect($ppf);
+
+
+        if (!$record) {
+            return null;
+        }
+
+        $data = [];
+        $getexpct = $this->defectRepo->getExpected($ppf);
+        $largeDefects = $this->defectRepo->getDefectforMain();
+
+        $data['expct'] = $getexpct->合格数 ?? 0;
+        $data['largeDefect'] = $largeDefects;
+        $data['ppf'] = $record->PPFNo;
+        $data['partno'] = $record->PartNo;
+        $data['lotno'] = $record->Lotno;
+        $data['matno'] = $record->MatNo;
+        $data['moldno'] = $record->MDNo;
+        $data['pressno'] = $record->PressNo;
+        $data['shift'] = $record->Shift;
+        $data['opt'] = $record->Operator;
+
+        // Quantities
+        $data['goodqty'] = $record->Good;
+        $data['excssqty'] = $record->ExcessQty;
+        $data['lackqty'] = $record->LackingQty;
+        $data['reworkqty'] = $record->ReworkQty;
+        $data['sampleqty'] = $record->SampleQty;
+
+        // Inspection
+        $data['insp1'] = $record->InspNo1;
+        $data['insp2'] = $record->InspNo2;
+        $data['insp3'] = $record->InspNo3;
+        $data['insp4'] = $record->InspNo4;
+        $data['insp5'] = $record->InspNo5;
+
+        // Dates
+        $data['inspection_date'] = Carbon::parse($record->InspectionDate)->format('Y-m-d');
+        $data['updated_at'] = Carbon::parse($record->DateEncode)->format('Y-m-d h:i:s A');
+
+        // Defects
+        $defects = [];
+
+        if (!empty($record->Defect) && $record->Quantity > 0) {
+            $defects[] = [
+                'type' => $record->Defect,
+                'qty'  => $record->Quantity
+            ];
+        }
+
+        $data['defects'] = $defects;
+
+
+        // Worker
+        $worker = $this->workerRepo->getWorkerName($record->Encoder);
+        $data['username'] = $worker->名前 ?? '';
+
+        // Others
+        $data['details'] = $record->Details;
+        $data['auto'] = $record->AutoMachine;
+
+        return $data;
     }
 }

@@ -9,10 +9,12 @@ class DefectRepository
 {
     public function fetchAddDefect($ppf)
     {
-        return AddDefect::where('PPFNo', $ppf)->first();
+        return Db::table('Defect')
+            ->where('PPFNo', $ppf)
+            ->first();
     }
 
-       public function getEncoders($ppf)
+    public function getEncoders($ppf)
     {
         return DB::table('Inspector_Defect')
             ->where('PPFNo', $ppf)
@@ -56,7 +58,7 @@ class DefectRepository
             ->value('insp_name');
     }
 
-    public function getSmallDefects($ppf, $encoder, $defectName,$encodeProcess)
+    public function getSmallDefects($ppf, $encoder, $defectName, $encodeProcess)
     {
         return DB::table('Inspector_Small')
             ->selectRaw('SmallDefect, SUM(Qty) as total_qty')
@@ -69,20 +71,34 @@ class DefectRepository
     }
 
     public function getDefectsGrouped($ppf)
-{
-    return DB::table('Inspector_Defect')
-        ->select(
-            'InspectorID',
-            'insp_name',
-            'Defect',
-            'EncodeProcess',
-            DB::raw('SUM(Quantity) as total_qty'),
-            DB::raw('MAX(DateEncode) as latest_date')
-        )
-        ->where('PPFNo', $ppf)
-        ->whereNotNull('InspectorID')
-        ->groupBy('InspectorID', 'insp_name', 'Defect', 'EncodeProcess')
-        ->orderBy('InspectorID')
-        ->get();
-}
+    {
+        return DB::table('Inspector_Defect')
+            ->select(
+                'InspectorID',
+                'insp_name',
+                'Defect',
+                'EncodeProcess',
+                DB::raw('SUM(Quantity) as total_qty'),
+                DB::raw('MAX(DateEncode) as latest_date')
+            )
+            ->where('PPFNo', $ppf)
+            ->whereNotNull('InspectorID')
+            ->groupBy('InspectorID', 'insp_name', 'Defect', 'EncodeProcess')
+            ->orderBy('InspectorID')
+            ->get();
+    }
+
+    public function getExpected($ppf)
+    {
+        return Db::table('計量１')->where('流動NO', $ppf)->first();
+    }
+
+    public function getDefectforMain()
+    {
+        return DB::table('DefectMatrix2')
+            ->select('LargeDefect')
+            ->whereNotNull('LargeDefect')
+            ->orderBy('LargeDefect', 'ASC')
+            ->get();
+    }
 }

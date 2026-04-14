@@ -274,15 +274,11 @@ class DoneRework extends Component
 
     public function saveDoneRework()
     {
-        // Sum TotalNg from all forms
         $totalNg = collect($this->forms)->sum(function ($form) {
-            // calculate total NG per form if not already calculated
             $defectQty = collect($form['defects'] ?? [])->sum('qty');
-            // $reworkQty = collect($form['rework'] ?? [])->sum('quan');
             return $defectQty;
         });
 
-        // Optional: also sum total good quantity
         $totalGood = collect($this->forms)->sum(function ($form) {
             return $form['GoodQty'] ?? 0;
         });

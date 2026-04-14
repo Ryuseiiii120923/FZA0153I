@@ -303,6 +303,7 @@ class Gldashboard extends Component
             return;
         }
         $this->dispatch('LoadMainRecord', $ppf);
+          $this->dispatch('FetchDoneRework', $ppf);
         $this->LoadDefectsGL($ppf);
         $this->dispatch('LoadPlantGL', $ppf);
         $this->LoadReworksGL($ppf);

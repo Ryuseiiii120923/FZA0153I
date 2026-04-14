@@ -107,7 +107,6 @@ class Goodng extends Component
         $this->goodqty = $this->ForReworkService()->fetchGoodQty($this->ppf);
         // $this->GoodNg();
         // $this->fetchGoodQty($this->ppf);
-        dd($this->ngratioqty);
     }
 
     #[On('fetchGoodQty')]

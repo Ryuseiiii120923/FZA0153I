@@ -12,6 +12,9 @@ use App\Models\Rework;
 use App\Models\SmallDef;
 use App\Models\ViCheck;
 use App\Models\WorkerName;
+use App\Services\DefectService;
+use App\Services\PPFService;
+use App\Services\ReworkService;
 use Illuminate\Support\Facades\Auth as UserAuth;
 use DateTime;
 use Livewire\Component;
@@ -87,6 +90,21 @@ class Add extends Component
         'InspectorUpdate' => 'InspectorUpdate'
     ];
 
+
+    private function ppfService(): PPFService
+    {
+        return  app(PPFService::class);
+    }
+
+    private function reworkService(): ReworkService
+    {
+        return app(ReworkService::class);
+    }
+
+    private function defectService(): DefectService
+    {
+        return app(DefectService::class);
+    }
     public function locked($data)
     {
         $this->locked = $data;
@@ -449,6 +467,8 @@ class Add extends Component
         if (!$this->loadMainRecord($ppf)) {
             return; // stop the rest of FetchDatas if record not found
         }
+        dd('here');
+        $this->dispatch('FetchDoneRework', $ppf);
         $this->loadPlant($ppf);
         $this->loadDefects($ppf);
         $this->loadReworks($ppf);
@@ -474,84 +494,37 @@ class Add extends Component
         }
     }
 
-    // #[On('ReceiveDefectsFromGL')]
-    // public function ReceiveDefectsFromGL(){
-    //     $this->defects
-    // }
-
-    private function loadDefects($ppf)
+    public function loadDefects($ppf)
     {
-        $defect = AddDefect::select('Defect', 'Quantity')->where('PPFNo', $ppf)->get();
-
-        if ($defect) {
-            // Main defect list
-            $this->defects = $defect->map(function ($item) {
-                return [
-                    'type' => $item->Defect,
-                    'qty'  => (int) $item->Quantity
-                ];
-            })->filter(fn($d) => $d['qty'] > 0)
-                ->values()
-                ->toArray();
-
-            $last = end(array: $this->defects);
-            $this->lastdef = $last['type'] ?? null;
-            $this->lastqty = $last['qty'] ?? null;
-
-            // Group small defects by large defect
-            foreach ($defect as $item) {
-                $large = $item->Defect;
-
-                $smallDef = SmallDef::select('LargeDefect', 'SmallDefect', 'Qty', 'EncodeProcess')->where('LargeDefect', $large)
-                    ->where('PPFNo', $ppf)
-                    ->get();
-
-                foreach ($smallDef as $s) {
-                    $large = $s->LargeDefect;
-                    $inspectorId = $s->inspect_REC;
-                }
-
-                $this->smalldefects[$large] = $smallDef->map(function ($s) {
-                    return [
-                        'SelectedLargeDefect' => $s->LargeDefect,
-                        'type' => $s->SmallDefect,
-                        'qty'  => $s->Qty
-                    ];
-                })->toArray();
-            }
-
-            if ($this->defects) {
-                $this->dispatch('DefectFromUpdate', [
+        $result = $this->defectService()->loadDefectsGL($ppf);
+        $this->defects = $result['defects'];
+        if (!empty($this->defects)) {
+            $this->smalldefects = $result['smallDefects'];
+            $this->dispatch(
+                'DefectFromUpdate',
+                [
                     'defects'       => $this->defects,
                     'smallDefects' => $this->smalldefects,
-                ]);
-            }
+                ]
+            );
         }
     }
 
     private function loadReworks($ppf)
     {
-        $reworkss = AddRwk::select('HFNo', 'TotalInspQty', 'Defect', 'Quantity')->where('PPFNo', $ppf)->get();
+        $result = $this->reworkService()->getReworks($ppf);
+        $this->rework = $result['reworks'];
 
-        if ($reworkss) {
-            $this->rework = $reworkss->map(function ($item) {
-                return [
-                    'hfno' => $item->HFNo,
-                    'totalinsp' => $item->TotalInspQty,
-                    'type' => $item->Defect,
-                    'quan' => $item->Quantity
-                ];
-            });
-
-            if ($this->rework) {
-                $this->dispatch('ReworkFromUpdate', [
-                    'reworks' => $this->rework
-                ]);
-            }
+        if (!empty($this->reworks)) {
+            $this->dispatch('ReworkFromUpdate', [
+                'reworks' => $this->rework
+            ]);
+            $this->dispatch('FromReworks', [
+                'reworksData' => $result['payload']
+            ]);
         }
 
-        $this->totalngrework = collect($this->rework)
-            ->sum(fn($x) => (int) $x['quan']);
+        $this->totalngrework = $result['total'];
     }
 
     public function InspectorUpdate($inspectorId)
@@ -579,107 +552,150 @@ class Add extends Component
     }
 
 
+    // #[On('LoadMainRecord')]
+    // public function loadMainRecord($ppf)
+    // {
+    //     $record = AddDefect::select('PPFNo', 'PartNo', 'Lotno', 'MatNo', 'MDNo', 'PressNo', 'Shift', 'Operator', 'Total', 'Good', 'HFNo1', 'HFNo2', 'HFNo3', 'HFNo4', 'HFNo5', 'InspNo1', 'InspNo2', 'InspNo3', 'InspNo4', 'ExcessQty', 'LackingQty', 'ReworkQty', 'SampleQty', 'InspectionDate', 'AutoMachine', 'Details', 'Encoder')->where('PPFNo', $ppf)->first();
+      //   $getexpct = CheckHF::where('流動NO', $ppf)->first();
+
+    //     if ($record) {
+
+    //         if ($getexpct) {
+    //             $this->expct = $getexpct->合格数;
+    //             $this->dispatch('totalInspectedProgress');
+    //         }
+
+    //         $this->Largedefects = Defects::select('LargeDefect')
+    //             ->distinct()
+    //             ->whereNotNull('LargeDefect')
+    //             ->orderBy('LargeDefect', 'ASC')
+    //             ->get();
+
+    //         $this->ppf = $record->PPFNo;
+    //         $this->partno = $record->PartNo;
+    //         $this->lotno = $record->Lotno;
+    //         $this->matno = $record->MatNo;
+    //         $this->moldno = $record->MDNo;
+    //         $this->pressno = $record->PressNo;
+    //         $this->shift = $record->Shift;
+    //         $this->opt = $record->Operator;
+    //         $this->expct = $record->Total;
+    //         $this->goodqty = $record->Good;
+    //         $this->hfno1 = $record->HFNo1;
+    //         $this->hfno2 = $record->HFNo2;
+    //         $this->hfno3 = $record->HFNo3;
+    //         $this->hfno4 = $record->HFNo4;
+    //         $this->hfno5 = $record->HFNo5;
+    //         $this->insp1 = $record->InspNo1;
+    //         $this->insp2 = $record->InspNo2;
+    //         $this->insp3 = $record->InspNo3;
+    //         $this->insp4 = $record->InspNo4;
+    //         $this->insp5 = $record->InspNo5;
+
+    //         $existingDefects = $record->Defect
+    //             ? [['newDefect' => $record->Defect, 'newQuan' => $record->Quantity]]
+    //             : [];
+
+    //         foreach ($existingDefects as $existing) {
+    //             if ($existing['newQuan'] <= 0) continue;
+
+    //             $exists = collect($this->defects)->contains(function ($def) use ($existing) {
+    //                 return strtolower(trim($existing['newDefect'])) === strtolower(trim($def['type']));
+    //             });
+
+    //             if (!$exists) {
+    //                 $this->defects[] = [
+    //                     'type' => $existing['newDefect'],
+    //                     'qty'  => $existing['newQuan']
+    //                 ];
+    //             }
+    //         }
+
+    //         $this->details = $record->Details;
+    //         $this->InspectDates = Carbon::parse($record->InspectionDate)->format('Y-m-d');
+    //         $this->encoder = $record->Encoder;
+    //         $this->UpdateDate = Carbon::parse($record->DateEndcode)->format('Y-m-d h:i:s A');
+    //         $this->excssqty = $record->ExcessQty;
+    //         $this->lackqty = $record->LackingQty;
+    //         $this->reworkqty = $record->ReworkQty;
+    //         $this->sampleqty = $record->SampleQty;
+    //         $this->auto = $record->AutoMachine;
+
+    //         $UserName = WorkerName::Where('社員CD', $this->encoder)->first();
+    //         $this->username = $UserName->名前  ?? '';
+
+    //         $this->dispatch('FromView', [
+    //             'ppf' => $this->ppf,
+    //             'lotno' => $this->lotno,
+    //             'partno' => $this->partno,
+    //             'matno' => $this->matno,
+    //             'moldno' => $this->moldno,
+    //             'pressno' => $this->pressno,
+    //             'shift' => $this->shift,
+    //             'opt' => $this->opt,
+    //             'expct' => (int)$this->expct,
+    //             'insp5' => $this->insp5,
+    //             'insp1' => $this->insp1,
+    //             'insp2' => $this->insp2,
+    //             'insp3' => $this->insp3,
+    //             'insp4' => $this->insp4,
+    //             'goodqty' => $this->goodqty,
+    //             'ngratioqty' => $this->ngratioqty,
+    //             'excssqty' => $this->excssqty,
+    //             'lackqty' => $this->lackqty,
+    //             'reworkqty' => $this->reworkqty,
+    //             'sampleqty' => $this->sampleqty,
+    //             'TotalNg' => $this->totalngrework,
+    //             'auto' => $this->auto
+    //         ]);
+    //         return true;
+    //     } else {
+    //         session()->flash('failed', 'Record not found');
+    //         return false;
+    //     }
+    // }
+
+
     #[On('LoadMainRecord')]
     public function loadMainRecord($ppf)
     {
-        $record = AddDefect::select('PPFNo', 'PartNo', 'Lotno', 'MatNo', 'MDNo', 'PressNo', 'Shift', 'Operator', 'Total', 'Good', 'HFNo1', 'HFNo2', 'HFNo3', 'HFNo4', 'HFNo5', 'InspNo1', 'InspNo2', 'InspNo3', 'InspNo4', 'ExcessQty', 'LackingQty', 'ReworkQty', 'SampleQty', 'InspectionDate', 'AutoMachine', 'Details', 'Encoder')->where('PPFNo', $ppf)->first();
-        $getexpct = CheckHF::where('流動NO', $ppf)->first();
+        $data = $this->ppfService()->loadMainRecord($ppf);
 
-        if ($record) {
-
-            if ($getexpct) {
-                $this->expct = $getexpct->合格数;
-                $this->dispatch('totalInspectedProgress');
-            }
-
-            $this->Largedefects = Defects::select('LargeDefect')
-                ->distinct()
-                ->whereNotNull('LargeDefect')
-                ->orderBy('LargeDefect', 'ASC')
-                ->get();
-
-            $this->ppf = $record->PPFNo;
-            $this->partno = $record->PartNo;
-            $this->lotno = $record->Lotno;
-            $this->matno = $record->MatNo;
-            $this->moldno = $record->MDNo;
-            $this->pressno = $record->PressNo;
-            $this->shift = $record->Shift;
-            $this->opt = $record->Operator;
-            $this->expct = $record->Total;
-            $this->goodqty = $record->Good;
-            $this->hfno1 = $record->HFNo1;
-            $this->hfno2 = $record->HFNo2;
-            $this->hfno3 = $record->HFNo3;
-            $this->hfno4 = $record->HFNo4;
-            $this->hfno5 = $record->HFNo5;
-            $this->insp1 = $record->InspNo1;
-            $this->insp2 = $record->InspNo2;
-            $this->insp3 = $record->InspNo3;
-            $this->insp4 = $record->InspNo4;
-            $this->insp5 = $record->InspNo5;
-
-            $existingDefects = $record->Defect
-                ? [['newDefect' => $record->Defect, 'newQuan' => $record->Quantity]]
-                : [];
-
-            foreach ($existingDefects as $existing) {
-                if ($existing['newQuan'] <= 0) continue;
-
-                $exists = collect($this->defects)->contains(function ($def) use ($existing) {
-                    return strtolower(trim($existing['newDefect'])) === strtolower(trim($def['type']));
-                });
-
-                if (!$exists) {
-                    $this->defects[] = [
-                        'type' => $existing['newDefect'],
-                        'qty'  => $existing['newQuan']
-                    ];
-                }
-            }
-
-            $this->details = $record->Details;
-            $this->InspectDates = Carbon::parse($record->InspectionDate)->format('Y-m-d');
-            $this->encoder = $record->Encoder;
-            $this->UpdateDate = Carbon::parse($record->DateEndcode)->format('Y-m-d h:i:s A');
-            $this->excssqty = $record->ExcessQty;
-            $this->lackqty = $record->LackingQty;
-            $this->reworkqty = $record->ReworkQty;
-            $this->sampleqty = $record->SampleQty;
-            $this->auto = $record->AutoMachine;
-
-            $UserName = WorkerName::Where('社員CD', $this->encoder)->first();
-            $this->username = $UserName->名前  ?? '';
-
-            $this->dispatch('FromView', [
-                'ppf' => $this->ppf,
-                'lotno' => $this->lotno,
-                'partno' => $this->partno,
-                'matno' => $this->matno,
-                'moldno' => $this->moldno,
-                'pressno' => $this->pressno,
-                'shift' => $this->shift,
-                'opt' => $this->opt,
-                'expct' => (int)$this->expct,
-                'insp5' => $this->insp5,
-                'insp1' => $this->insp1,
-                'insp2' => $this->insp2,
-                'insp3' => $this->insp3,
-                'insp4' => $this->insp4,
-                'goodqty' => $this->goodqty,
-                'ngratioqty' => $this->ngratioqty,
-                'excssqty' => $this->excssqty,
-                'lackqty' => $this->lackqty,
-                'reworkqty' => $this->reworkqty,
-                'sampleqty' => $this->sampleqty,
-                'TotalNg' => $this->totalngrework,
-                'auto' => $this->auto
-            ]);
-            return true;
-        } else {
+        if (!$data) {
             session()->flash('failed', 'Record not found');
             return false;
         }
+
+        // Assign to properties
+        foreach ($data as $key => $value) {
+            $this->{$key} = $value;
+        }
+         $this->dispatch('totalInspectedProgress');
+
+        $this->dispatch('FromView', [
+            'ppf' => $this->ppf,
+            'lotno' => $this->lotno,
+            'partno' => $this->partno,
+            'matno' => $this->matno,
+            'moldno' => $this->moldno,
+            'pressno' => $this->pressno,
+            'shift' => $this->shift,
+            'opt' => $this->opt,
+            'expct' => (int)$this->expct,
+            'insp1' => $this->insp1,
+            'insp2' => $this->insp2,
+            'insp3' => $this->insp3,
+            'insp4' => $this->insp4,
+            'insp5' => $this->insp5,
+            'goodqty' => $this->goodqty,
+            'excssqty' => $this->excssqty,
+            'lackqty' => $this->lackqty,
+            'reworkqty' => $this->reworkqty,
+            'sampleqty' => $this->sampleqty,
+            'auto' => $this->auto
+        ]);
+
+        return true;
     }
 
     #[On('sendNg')]
@@ -777,7 +793,7 @@ class Add extends Component
     }
     public function AddtoDb()
     {
-        $totalInspected = PRInsp::where('PPFNo', $this->ppf)
+        $totalInspected = DB::table('Inspector_PR')->where('PPFNo', $this->ppf)
             ->sum('total_inspect');
 
         $hasRework = DB::table('hf_rework')
@@ -846,8 +862,8 @@ class Add extends Component
         //dd($this->rework);
         //dd($this->smalldefects);
 
-        SmallDef::where('PPFNo', $this->ppf)->delete();
-        AddRwk::where('PPFNo', $this->ppf)->delete();
+        Db::table('DefectSMALL')->where('PPFNo', $this->ppf)->delete();
+        Db::table('DefectRWK')->where('PPFNo', $this->ppf)->delete();
         if (!empty($this->rework)) {
             foreach ($this->rework as $hfno => $types) {
                 foreach ($types as $rework) {
@@ -855,7 +871,7 @@ class Add extends Component
                     $qty   = $rework['quan'] ?? 0;
                     $total = $rework['totalinsp'] ?? 0;
 
-                    AddRwk::create([
+                    Db::table('DefectRWK') ->create([
                         'PPFNo'        => $this->ppf,
                         'HFNo'         => $hfno,   // now HFNO comes from the key
                         'Defect'       => $type ?? '',
@@ -866,9 +882,9 @@ class Add extends Component
             }
         }
 
-        $ViCheck = ViCheck::select('QtyOut', 'NGQty', 'Excess', 'Lacking', 'Rework', 'Sample', 'EncoderOut', 'Plant', 'InspectionDate', 'DateOut')->where('PPFNO', $this->ppf)->first();
+        $ViCheck = Db::table('VICHECK')->select('QtyOut', 'NGQty', 'Excess', 'Lacking', 'Rework', 'Sample', 'EncoderOut', 'Plant', 'InspectionDate', 'DateOut')->where('PPFNO', $this->ppf)->first();
         if ($ViCheck) {
-            ViCheck::where('PPFNO', $this->ppf)
+            Db::table('VICHECK')->where('PPFNO', $this->ppf)
                 ->update([
                     'QtyOut' => $this->goodqty ?? 0,
                     'NGQty' => $this->ngratioqty ?? 0,
@@ -888,7 +904,7 @@ class Add extends Component
 
         if (empty($this->defects) || count($this->defects) === 0) {
 
-            AddDefect::create([
+            Db::table('Defect')->create([
 
                 'PPFNo' => (float) $this->ppf,
                 'PartNo' => $this->partno,
@@ -929,7 +945,7 @@ class Add extends Component
                 $type = $defect['type'] ?? $defect['newDefect'] ?? null;
                 $qty  = isset($defect['qty']) ? (float)$defect['qty'] : (float)($defect['newQuan'] ?? '');
                 if (!$type || $qty <= 0) continue;
-                AddDefect::create([
+                Db::table('Defect')->create([
                     'PPFNo' => (float) $this->ppf,
                     'PartNo' => $this->partno,
                     'Lotno' => $this->lotno,
@@ -984,7 +1000,7 @@ class Add extends Component
                 //     ->delete();
                 foreach ($this->smalldefects as $largeDefect => $smalls) {
                     foreach ($smalls as $small) {
-                        SmallDef::create([
+                        DB::table('DefectSMALL')->create([
                             'PPFNo'       => $this->ppf,
                             'LargeDefect' => $largeDefect, // <-- the name, not the array
                             'SmallDefect' => $small['newSmallDefect'] ?? $small['type'],
@@ -995,13 +1011,13 @@ class Add extends Component
             }
         } elseif ($this->submitMethod === 'addToDb') {
             if (!empty($this->smalldefects)) {
-                SmallDef::select('PPFNo', 'LargeDefect', 'SmallDefect', 'Qty')->where('PPFNo', $this->ppf)
+                 DB::table('DefectSMALL')->select('PPFNo', 'LargeDefect', 'SmallDefect', 'Qty')->where('PPFNo', $this->ppf)
                     ->where('dFlg', 'VI')
                     ->delete();
 
                 foreach ($this->smalldefects as $largeDefect => $smalls) {
                     foreach ($smalls as $small) {
-                        SmallDef::create([
+                        DB::table('DefectSMALL')->create([
                             'PPFNo'       => $this->ppf,
                             'LargeDefect' => $largeDefect, // <-- the name, not the array
                             'SmallDefect' => $small['newSmallDefect'] ?? $small['type'],
