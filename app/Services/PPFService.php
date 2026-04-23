@@ -160,6 +160,13 @@ class PPFService
         $data['insp4'] = $record->InspNo4;
         $data['insp5'] = $record->InspNo5;
 
+        $data['hfno1'] = $record->HFNo1;
+        $data['hfno2'] = $record->HFNo2;
+        $data['hfno3'] = $record->HFNo3;
+        $data['hfno4'] = $record->HFNo4;
+        $data['hfno5'] = $record->HFNo5;
+
+
         // Dates
         $data['inspection_date'] = Carbon::parse($record->InspectionDate)->format('Y-m-d');
         $data['updated_at'] = Carbon::parse($record->DateEncode)->format('Y-m-d h:i:s A');

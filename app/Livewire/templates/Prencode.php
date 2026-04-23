@@ -49,6 +49,7 @@ class Prencode extends Component
     public $isCheckPPF;
     public $methodSave;
     public $needToDeleteForm = [], $needToDeleteDefect = [], $needToDeleteRework = [], $needToDeleteDefectSmall = [];
+    public $loading = false;
 
 
     protected function prencodeService()
@@ -336,8 +337,10 @@ class Prencode extends Component
 
     public function editPrencode()
     {
+        
         Db::beginTransaction();
         try {
+            $this->loading = true;
             $ppfno = $this->ppf;
             if (!empty($this->needToDeleteForm)) {
                 foreach ($this->needToDeleteForm as $form) {
@@ -453,6 +456,7 @@ class Prencode extends Component
             $this->needToDeleteRework = [];
 
             DB::commit();
+            $this->loading = false;
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Edit PR Encode Error', [
@@ -462,6 +466,7 @@ class Prencode extends Component
 
             session()->flash('failed', 'Edit failed!');
         }
+
     }
 
     #[On('fetchTotalInspection')]

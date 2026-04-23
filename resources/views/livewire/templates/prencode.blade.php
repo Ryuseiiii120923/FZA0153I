@@ -146,5 +146,30 @@
     <div class="mt-3">
         <livewire:templates.operatordash />
     </div>
+    <div
+        wire:loading.flex
+        wire:target="editPrencode"
+        class="fixed inset-0 z-50 items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            ⏳ Saving Please wait...
+        </div>
+    </div>
 
+      <div
+        wire:loading.flex
+        wire:target="addPrencode"
+        class="fixed inset-0 z-50 items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            ⏳ Adding Please wait...
+        </div>
+    </div>
+
+    <div
+        wire:loading.flex
+        wire:target="deletePrencode"
+        class="fixed inset-0 z-50 items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            ⏳ Deleting Please wait...
+        </div>
+    </div>
 </div>

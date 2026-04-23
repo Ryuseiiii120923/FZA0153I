@@ -146,7 +146,6 @@ class Checkppf extends Component
     //         $this->isAccept = false;
     //     }
     // }
-
     public function totalInspectedProgress()
     {
         // Compute the current tota
@@ -169,6 +168,7 @@ class Checkppf extends Component
                 'excssqty' => 0,
                 'lackqty' => 0,
             ]);
+            $this->dispatch('GoodNg');
         } else {
             $this->isAccept = false;
         }
@@ -200,6 +200,7 @@ class Checkppf extends Component
         $check = ModelsCheckPPF::where('流動NO', $this->ppf)->first();
         $hf = CheckHF::where('流動NO', $this->ppf)->first();
         $totalinsp = PRInsp::where('PPFNo', $this->ppf)->where('InspectorID', $this->inspectorID)->first();
+        
         $this->dispatch('GoodNg');
         if ($this->actiondash != 'edit' && $this->actiondash != 'view') {
 
@@ -271,6 +272,7 @@ class Checkppf extends Component
                 $this->showInspectionModal = true;
             }
         }
+        $this->totalInspectedProgress();
         return true;
     }
 
@@ -428,6 +430,7 @@ class Checkppf extends Component
                 $this->dispatch('fetchppf', $this->ppf);
                 $this->dispatch('GoodNg');
             }
+            $this->dispatch('IsLoading', false);
         } elseif ($this->systemname === 'GLDashboard') {
             $this->dispatch('FetchTotalInspectionTable', $ppf);
             if ($this->action === 'Add') {

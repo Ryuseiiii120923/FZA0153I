@@ -1,6 +1,5 @@
-
 <div x-data="{ showFixed: false }"
-     x-init="
+    x-init="
         window.addEventListener('scroll', () => {
             showFixed = window.scrollY > 470;
         })
@@ -26,8 +25,8 @@
 
     <!-- FLOATING BUTTON (appears on scroll) -->
     <div x-show="showFixed"
-         x-transition
-         class="fixed top-0 left-0 w-full z-50 bg-white shadow-lg px-5 py-5 flex gap-3">
+        x-transition
+        class="fixed top-0 left-0 w-full z-50 bg-white shadow-lg px-5 py-5 flex gap-3">
 
         <button
             @if (!$isCheckPPF) disabled @endif
@@ -46,7 +45,7 @@
     </div>
 
     <!-- CONTENT -->
-     <div class="space-y-4 mt-10">
+    <div class="space-y-4 mt-10">
         <!-- Add Operator Button -->
 
         @foreach($forms as $formId => $form)

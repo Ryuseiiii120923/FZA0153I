@@ -70,6 +70,7 @@ class Add extends Component
     public $locked = false;
     public $canAdd = false;
     public $haserror = false;
+    public $loadingSave = false, $loadingAdd = false, $loadingDelete = false;
 
     public $listeners = [
         'FromCheckppf' => 'Checkppf',
@@ -131,65 +132,116 @@ class Add extends Component
     }
 
 
+    // public function Reworks(array $reworksData)
+    // {
+    //     $data = $reworksData['reworksData'] ?? $reworksData;
+    //     $hfno = $data['newhfno'] ?? $data['hfno'] ?? null;
+    //     dd($hfno);
+    //     $type = strtoupper(trim($data['newtype'] ?? $data['type'] ?? ''));
+
+    //     if (!$hfno || !$type) return;
+
+    //     $quan = (int) ($data['newquan'] ?? $data['quan'] ?? 0);
+    //     $totalinsp = (int) ($data['totalinsp'] ?? 0);
+
+    //     $this->rework = $this->rework ?? [];
+
+    //     if (($data['action'] ?? '') === 'delete') {
+    //         // Remove this type under the HFNO
+    //         if (isset($this->rework[$hfno])) {
+    //             $this->rework[$hfno] = collect($this->rework[$hfno])
+    //                 ->reject(fn($r) => $r['type'] === $type)
+    //                 ->values()
+    //                 ->toArray();
+
+    //             // Remove HFNO if no types left
+    //             if (empty($this->rework[$hfno])) {
+    //                 unset($this->rework[$hfno]);
+    //             }
+    //         }
+    //     } else {
+    //         // Add or update
+    //         $this->rework[$hfno] = $this->rework[$hfno] ?? [];
+
+    //         // Remove any existing type
+    //         $this->rework[$hfno] = collect($this->rework[$hfno])
+    //             ->reject(fn($r) => $r['type'] === $type)
+    //             ->values()
+    //             ->toArray();
+
+    //         // Add the new type
+    //         $this->rework[$hfno][] = [
+    //             'type' => $type,
+    //             'quan' => $quan,
+    //             'totalinsp' => $totalinsp,
+    //         ];
+    //     }
+
+    //     // Recalculate total quantity (sum all types of all HFNOs)
+    //     $this->totalngrework = collect($this->rework)
+    //         ->map(fn($types) => collect($types)->sum('quan'))
+    //         ->sum();
+
+    //     // Recalculate hfno1..hfno5 (keys)
+    //     $hfnos = array_keys($this->rework);
+    //     $this->hfno1 = $hfnos[0] ?? '';
+    //     $this->hfno2 = $hfnos[1] ?? '';
+    //     $this->hfno3 = $hfnos[2] ?? '';
+    //     $this->hfno4 = $hfnos[3] ?? '';
+    //     $this->hfno5 = $hfnos[4] ?? '';
+    // }
+
     public function Reworks(array $reworksData)
-    {
-        $data = $reworksData['reworksData'] ?? $reworksData;
+{
+    $items = $reworksData['reworksData'] ?? $reworksData;
 
-        $hfno = $data['newhfno'] ?? $data['hfno'] ?? null;
-        $type = strtoupper(trim($data['newtype'] ?? $data['type'] ?? ''));
-
-        if (!$hfno || !$type) return;
-
-        $quan = (int) ($data['newquan'] ?? $data['quan'] ?? 0);
-        $totalinsp = (int) ($data['totalinsp'] ?? 0);
-
-        $this->rework = $this->rework ?? [];
-
-        if (($data['action'] ?? '') === 'delete') {
-            // Remove this type under the HFNO
-            if (isset($this->rework[$hfno])) {
-                $this->rework[$hfno] = collect($this->rework[$hfno])
-                    ->reject(fn($r) => $r['type'] === $type)
-                    ->values()
-                    ->toArray();
-
-                // Remove HFNO if no types left
-                if (empty($this->rework[$hfno])) {
-                    unset($this->rework[$hfno]);
-                }
-            }
-        } else {
-            // Add or update
-            $this->rework[$hfno] = $this->rework[$hfno] ?? [];
-
-            // Remove any existing type
-            $this->rework[$hfno] = collect($this->rework[$hfno])
-                ->reject(fn($r) => $r['type'] === $type)
-                ->values()
-                ->toArray();
-
-            // Add the new type
-            $this->rework[$hfno][] = [
-                'type' => $type,
-                'quan' => $quan,
-                'totalinsp' => $totalinsp,
-            ];
-        }
-
-        // Recalculate total quantity (sum all types of all HFNOs)
-        $this->totalngrework = collect($this->rework)
-            ->map(fn($types) => collect($types)->sum('quan'))
-            ->sum();
-
-        // Recalculate hfno1..hfno5 (keys)
-        $hfnos = array_keys($this->rework);
-        $this->hfno1 = $hfnos[0] ?? '';
-        $this->hfno2 = $hfnos[1] ?? '';
-        $this->hfno3 = $hfnos[2] ?? '';
-        $this->hfno4 = $hfnos[3] ?? '';
-        $this->hfno5 = $hfnos[4] ?? '';
+    // If it's a Collection, convert to array
+    if ($items instanceof \Illuminate\Support\Collection) {
+        $items = $items->toArray();
     }
 
+    $this->rework = $this->rework ?? [];
+
+    foreach ($items as $data) {
+
+        $hfno = $data['hfno'] ?? null;
+        $type = strtoupper(trim($data['type'] ?? ''));
+
+        if (!$hfno || !$type) {
+            continue;
+        }
+
+        $quan = (int) ($data['quan'] ?? 0);
+        $totalinsp = (int) ($data['totalinsp'] ?? 0);
+
+        // ADD / UPDATE
+        $this->rework[$hfno] = $this->rework[$hfno] ?? [];
+
+        $this->rework[$hfno] = collect($this->rework[$hfno])
+            ->reject(fn($r) => $r['type'] === $type)
+            ->values()
+            ->toArray();
+
+        $this->rework[$hfno][] = [
+            'type' => $type,
+            'quan' => $quan,
+            'totalinsp' => $totalinsp,
+        ];
+    }
+
+    // totals
+    $this->totalngrework = collect($this->rework)
+        ->map(fn($types) => collect($types)->sum('quan'))
+        ->sum();
+
+    $hfnos = array_keys($this->rework);
+    $this->hfno1 = $hfnos[0] ?? '';
+    $this->hfno2 = $hfnos[1] ?? '';
+    $this->hfno3 = $hfnos[2] ?? '';
+    $this->hfno4 = $hfnos[3] ?? '';
+    $this->hfno5 = $hfnos[4] ?? '';
+
+}
 
     public function ReworksData($data)
     {
@@ -440,10 +492,6 @@ class Add extends Component
         if ($this->submitMethod === 'editToDb') {
             $this->EditoDb();
         }
-
-        if ($this->submitMethod === 'viewToDb') {
-            dd('view');
-        }
     }
     public function render()
     {
@@ -467,8 +515,6 @@ class Add extends Component
         if (!$this->loadMainRecord($ppf)) {
             return; // stop the rest of FetchDatas if record not found
         }
-        dd('here');
-        $this->dispatch('FetchDoneRework', $ppf);
         $this->loadPlant($ppf);
         $this->loadDefects($ppf);
         $this->loadReworks($ppf);
@@ -556,7 +602,7 @@ class Add extends Component
     // public function loadMainRecord($ppf)
     // {
     //     $record = AddDefect::select('PPFNo', 'PartNo', 'Lotno', 'MatNo', 'MDNo', 'PressNo', 'Shift', 'Operator', 'Total', 'Good', 'HFNo1', 'HFNo2', 'HFNo3', 'HFNo4', 'HFNo5', 'InspNo1', 'InspNo2', 'InspNo3', 'InspNo4', 'ExcessQty', 'LackingQty', 'ReworkQty', 'SampleQty', 'InspectionDate', 'AutoMachine', 'Details', 'Encoder')->where('PPFNo', $ppf)->first();
-      //   $getexpct = CheckHF::where('流動NO', $ppf)->first();
+    //   $getexpct = CheckHF::where('流動NO', $ppf)->first();
 
     //     if ($record) {
 
@@ -670,7 +716,7 @@ class Add extends Component
         foreach ($data as $key => $value) {
             $this->{$key} = $value;
         }
-         $this->dispatch('totalInspectedProgress');
+        $this->dispatch('totalInspectedProgress');
 
         $this->dispatch('FromView', [
             'ppf' => $this->ppf,
@@ -736,6 +782,7 @@ class Add extends Component
     }
     public function DeleteToDb()
     {
+        $this->loadingDelete = true;
         if (empty($this->ppf)) {
             session()->flash('failed', 'Please Enter PPF!');
             return;
@@ -767,6 +814,7 @@ class Add extends Component
                     'InspectionDate' => null,
                     'Dateout' => null,
                 ]);
+            $this->loadingDelete = false;
             session()->flash('success', 'Deleted successfully!');
         } else {
             session()->flash('failed', 'Failed! PPF not found or already deleted.');
@@ -793,6 +841,11 @@ class Add extends Component
     }
     public function AddtoDb()
     {
+        if ($this->submitMethod == 'addToDb') {
+            $this->loadingAdd = true;
+        } elseif ($this->submitMethod == 'editToDb') {
+            $this->loadingSave = true;
+        }
         $totalInspected = DB::table('Inspector_PR')->where('PPFNo', $this->ppf)
             ->sum('total_inspect');
 
@@ -818,43 +871,63 @@ class Add extends Component
 
         if ($this->haserror) {
             $this->dispatch('haserror', ['message' => 'Please fix the error!']);
+            $this->loadingAdd = false;
+            $this->loadingSave = false;
             return;
         }
         if (empty($this->insp1)) {
             $this->dispatch('haserror', ['message' => 'Please enter inspector!']);
+            $this->loadingAdd = false;
+            $this->loadingSave = false;
             return;
         }
         if (empty($this->plant)) {
             $this->dispatch('haserror', ['message' => 'Please enter plant']);
+            $this->loadingAdd = false;
+            $this->loadingSave = false;
             return;
         }
         if (empty($this->ppf)) {
             session()->flash('failed', 'Please Enter PPF!');
+            $this->loadingAdd = false;
+            $this->loadingSave = false;
             return;
         }
         if ($this->ppf === "0") {
             session()->flash('failed', 'Please Enter PPF!');
+            $this->loadingAdd = false;
+            $this->loadingSave = false;
             return;
         }
         if ($this->isAdd) {
             $this->dispatch('haserror', ['message' => 'Please accept first the quantity']);
+            $this->loadingAdd = false;
+            $this->loadingSave = false;
             return;
         }
         if ($hasRework) {
             $this->dispatch('haserror', ['message' => 'There are pending reworks for this PPF. Please resolve them before Saving.']);
+            $this->loadingAdd = false;
+            $this->loadingSave = false;
             return;
         }
         if (!$hasReworkHf) {
             $this->dispatch('haserror', ['message' => 'There are pending reworks in HF for this PPF. Please resolve them before Saving.']);
+            $this->loadingAdd = false;
+            $this->loadingSave = false;
             return;
         }
         if (!$isDone) {
             $this->dispatch('haserror', ['message' => 'This PPF rework is not yet marked as done. Please resolve them before Saving.']);
+            $this->loadingAdd = false;
+            $this->loadingSave = false;
             return;
         }
 
         if ($isDone && !$isEncoded) {
             $this->dispatch('haserror', ['message' => 'This PPF rework is not yet encode in Operator. Please resolve them before Saving.']);
+            $this->loadingAdd = false;
+            $this->loadingSave = false;
             return;
         }
 
@@ -871,7 +944,7 @@ class Add extends Component
                     $qty   = $rework['quan'] ?? 0;
                     $total = $rework['totalinsp'] ?? 0;
 
-                    Db::table('DefectRWK') ->create([
+                    Db::table('DefectRWK')->insert([
                         'PPFNo'        => $this->ppf,
                         'HFNo'         => $hfno,   // now HFNO comes from the key
                         'Defect'       => $type ?? '',
@@ -904,7 +977,7 @@ class Add extends Component
 
         if (empty($this->defects) || count($this->defects) === 0) {
 
-            Db::table('Defect')->create([
+            Db::table('Defect')->insert([
 
                 'PPFNo' => (float) $this->ppf,
                 'PartNo' => $this->partno,
@@ -945,7 +1018,7 @@ class Add extends Component
                 $type = $defect['type'] ?? $defect['newDefect'] ?? null;
                 $qty  = isset($defect['qty']) ? (float)$defect['qty'] : (float)($defect['newQuan'] ?? '');
                 if (!$type || $qty <= 0) continue;
-                Db::table('Defect')->create([
+                Db::table('Defect')->insert([
                     'PPFNo' => (float) $this->ppf,
                     'PartNo' => $this->partno,
                     'Lotno' => $this->lotno,
@@ -1011,7 +1084,7 @@ class Add extends Component
             }
         } elseif ($this->submitMethod === 'addToDb') {
             if (!empty($this->smalldefects)) {
-                 DB::table('DefectSMALL')->select('PPFNo', 'LargeDefect', 'SmallDefect', 'Qty')->where('PPFNo', $this->ppf)
+                DB::table('DefectSMALL')->select('PPFNo', 'LargeDefect', 'SmallDefect', 'Qty')->where('PPFNo', $this->ppf)
                     ->where('dFlg', 'VI')
                     ->delete();
 
@@ -1037,5 +1110,11 @@ class Add extends Component
         DB::statement('EXEC FZA153I_DEFECT_ADD_RTN ?', [
             $this->ppf
         ]);
+
+        if ($this->submitMethod == 'addToDb') {
+            $this->loadingAdd = false;
+        } elseif ($this->submitMethod == 'editToDb') {
+            $this->loadingSave = false;
+        }
     }
 }

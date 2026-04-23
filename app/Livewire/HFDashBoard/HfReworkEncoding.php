@@ -5,6 +5,7 @@ namespace App\Livewire\HFDashBoard;
 use App\Models\Worker;
 use App\Models\WorkerName;
 use App\Services\DoneReworkService;
+use App\Services\DropdownService;
 use App\Services\ForReworkService;
 use App\Services\HfDashboardService;
 use App\Services\PPFService;
@@ -12,14 +13,16 @@ use Carbon\Carbon;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth as UserAuth;
+use Illuminate\Support\Str;
 
 class HfReworkEncoding extends Component
 {
-    public $pendingRework = [], $defects = [], $rework = [], $smalldefects = [];
+    public $pendingRework = [], $defects = [], $rework = [];
     public $ppf, $totalngrework;
     public $open = false;
+    public $toggles = false;
     public $selectedPPF = null;
-    public $error;
+    public $error, $hasError;
     public $insp1, $insp2, $insp3, $insp4, $insp5;
     public $hfno1, $hfno2, $hfno3, $hfno4, $hfno5;
     public $hfname, $hf_id, $total_inspect;
@@ -27,8 +30,17 @@ class HfReworkEncoding extends Component
     public $defectNg, $reworkNg;
     public $confirmingDelete = false;
     public $ppfToDelete = null;
+    public $isEdit = false;
     public $status;
-
+    public $deletedppf;
+    public $forms = [];
+    public $modalOpen = [];
+    public $modalMode;
+    public $dropdownForms = [];
+    public $hasErrorForm = [];
+    public $needdeleteSmall = [], $needdeleteDefect = [], $needdeleteForm = [];
+    public $inspectRec = [];
+    public $isSaved = false;
     private function ppfService(): PPFService
     {
         return $this->ppfService ?? app(PPFService::class);
@@ -46,6 +58,181 @@ class HfReworkEncoding extends Component
     {
         return app(HfDashboardService::class);
     }
+    public function addNew()
+    {
+        $this->toggles = true;
+        $formId = (string) Str::uuid();
+        $this->forms[$formId] = [
+            'hf_id' => '',
+            'inspect_REC' => uniqid(),
+            'hf_name' => '',
+            'total_inspect' => 0,
+            'defects' => [],
+            'rework' => [],
+            'smallDefects' => [],
+            'defectNg' => 0,
+            'reworkNg' => 0,
+            'status' => 'Pending',
+            'ppfno' => (int)$this->selectedPPF,
+            'open' => false,
+        ];
+        $this->modalOpen[$formId] = true;
+    }
+
+    public function editHF($formId)
+    {
+        $this->modalMode[$formId] = "edit";
+        $this->modalOpen[$formId] = true;
+    }
+
+    public function toggle($index)
+    {
+        $this->forms[$index]['open'] = !$this->forms[$index]['open'];
+    }
+
+    public function saveHF($formId)
+    {
+        try {
+            app(DropdownService::class)->saveHF(
+                $formId,
+                $this->forms,
+                $this->hf_id,
+                $this->total_inspect
+            );
+
+            $this->modalOpen[$formId] = false;
+
+            $this->dispatch(
+                'FetchHfNo',
+                hf_id: $this->forms[$formId]['hf_id'],
+                total_inspect: (int) $this->forms[$formId]['total_inspect'],
+                form_id: $formId
+            );
+
+            $this->CalcGoodQty($formId);
+            $this->receiveDropdownData(['forms' => $this->forms]);
+
+            // Reset fields
+            $this->hf_id = '';
+            $this->total_inspect = '';
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->setErrorBag($e->validator->errors());
+        }
+    }
+
+    public function CalcGoodQty($formId)
+    {
+        if (!isset($this->forms[$formId])) return;
+
+        $form = $this->forms[$formId];
+
+        $defectQty = isset($this->defectNg[$formId])
+            ? $this->defectNg[$formId]
+            : collect($form['defects'] ?? [])->sum('qty');
+
+        $reworkQty = isset($this->reworkNg[$formId])
+            ? $this->reworkNg[$formId]
+            : collect($form['rework'] ?? [])->sum('quan');
+
+        $totalNg = $defectQty ?? 0 + $reworkQty ?? 0;
+
+        $this->forms[$formId]['GoodQty'] = ($form['total_inspect'] ?? 0) - $totalNg - $reworkQty;
+        $this->forms[$formId]['TotalNg'] = $totalNg;
+        $this->forms[$formId]['TotalRework'] = $reworkQty;
+
+        return [
+            $this->forms[$formId]['GoodQty'],
+            $this->forms[$formId]['TotalNg']
+        ];
+    }
+
+    #[On('operator.defects-updated')]
+    public function updateDefectsFromChild($data = [])
+    {
+        $this->isSaved = false;
+
+        $this->forms = app(DropdownService::class)->syncFormData(
+            $this->forms,
+            $data,
+            function ($existing, $incoming, $action, $keyResolver) {
+                return $this->syncCollection($existing, $incoming, $action, $keyResolver);
+            }
+        );
+
+        $formId = $data['formId'] ?? null;
+
+        if ($formId) {
+            $this->reworkNg[$formId] = collect($this->forms[$formId]['rework'] ?? [])->sum('quan');
+            $this->CalcGoodQty($formId);
+        }
+
+        $this->receiveDropdownData(['forms' => $this->forms]);
+    }
+
+    public function receiveDropdownData($data)
+    {
+        foreach ($this->dropdownForms as $formId => $form) {
+            if (!isset($data['forms'][$formId])) {
+                unset($this->dropdownForms[$formId]);
+            }
+        }
+
+        foreach ($data['forms'] as $formId => $formData) {
+
+            if (!isset($this->dropdownForms[$formId])) {
+                $this->dropdownForms[$formId] = $formData;
+            } else {
+
+                foreach ($formData as $key => $value) {
+
+                    if (is_array($value)) {
+                        $this->dropdownForms[$formId][$key] = $value;
+                    } else {
+                        $this->dropdownForms[$formId][$key] = $value;
+                    }
+                }
+            }
+            $this->dispatch(
+                'FetchHfNo',
+                hf_id: $formData['hf_id'] ?? null,
+                total_inspect: (int) ($formData['total_inspect'] ?? 0),
+                form_id: $formId
+            );
+        }
+        $this->dropdownForms = $data['forms'];
+    }
+
+
+    public function remove($id)
+    {
+        unset($this->forms[$id]);
+        $this->needdeleteForm[] = [
+            'formId' => $this->inspectRec[$id] ?? null,
+        ];
+    }
+    #[On('NeedToDeleteDefect')]
+    public function deleteDefectFromChild($data)
+    {
+        $formId = $data['formId'];
+        $type = $data['type'];
+        $this->needdeleteDefect[] = [
+            'formId' => $this->inspectRec[$formId] ?? null,
+            'type' => $type,
+        ];
+    }
+
+    #[On('NeedToDeleteSmall')]
+    public function deleteSmallFromChild($data)
+    {
+        $formId = $data['formId'];
+        $type = $data['type'];
+        $largeDefect = $data['largeDefect'];
+        $this->needdeleteSmall[] = [
+            'formId' => $this->inspectRec[$formId] ?? null,
+            'type' => $type,
+            'largeDefect' => $largeDefect,
+        ];
+    }
 
     public function mount()
     {
@@ -59,6 +246,9 @@ class HfReworkEncoding extends Component
         $this->encoder = (int)$userencoder;
         $UserName = WorkerName::select('名前 ')->Where('社員CD', $this->encoder)->first();
         $this->username = $UserName->名前 ?? '';
+        foreach ($this->forms as $formId => $form) {
+            $this->modalOpen[$formId] = false; // default all modals closed
+        }
     }
 
     public function render()
@@ -68,6 +258,7 @@ class HfReworkEncoding extends Component
 
     public function confirm_ppf($ppf)
     {
+
         $this->selectedPPF = $ppf;
         $this->open = true;
         $this->dispatch('transferHf', [
@@ -75,19 +266,52 @@ class HfReworkEncoding extends Component
             'total_inspect' => $this->total_inspect ?? 0
         ]);
     }
+    public function removeSelectedPPF()
+    {
+        $this->selectedPPF = null;
+        $this->forms = [];
+        $this->modalOpen = [];
+        $this->open = false;
+    }
+
+    private function syncCollection(array $existing, array $incoming, string $action, callable $keyBuilder)
+    {
+        $map = collect($existing)
+            ->keyBy($keyBuilder)
+            ->toArray();
+
+        foreach ($incoming as $item) {
+
+            $key = $keyBuilder($item);
+
+            if (!$key) continue;
+
+            switch ($action) {
+                case 'delete':
+                    unset($map[$key]);
+                    break;
+
+                case 'update':
+                case 'add':
+                    $map[$key] = $item;
+                    break;
+            }
+        }
+
+        return array_values($map);
+    }
+
+
+
     public function edit_ppf($ppf)
     {
         $this->selectedPPF = $ppf;
 
         $defect = $this->HfdashboardService()->fetchDefectsByPPF($ppf);
-        $rework = $this->HfdashboardService()->fetchReworksByPPF($ppf);
         $this->hf_id = $defect['hf_id'] ?? null;
         $this->dispatch('FetchDefect', [
             'defects' => $defect['defect'] ?? [],
             'smallDefects' => $defect['smallDefects'] ?? []
-        ]);
-        $this->dispatch('FetchRework', [
-            'reworks' => $rework['reworks'] ?? []
         ]);
         $this->dispatch('transferHf', [
             'hf_id' => $this->hf_id,
@@ -96,10 +320,11 @@ class HfReworkEncoding extends Component
         $this->open = true;
     }
 
-    public function delete_ppf($ppf)
+    public function delete_ppf()
     {
         try {
-            $this->HfdashboardService()->deleteDoneRework($ppf);
+
+            $this->HfdashboardService()->deleteDoneRework($this->ppfToDelete);
             $this->resetModal();
             session()->flash('success', 'Deleted Successfully!');
         } catch (\Throwable $e) {
@@ -114,11 +339,6 @@ class HfReworkEncoding extends Component
     }
 
 
-    public function CloseModal()
-    {
-        $this->resetModal();
-    }
-
     private function resetModal()
     {
         $this->ppf = null;
@@ -128,30 +348,26 @@ class HfReworkEncoding extends Component
         $this->open = false;
     }
 
-    public function CheckHf()
+    public function CheckHf($formId)
     {
-        if (empty($this->hf_id)) {
-            $this->hfname = null;
-            $this->resetErrorBag('hf_id');
-            return;
-        }
+        $result = app(DropdownService::class)->checkHf($formId, $this->forms);
 
-        $searchValue = (strlen($this->hf_id) === 2) ? ' ' . $this->hf_id : $this->hf_id;
-        $hf = Worker::where('作業員CD', $searchValue)->first();
+        $this->forms = $result['forms'];
 
-        if ($hf) {
-            $name = WorkerName::where('社員CD', $hf->社員CD)->first();
-            $this->hfname = $name ? $name->名前 : null;
-            $this->resetErrorBag('hf_id');
-            $this->dispatch('transferHf', [
-                'total_inspect' => $this->total_inspect,
-                'hf_id' => $this->hf_id
-            ]);
+        if ($result['error']) {
+            $this->addError('forms.' . $formId . '.hf_id', $result['error']);
+            $this->hasErrorForm[$formId] = true;
         } else {
-            $this->addError('hf_id', 'This Operator does not exist');
-            $this->hf_id = "";
-            $this->hfname = null;
+            $this->resetErrorBag('forms.' . $formId . '.hf_id');
+            $this->hasErrorForm[$formId] = false;
         }
+
+        $this->hasError = $this->hasErrorForm;
+
+        $this->dispatch('hasErrorPren', [
+            'hasError' => $this->hasError,
+            'hasErrorForm' => $this->hasErrorForm
+        ]);
     }
 
     #[On('FromDefects')]
@@ -217,128 +433,6 @@ class HfReworkEncoding extends Component
         $this->defects = array_values($normalized);
     }
 
-    #[On('FromReworks')]
-    public function Reworks(array $reworksData)
-    {
-        // If the data is nested under 'reworksData', use it
-        $data = $reworksData['reworksData'] ?? $reworksData;
-
-
-        $type = $data['newtype'] ?? $data['type'] ?? null;
-        if (!$type) return;
-        // Normalize
-        $normalized = [
-            'hfno'      => $data['newhfno'] ?? $data['hfno'] ?? '',
-            'type'      => strtoupper(trim($type)),
-            'quan'      => (int) ($data['newquan'] ?? $data['quan'] ?? 0),
-            'totalinsp' => (int) ($data['totalinsp'] ?? 0),
-        ];
-
-        // Ensure $this->rework is an array
-        $this->rework = $this->rework ?? [];
-
-        if (($data['action'] ?? '') === 'delete') {
-            // Remove matching rework
-            $this->rework = collect($this->rework)
-                ->reject(
-                    fn($r) =>
-                    $r['hfno'] === $normalized['hfno'] &&
-                        $r['type'] === $normalized['type']
-                )
-                ->values()
-                ->toArray();
-        } else {
-            // Add or update
-            $this->rework = collect($this->rework)
-                ->reject(
-                    fn($r) =>
-                    $r['hfno'] === $normalized['hfno'] &&
-                        $r['type'] === $normalized['type']
-                )
-                ->push($normalized)
-                ->values()
-                ->toArray();
-        }
-
-        // Recalculate total quantity
-        $this->totalngrework = collect($this->rework)->sum('quan');
-
-        $hfnos = array_column($this->rework, 'hfno');
-        $this->hfno1 = $hfnos[0] ?? '';
-        $this->hfno2 = $hfnos[1] ?? '';
-        $this->hfno3 = $hfnos[2] ?? '';
-        $this->hfno4 = $hfnos[3] ?? '';
-        $this->hfno5 = $hfnos[4] ?? '';
-    }
-
-
-    #[On('FromReworksData')]
-    public function ReworksData($data)
-    {
-        $this->totalngrework = $data['totalngrework'];
-    }
-
-    // #[On('FromSmallDefects')]
-    // public function SmallDefects($smalldefectData)
-    // {
-    //     $large  = $smalldefectData['SelectedLargeDefect'];
-    //     $type   = $smalldefectData['type'] ?? $smalldefectData['newSmallDefect'];
-    //     $qty    = $smalldefectData['qty'] ?? $smalldefectData['newSmallQuan'];
-    //     $action = $smalldefectData['action'] ?? 'add';
-
-    //     $this->smalldefects[$large][$type] = [
-    //         'type' => $type,
-    //         'qty' => $qty
-    //     ];
-
-    //     if (!isset($this->smalldefects[$large])) {
-    //         $this->smalldefects[$large] = [];
-    //     }
-    //     dd($this->smalldefects[$large]);
-
-    //     // Normalize existing small defects by lowercase type
-    //     $normalized = [];
-    //     foreach ($this->smalldefects[$large] as $small) {
-    //         $smallType = strtolower($small['type'] ?? '');
-    //         if ($smallType === '') continue;
-
-    //         if (isset($normalized[$smallType])) {
-    //             $normalized[$smallType]['qty'] += $small['qty'];
-    //         } else {
-    //             $normalized[$smallType] = [
-    //                 'type' => $small['type'],
-    //                 'qty'  => $small['qty']
-    //             ];
-    //         }
-    //     }
-
-    //     $key = strtolower($type);
-
-    //     if ($action === 'delete') {
-    //         // Remove the small defect
-    //         //dd('here');
-    //         unset($normalized[$key]);
-    //     } elseif ($action === 'update') {
-    //         // Update the quantity if it exists
-    //         if (isset($normalized[$key])) {
-    //             $normalized[$key]['qty'] = $qty;
-    //         }
-    //     } else {
-    //         // Add new small defect
-    //         if (isset($normalized[$key])) {
-    //             $normalized[$key]['qty'] += $qty;
-    //         } else {
-    //             $normalized[$key] = [
-    //                 'type' => $type,
-    //                 'qty'  => $qty
-    //             ];
-    //         }
-    //     }
-
-    //     // Save back normalized array
-    //     $this->smalldefects[$large] = array_values($normalized);
-    // }
-
     #[On('FromSmallDefects')]
     public function SmallDefects($smalldefectData)
     {
@@ -397,34 +491,76 @@ class HfReworkEncoding extends Component
         $this->defectNg = $data;
     }
 
-    #[On('sendNgRework')]
-    public function fetchReworkNg($data)
+    public function CloseModal($formId)
     {
-        $this->reworkNg = $data;
+        $this->modalOpen[$formId] = false;
     }
 
-    public function saveHF($ppf)
+
+    public function saveHFRework()
     {
         try {
 
-            $goodQty = ($this->total_inspect ?? 0) - ($this->defectNg ?? 0) - ($this->reworkNg ?? 0);
+            $forms = collect($this->forms)
+                ->filter(fn($form) => ($form['ppfno'] ?? null) == $this->selectedPPF)
+                ->map(function ($form) {
+
+                    $defectNg = collect($form['defects'] ?? [])->sum('qty');
+
+                    $form['GoodQty'] = ($form['total_inspect'] ?? 0) - $defectNg;
+
+                    return $form;
+                })
+                ->values()
+                ->toArray();
+
+            if (empty($forms)) {
+                throw new \Exception("No forms to save.");
+            }
+
             $data = [
-                'hf_id' => $this->hf_id ?? null,
-                'total_inspect' => $this->total_inspect ?? 0,
+                'ppfno' => $this->selectedPPF,
                 'encoder' => $this->encoder ?? 'system',
-                'ppfno' => $ppf,
-                'goodQty' => $goodQty,
-                'defects' => $this->defects ?? [],
-                'reworks' => $this->rework ?? [],
-                'smalldefects' => $this->smalldefects ?? [],
+                'forms' => $forms
             ];
+            if ($this->isEdit == false) {
+                $this->doneReworkService()->saveDoneRework($data);
+            } else {
+                $this->doneReworkService()->editDonerework($data, $this->needdeleteSmall,$this->needdeleteDefect,$this->needdeleteForm);
+                $this->isEdit == false;
+            }
+            // reset AFTER everything
+            $this->removeSelectedPPF();
 
-            $this->doneReworkService()->saveDoneRework($data);
-
-            $this->resetModal();
             session()->flash('success', 'Saved Successfully!');
         } catch (\Throwable $e) {
             $this->errorMessage = $e->getMessage();
+        }
+    }
+
+    public function editPPFFromChild($ppf)
+    {
+        $this->selectedPPF = $ppf;
+        $this->defectNg = [];
+        $this->isEdit = true;
+
+        $data = app(DropdownService::class)->editFormsforFinishing($ppf, $this->encoder);
+        if (empty($data['forms'])) return;
+
+        $this->toggles = true;
+        $this->forms = $data['forms'];
+        $this->defectNg = $data['defectNg'];
+
+        foreach ($this->forms as $id => $form) {
+            $this->CheckHf($id);
+            $this->CalcGoodQty($id);
+            $this->modalOpen[$id] = false;
+            $this->inspectRec[$id] = $form['inspect_REC'] ?? null;
+        }
+        if ($this->hasError) {
+            $this->dispatch('hasErrorPren', $this->hasError);
+        } else {
+            $this->receiveDropdownData(['forms' => $this->forms]);
         }
     }
 }

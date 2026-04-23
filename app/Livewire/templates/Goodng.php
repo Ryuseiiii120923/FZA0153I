@@ -208,6 +208,7 @@ class Goodng extends Component
         $this->lackqty   = $this->lackqty ?: 0;
         $this->reworkqty = $this->reworkqty ?: 0;
         $this->sampleqty = $this->sampleqty ?: 0;
+
         // Lock lack if excess exists
         if ($this->excssqty != 0) {
             $this->locklack = true;
@@ -232,6 +233,14 @@ class Goodng extends Component
             $this->lastsampleqty == $this->sampleqty
 
         ) {
+            $this->dispatch('FromGoodNg', [
+                'goodqty'    => $this->goodqty,
+                'ngratioqty' => $this->ngratioqty,
+                'excssqty'   => $this->excssqty,
+                'lackqty'    => $this->lackqty,
+                'reworkqty'  => $this->reworkqty,
+                'sampleqty'  => $this->sampleqty
+            ]);
             return;
         }
 

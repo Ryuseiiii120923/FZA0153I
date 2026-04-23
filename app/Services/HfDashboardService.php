@@ -13,6 +13,7 @@ class HfDashboardService
         $this->repository = new HfDashboardRepository();
     }
 
+
     public function fetchHfReworkData()
     {
         //check if there are any pending rework items
@@ -116,6 +117,7 @@ class HfDashboardService
 
     public function deleteDoneRework($ppf){
         $result = $this->repository->deleteDoneReworkByPPF($ppf);
+             
         if($result){
             $this->repository->updateflagdoneforDelete($ppf);
             return true;

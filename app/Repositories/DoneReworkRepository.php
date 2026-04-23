@@ -14,27 +14,29 @@ class DoneReworkRepository
     public function saveMainForm(array $data)
     {
         try {
-            // $exists = DB::table('dr_forms')
-            //     ->where('ppfno', $data['ppfno'])
-            //     ->exists();
-
-            // if ($exists) {
-            //     throw new \Exception("PPF already exists: " . $data['ppfno']);
-            // }
-            return DB::table('dr_forms')->insertGetId([
+            $forms = [];
+            $forms[] = [
                 'hf_id' => $data['hf_id'],
                 'total_inspect' => $data['total_inspect'],
                 'created_at' => now(),
                 'updated_by' => $data['encoder'],
                 'ppfno' => $data['ppfno'],
                 'GoodQty' => $data['goodQty'],
-            ]);
+                'inspect_REC' => $data['inspect_REC']
+            ];
+
+
+            DB::table('dr_forms')->upsert(
+                $forms,
+                ['inspect_REC', 'ppfno'],
+                ['GoodQty', 'updated_by', 'total_inspect', 'hf_id']
+            );
         } catch (\Throwable $e) {
             throw new \Exception("Failed to save DR form: " . $e->getMessage());
         }
     }
 
-    public function saveDefects(int $hfId, array $defects, int $ppfno, string $encoder)
+    public function saveDefects(int $hfId, array $defects, int $ppfno, int $encoder, string $inspectRec)
     {
         try {
 
@@ -53,12 +55,26 @@ class DoneReworkRepository
                     'qty' => $defect['qty'],
                     'updated_by' => $encoder,
                     'ppfno' => $ppfno,
+                    'inspect_REC' => $inspectRec
                 ];
+            }
+
+            $groupedDefects = collect($defects)
+                ->groupBy('type')
+                ->map(function ($items, $type) {
+                    return [
+                        'type' => $type,
+                        'qty' => collect($items)->sum('qty')
+                    ];
+                })
+                ->values();
+
+            foreach ($groupedDefects as $defect) {
 
                 $inspectorRows[] = [
                     'PPFNo' => $ppfno,
-                    'InspectorID' => $hfId,
-                    'insp_name' => $this->workerRepo->getWorkerName($hfId)->名前 ?? 'Unknown',
+                    'InspectorID' => $encoder,
+                    'insp_name' => $this->workerRepo->getWorkerName($encoder)->名前 ?? 'Unknown',
                     'Defect' => $defect['type'],
                     'Quantity' => $defect['qty'],
                     'DateEncode' => now(),
@@ -66,16 +82,15 @@ class DoneReworkRepository
                     'EncodeProcess' => 'reRework',
                 ];
             }
-
             DB::table('dr_defect')->upsert(
                 $drRows,
-                ['ppfno', 'defect'],
-                ['qty', 'updated_by', 'hf_id']
+                ['hf_id', 'ppfno', 'defect', 'inspect_REC'],
+                ['qty', 'updated_by', 'hf_id', 'ppfno']
             );
 
             DB::table('Inspector_Defect')->upsert(
                 $inspectorRows,
-                ['PPFNo',  'Defect', 'EncodeProcess'], // unique keys
+                ['PPFNo',  'Defect', 'EncodeProcess', 'InspectorID'], // unique keys
                 ['Quantity', 'insp_name', 'InspectorID', 'DateEncode']              // columns to update
             );
         } catch (\Throwable $e) {
@@ -83,41 +98,7 @@ class DoneReworkRepository
         }
     }
 
-    public function saveReworks(int $hfId, array $reworks, string $ppfno, string $encoder)
-    {
-        try {
-            // $exists = DB::table('dr_rework')
-            //     ->where('ppfno', $ppfno)
-            //     ->exists();
-
-            // if ($exists) {
-            //     throw new \Exception("PPF already exists: " . $ppfno);
-            // }
-            foreach ($reworks as $rework) {
-                if (empty($rework['type'])) {
-                    throw new \Exception("Rework type cannot be empty.");
-                }
-                $hfrows[] = [
-                    'ppfno' => $ppfno,
-                    'hf_id' => $hfId,
-                    'rework_type' => $rework['type'],
-                    'qty' => $rework['quan'],
-                    'updated_by' => $encoder,
-                    'hfno' => $rework['hfno'],
-                    'totalinsp' => $rework['totalinsp'],
-                ];
-                DB::table('dr_rework')->upsert(
-                    $hfrows,
-                    ['ppfno', 'rework_type','updated_by'],
-                    ['qty',  'hf_id', 'hfno', 'totalinsp']
-                );
-            }
-        } catch (\Throwable $e) {
-            throw new \Exception("Failed to save reworks: " . $e->getMessage());
-        }
-    }
-
-    public function saveSmallDefects(int $hfId, array $smalldefects, string $ppfno, string $encoder)
+    public function saveSmallDefects(int $hfId, array $smalldefects, string $ppfno, string $encoder, string $inspectRec)
     {
         try {
             // $exists = DB::table('dr_small')
@@ -143,34 +124,59 @@ class DoneReworkRepository
                         'qty' => $small['qty'],
                         'updated_by' => $encoder,
                         'ppfno' => $ppfno,
-                    ];
-
-                    $inspectorSmallRows[] = [
-                        'PPFNo' => $ppfno,
-                        'InspectorID' => $hfId,
-                        'LargeDefect' => $large,
-                        'SmallDefect' => $small['type'],
-                        'Qty' => $small['qty'],
-                        'Process' => 'HF',
-                        'EncodeProcess' => 'reRework',
+                        'inspect_REC' => $inspectRec
                     ];
                 }
+            }
+
+            $groupedSmall = collect($smalldefects)
+                ->flatMap(function ($smalls, $large) {
+                    return collect($smalls)->map(function ($small) use ($large) {
+                        return [
+                            'large' => $large,
+                            'type' => $small['type'],
+                            'qty' => $small['qty']
+                        ];
+                    });
+                })
+                ->groupBy(fn($item) => $item['large'] . '|' . $item['type'])
+                ->map(function ($items) {
+                    $first = $items->first();
+                    return [
+                        'large' => $first['large'],
+                        'type' => $first['type'],
+                        'qty' => $items->sum('qty')
+                    ];
+                })
+                ->values();
+
+            foreach ($groupedSmall as $small) {
+
+                $inspectorSmallRows[] = [
+                    'PPFNo' => $ppfno,
+                    'InspectorID' => $encoder,
+                    'LargeDefect' => $small['large'],
+                    'SmallDefect' => $small['type'],
+                    'Qty' => $small['qty'],
+                    'Process' => 'HF',
+                    'EncodeProcess' => 'reRework',
+                ];
             }
 
             // ✅ Run UPSERT once
             if (!empty($drsmallrows)) {
                 DB::table('dr_small')->upsert(
                     $drsmallrows,
-                    ['ppfno', 'large_defect', 'small_defect'], // better unique key
-                    ['qty','hf_id', ]
+                    ['hf_id', 'ppfno', 'large_defect', 'small_defect', 'inspect_REC'], // better unique key
+                    ['qty', 'hf_id',]
                 );
             }
 
             if (!empty($inspectorSmallRows)) {
                 DB::table('Inspector_Small')->upsert(
                     $inspectorSmallRows,
-                    ['PPFNo',  'LargeDefect', 'SmallDefect', 'Process', 'EncodeProcess'],
-                    ['Qty','InspectorID']
+                    ['LargeDefect', 'SmallDefect', 'EncodeProcess', 'InspectorID'],
+                    ['Qty', 'InspectorID']
                 );
             }
         } catch (\Throwable $e) {
@@ -209,5 +215,18 @@ class DoneReworkRepository
         } catch (\Throwable $e) {
             throw new \Exception("Failed to Fetch: " . $e->getMessage());
         }
+    }
+
+    public function deleteLargeDefect($ppf,$type,$formId){
+        DB::table('dr_defect')->where('ppfno', $ppf)->where('defect', $type)->where('inspect_REC', $formId)->delete();
+        DB::table('dr_small')->where('ppfno', $ppf)->where('large_defect', $type)->where('inspect_REC', $formId)->delete();
+    }
+     public function deleteSmallDefect($ppf,$large,$type,$formId){
+        DB::table('dr_small')->where('ppfno',(int)$ppf)->where('small_defect', $type)->where('large_defect', $large)->where('inspect_REC', $formId)->delete();
+    }
+     public function deleteForm($formId, $ppfno){
+        DB::table('dr_forms')->where('inspect_REC', $formId)->where('ppfno', $ppfno)->delete();
+        DB::table('dr_defect')->where('inspect_REC', $formId)->where('ppfno', $ppfno)->delete();
+        DB::table('dr_small')->where('inspect_REC', $formId)->where('ppfno', $ppfno)->delete();
     }
 }

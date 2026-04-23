@@ -68,6 +68,17 @@ class HfDashboardRepository
                     ->delete();
             }
         });
+
+         $tables = ['Inspector_Defect','Inspector_Small'];
+
+        DB::transaction(function () use ($tables, $ppf) {
+            foreach ($tables as $table) {
+                DB::table($table)
+                    ->where('PPFNo', $ppf)
+                    ->where('EncodeProcess', 'reRework')
+                    ->delete();
+            }
+        });
         return true;
     }
 }

@@ -63,6 +63,11 @@ class DoneRework extends Component
         $this->modalOpen[$formId] = true;
     }
 
+    #[On('ClearForm')]
+    public function ClearForm(){
+        $this->doneReworks = [];
+    }
+
     public function NGQty($formId)
     {
         if (!isset($this->forms[$formId])) return;

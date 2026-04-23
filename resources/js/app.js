@@ -143,6 +143,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    window.addEventListener("confirm-deleteHF", () => {
+        console.log('here');
+        if (confirm("Are you sure you want to delete this?")) {
+            Livewire.dispatch("deleteForRework");
+        }
+    });
+
     window.addEventListener("ppfcheck", () => {
         document.getElementById("Init-add").click;
     });

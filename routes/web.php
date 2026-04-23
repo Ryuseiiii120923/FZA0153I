@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('auth.login');
 })->name('login');
+Route::get('/debug-key', function () {
+    return config('app.key');
+});
 
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');

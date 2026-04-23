@@ -10549,6 +10549,12 @@ document.addEventListener("DOMContentLoaded", function () {
       Livewire.dispatch("deletePrencode");
     }
   });
+  window.addEventListener("confirm-deleteHF", function () {
+    console.log('here');
+    if (confirm("Are you sure you want to delete this?")) {
+      Livewire.dispatch("deleteForRework");
+    }
+  });
   window.addEventListener("ppfcheck", function () {
     document.getElementById("Init-add").click;
   });

@@ -21,6 +21,7 @@ class Operatordash extends Component
     public $lastdef;
     public $lastqty;
     public $ppfrecord = [];
+    public $loading = false;
 
     public function mount()
     {
@@ -48,12 +49,20 @@ class Operatordash extends Component
 
     public function editPPF($ppf)
     {
+        $this->dispatch('ClearFormDropdown');
+        $this->loading = true;
         $this->dispatch("dash-ppf", [
             'ppf' => $ppf,
             'actiondash' => 'edit',
             'encoder' => $this->inspectorID
         ]);
-        $this->dispatch('ClearFormDropdown');
+        
+    }
+
+    #[On('IsLoading')]
+    public function isLoading($data){
+        $this->loading = $data;
+        
     }
 
     public function deletePPF($ppf)
