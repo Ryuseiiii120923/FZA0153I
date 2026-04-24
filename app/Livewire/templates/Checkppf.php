@@ -44,7 +44,7 @@ class Checkppf extends Component
     public $isAccept = false;
     public $canEditTotal = false;
     public $actiondash;
-    public $method; //if User press Add button method = Add, Update method = Update, Delete method = Delete, View method = View
+    public $method;
 
     public $rules = ['ppf' => 'required|numeric'];
     public $messages = [
@@ -126,26 +126,6 @@ class Checkppf extends Component
         $this->errorexisting = $data;
     }
 
-
-    // public function totalInspectedProgress()
-    // {
-    //     $totalInspected = PRInsp::where('PPFNo', $this->ppf)
-    //         ->sum('total_inspect');
-
-    //     $this->totalInspection = $totalInspected;
-
-    //     $this->progressInsp = $this->totalInspection . "/" . $this->expct;
-
-    //     if ((int)$this->totalInspection === (int)$this->expct) {
-    //         $this->isAccept = true;
-    //         $this->dispatch('UpdateQty', [
-    //             'excssqty' => 0,
-    //             'lackqty' => 0,
-    //         ]);
-    //     } else {
-    //         $this->isAccept = false;
-    //     }
-    // }
     public function totalInspectedProgress()
     {
         // Compute the current tota
@@ -362,7 +342,6 @@ class Checkppf extends Component
 
         $this->ppf = $data['ppf'];
         $this->actiondash = $data['actiondash'];
-
         $this->checkPPF();
     }
 

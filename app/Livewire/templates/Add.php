@@ -597,111 +597,6 @@ class Add extends Component
         $this->dropdownForms = $data;
     }
 
-
-    // #[On('LoadMainRecord')]
-    // public function loadMainRecord($ppf)
-    // {
-    //     $record = AddDefect::select('PPFNo', 'PartNo', 'Lotno', 'MatNo', 'MDNo', 'PressNo', 'Shift', 'Operator', 'Total', 'Good', 'HFNo1', 'HFNo2', 'HFNo3', 'HFNo4', 'HFNo5', 'InspNo1', 'InspNo2', 'InspNo3', 'InspNo4', 'ExcessQty', 'LackingQty', 'ReworkQty', 'SampleQty', 'InspectionDate', 'AutoMachine', 'Details', 'Encoder')->where('PPFNo', $ppf)->first();
-    //   $getexpct = CheckHF::where('流動NO', $ppf)->first();
-
-    //     if ($record) {
-
-    //         if ($getexpct) {
-    //             $this->expct = $getexpct->合格数;
-    //             $this->dispatch('totalInspectedProgress');
-    //         }
-
-    //         $this->Largedefects = Defects::select('LargeDefect')
-    //             ->distinct()
-    //             ->whereNotNull('LargeDefect')
-    //             ->orderBy('LargeDefect', 'ASC')
-    //             ->get();
-
-    //         $this->ppf = $record->PPFNo;
-    //         $this->partno = $record->PartNo;
-    //         $this->lotno = $record->Lotno;
-    //         $this->matno = $record->MatNo;
-    //         $this->moldno = $record->MDNo;
-    //         $this->pressno = $record->PressNo;
-    //         $this->shift = $record->Shift;
-    //         $this->opt = $record->Operator;
-    //         $this->expct = $record->Total;
-    //         $this->goodqty = $record->Good;
-    //         $this->hfno1 = $record->HFNo1;
-    //         $this->hfno2 = $record->HFNo2;
-    //         $this->hfno3 = $record->HFNo3;
-    //         $this->hfno4 = $record->HFNo4;
-    //         $this->hfno5 = $record->HFNo5;
-    //         $this->insp1 = $record->InspNo1;
-    //         $this->insp2 = $record->InspNo2;
-    //         $this->insp3 = $record->InspNo3;
-    //         $this->insp4 = $record->InspNo4;
-    //         $this->insp5 = $record->InspNo5;
-
-    //         $existingDefects = $record->Defect
-    //             ? [['newDefect' => $record->Defect, 'newQuan' => $record->Quantity]]
-    //             : [];
-
-    //         foreach ($existingDefects as $existing) {
-    //             if ($existing['newQuan'] <= 0) continue;
-
-    //             $exists = collect($this->defects)->contains(function ($def) use ($existing) {
-    //                 return strtolower(trim($existing['newDefect'])) === strtolower(trim($def['type']));
-    //             });
-
-    //             if (!$exists) {
-    //                 $this->defects[] = [
-    //                     'type' => $existing['newDefect'],
-    //                     'qty'  => $existing['newQuan']
-    //                 ];
-    //             }
-    //         }
-
-    //         $this->details = $record->Details;
-    //         $this->InspectDates = Carbon::parse($record->InspectionDate)->format('Y-m-d');
-    //         $this->encoder = $record->Encoder;
-    //         $this->UpdateDate = Carbon::parse($record->DateEndcode)->format('Y-m-d h:i:s A');
-    //         $this->excssqty = $record->ExcessQty;
-    //         $this->lackqty = $record->LackingQty;
-    //         $this->reworkqty = $record->ReworkQty;
-    //         $this->sampleqty = $record->SampleQty;
-    //         $this->auto = $record->AutoMachine;
-
-    //         $UserName = WorkerName::Where('社員CD', $this->encoder)->first();
-    //         $this->username = $UserName->名前  ?? '';
-
-    //         $this->dispatch('FromView', [
-    //             'ppf' => $this->ppf,
-    //             'lotno' => $this->lotno,
-    //             'partno' => $this->partno,
-    //             'matno' => $this->matno,
-    //             'moldno' => $this->moldno,
-    //             'pressno' => $this->pressno,
-    //             'shift' => $this->shift,
-    //             'opt' => $this->opt,
-    //             'expct' => (int)$this->expct,
-    //             'insp5' => $this->insp5,
-    //             'insp1' => $this->insp1,
-    //             'insp2' => $this->insp2,
-    //             'insp3' => $this->insp3,
-    //             'insp4' => $this->insp4,
-    //             'goodqty' => $this->goodqty,
-    //             'ngratioqty' => $this->ngratioqty,
-    //             'excssqty' => $this->excssqty,
-    //             'lackqty' => $this->lackqty,
-    //             'reworkqty' => $this->reworkqty,
-    //             'sampleqty' => $this->sampleqty,
-    //             'TotalNg' => $this->totalngrework,
-    //             'auto' => $this->auto
-    //         ]);
-    //         return true;
-    //     } else {
-    //         session()->flash('failed', 'Record not found');
-    //         return false;
-    //     }
-    // }
-
-
     #[On('LoadMainRecord')]
     public function loadMainRecord($ppf)
     {
@@ -769,7 +664,7 @@ class Add extends Component
         } else {
             $this->ngratioqty = number_format(($this->Ng / $denominator) * 100, 2);
         }
-        // dd([$this->Ng, $this->goodqty,$denominator, $this->ngratioqty]);
+        //dd([$this->Ng, $this->goodqty,$denominator, $this->ngratioqty]);
     }
 
     #[On('dispatchUpdates')]

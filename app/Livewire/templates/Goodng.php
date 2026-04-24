@@ -102,11 +102,11 @@ class Goodng extends Component
         $this->lackqty    = (int) ($data['lackqty']    ?? $this->lackqty    ?? 0);
         $this->reworkqty  = (int) ($data['reworkqty']  ?? $this->reworkqty  ?? 0);
         $this->sampleqty  = (int) ($data['sampleqty']  ?? $this->sampleqty  ?? 0);
-        $this->ngratioqty = (int) ($data['ngratioqty'] ?? $this->ngratioqty ?? 0);
         $this->expct      = (int) ($data['expct']      ?? $this->expct      ?? 0);
-        $this->goodqty = $this->ForReworkService()->fetchGoodQty($this->ppf);
-        // $this->GoodNg();
-        // $this->fetchGoodQty($this->ppf);
+        $this->goodqty      = (int) ($data['goodqty']      ?? $this->expct      ?? 0); // This will update the goodqty and fix the issue in fetch issue
+        $this->GoodNg();
+        // $this->goodqty = $this->ForReworkService()->fetchGoodQty($this->ppf);
+
     }
 
     #[On('fetchGoodQty')]
@@ -127,7 +127,7 @@ class Goodng extends Component
 
     public function FetchngRework($data)
     {
-        $this->TotalNg = (int) $data['ngratioqty'];
+        $this->ngratioqty = (int) $data['ngratioqty'];
         $this->goodqty = (int) $data['goodqty'];
     }
 
@@ -218,7 +218,9 @@ class Goodng extends Component
         }
 
         if ($this->excssqty == 0 && $this->lackqty == 0 && $this->reworkqty == 0 && $this->sampleqty == 0) {
-            $this->goodqty = $this->initialGoodQty;
+            if($this->initialGoodQty != 0){
+                $this->goodqty = $this->initialGoodQty;
+            }
             $denominator = $this->goodqty + $this->TotalNg;
             $this->ngratioqty = $denominator == 0
                 ? 0
@@ -227,7 +229,7 @@ class Goodng extends Component
 
         // Skip recalculation if nothing changed
         if (
-            $this->lastexcssqty == $this->excssqty &&
+            $this->lastexcssqty == $this ->excssqty &&
             $this->lastlackqty == $this->lackqty &&
             $this->lastreworkqty == $this->reworkqty &&
             $this->lastsampleqty == $this->sampleqty

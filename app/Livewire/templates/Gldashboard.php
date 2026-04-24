@@ -70,7 +70,7 @@ class Gldashboard extends Component
     public function ppfService(): PPFService
     {
         return app(PPFService::class);
-     }
+    }
     protected $listeners = [
         'FromCheckppf' => 'Checkppf',
         'FromDefects' => 'Defects',
@@ -303,11 +303,11 @@ class Gldashboard extends Component
             return;
         }
         $this->dispatch('LoadMainRecord', $ppf);
-          $this->dispatch('FetchDoneRework', $ppf);
         $this->LoadDefectsGL($ppf);
-        $this->dispatch('LoadPlantGL', $ppf);
         $this->LoadReworksGL($ppf);
-        $this->dispatch('CalculateQuantities');
+        $this->dispatch('FetchDoneRework', $ppf);
+        $this->dispatch('LoadPlantGL', $ppf);
+        // $this->dispatch('CalculateQuantities');
         $this->dispatch('dispatchUpdates');
         $this->dispatch('totalInspectedProgress');
     }
