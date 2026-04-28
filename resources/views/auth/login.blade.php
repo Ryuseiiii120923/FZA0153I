@@ -11,7 +11,6 @@
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
      @livewireStyles
 
-
 </head>
 <body>
 <div id="static-modal-login" data-modal-backdrop="static" tabindex="-1" aria-hidden="true"

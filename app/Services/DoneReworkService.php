@@ -59,7 +59,6 @@ class DoneReworkService
     public function saveDoneRework($data)
     {
         return DB::transaction(function () use ($data) {
-
             foreach ($data['forms'] as $form) {
 
                 $hfId = $form['hf_id'];
@@ -72,7 +71,6 @@ class DoneReworkService
                     'goodQty' => $form['GoodQty'] ?? 0,
                     'inspect_REC' => $form['inspect_REC']
                 ]);
-
                 $this->doneReworkRepo->saveDefects(
                     $hfId,
                     $form['defects'] ?? [],

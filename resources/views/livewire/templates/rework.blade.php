@@ -190,9 +190,9 @@
                     <label for="HfNo" class="block text-sm font-medium text-black">HF No.</label>
 
                     <div class="flex items-center gap-3">
-                        <input type="number" readonly id="HF" x-ref="firstInput" class="my-2 bg-gray-500 block w-full border border-black rounded-md px-2 py-1" wire:blur="CheckHf" wire:model.lazy="hfno.{{ $formId }}">
+                        <input type="text" readonly id="HF" x-ref="firstInput" class="my-2 bg-gray-500 block w-full border border-black rounded-md px-2 py-1" wire:blur="CheckHf" wire:model.lazy="hfno.{{ $formId }}">
                         @if(!empty($hfno[$formId]))
-                        <p class="text-sm font-medium text-black">{{ $hfname }}</p>
+                        <p class="text-sm font-medium text-black">{{ $hfname[$formId] ?? '' }}</p>
                         @endif
                     </div>
 

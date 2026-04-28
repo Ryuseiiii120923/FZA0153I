@@ -33,6 +33,7 @@ class DropDown extends Component
 
     public $hf_id = '', $ppf;
     public $total_inspect = '';
+    public $finishingProcedure = '';
     public $modalOpen = [];
 
     public $default = 'new';
@@ -69,7 +70,9 @@ class DropDown extends Component
         $this->forms[$formId] = [
             'hf_id' => '',
             'inspect_REC' => uniqid(),
+            'formId' => $formId,
             'hf_name' => '',
+            'finishingProcedure' => '',
             'total_inspect' => '',
             'open' => false, // start expanded by default
             'defects' => [],
@@ -78,7 +81,7 @@ class DropDown extends Component
             'ForRework' => false,
             'TotalNg' => [],
             'GoodQty' => [],
-            'TotalRework' => []
+            'TotalRework' => [],
         ];
         $this->modalOpen[$formId] = true;
     }
@@ -143,7 +146,8 @@ class DropDown extends Component
                 $formId,
                 $this->forms,
                 $this->hf_id,
-                $this->total_inspect
+                $this->total_inspect,
+                $this->finishingProcedure
             );
 
             $this->modalOpen[$formId] = false;
@@ -161,6 +165,7 @@ class DropDown extends Component
             // Reset fields
             $this->hf_id = '';
             $this->total_inspect = '';
+            $this->finishingProcedure = '';
         } catch (\Illuminate\Validation\ValidationException $e) {
             $this->setErrorBag($e->validator->errors());
         }
@@ -196,7 +201,6 @@ class DropDown extends Component
         $this->defectNg = [];
 
         $data = app(DropdownService::class)->editForms($ppf, $inspectorId);
-
         if (empty($data['forms'])) return;
 
         $this->toggles = true;
@@ -210,110 +214,11 @@ class DropDown extends Component
             $this->modalOpen[$id] = false;
         }
 
-        if ($this->hasError) {
-            $this->dispatch('hasErrorPren', $this->hasError);
-        } else {
-            $this->dispatch('dropdown-updated', [
-                'forms' => $this->forms
-            ]);
-        }
+
+        $this->dispatch('dropdown-updated', [
+            'forms' => $this->forms
+        ]);
     }
-
-    //  #[On('edit-ppf')]
-    // public function editPPFFromChild($ppf, $inspectorId)
-    // {
-    //     $this->defectNg = [];
-    //     $hfRecords = HF::where('ppfno', $ppf)
-    //         ->where('updated_by', $inspectorId)
-    //         ->get();
-
-    //     if ($hfRecords->isEmpty()) return;
-
-    //     $this->toggles = true;
-
-    //     foreach ($hfRecords as $h) {
-
-    //         $operatorDefects = Defect::where('ppfno', $ppf)
-    //             ->where('updated_by', $inspectorId)
-    //             ->where('inspect_REC', $h->inspect_REC)
-    //             ->get()
-    //             ->groupBy(fn($d) => strtolower(trim($d->defect)))
-    //             ->map(function ($group) {
-    //                 $first = $group->first();
-    //                 $totalQty = $group->sum(fn($d) => $d->qty ?? 1);
-    //                 return [
-    //                     'id' => $first->RECNO,
-    //                     'type' => $first->defect,
-    //                     'qty'  => $totalQty,
-    //                 ];
-    //             })
-    //             ->values()
-    //             ->toArray();
-    //         $this->defectNg[$h->hf_id] = collect($operatorDefects)->sum('qty');
-
-    //         $operatorRework = Rework::where('ppfno', $ppf)
-    //             ->where('updated_by', $inspectorId)
-    //             ->where('inspect_REC', $h->inspect_REC)
-    //             ->get()
-    //             ->map(function ($r) {
-    //                 return [
-    //                     'id' => $r->RECNO,
-    //                     'hfno' => $r->hfno,
-    //                     'totalinsp' => $r->totalinsp ?? 0,
-    //                     'type' => $r->rework_type,
-    //                     'quan' => $r->qty ?? 1,
-    //                 ];
-    //             })
-    //             ->toArray();
-    //         $this->reworkNg[$h->hf_id] = collect($operatorRework)->sum('quan');
-    //         $operatorSmallDefects = SmallDefect::where('ppfno', $ppf)
-    //             ->where('updated_by', $inspectorId)
-    //             ->where('inspect_REC', $h->inspect_REC)
-    //             ->whereNotNull('large_defect')
-    //             ->get()
-    //             ->groupBy('large_defect')
-    //             ->mapWithKeys(function ($group, $largeDefect) {
-    //                 return [
-    //                     $largeDefect => collect($group)->map(fn($s) => [
-    //                         'id' => $s->RECNO,
-    //                         'type' => $s->small_defect,
-    //                         'qty'  => $s->qty ?? 0,
-    //                     ])->toArray()
-    //                 ];
-    //             })
-    //             ->toArray();
-    //         // dd($operatorSmallDefects);
-    //         $uniqueId = uniqid();
-    //         $selectedLarge = array_key_first($operatorSmallDefects) ?? null;
-    //         $this->forms[$uniqueId] = [
-    //             'id' => $h->RECNO,
-    //             'inspect_REC' => $h->inspect_REC,
-    //             'hf_id' => $h->hf_id,
-    //             'ppfno' => $h->ppfno,
-    //             'total_inspect' => $h->total_inspect,
-    //             'open' => true,
-    //             'defects' => $operatorDefects,
-    //             'created_at' => $h->created_at ?? null,
-    //             'updated_date' => $h->updated_date ?? null,
-    //             'smallDefects' => $operatorSmallDefects,
-    //             'selectedLargeDefect' => $selectedLarge,
-    //             'rework' => $operatorRework,
-    //             'isRework' => (bool) $h->IsDoneRework,
-    //             'ForRework' => (bool) $h->ForRework
-    //         ];
-    //         $this->CheckHf($uniqueId);
-    //         $this->CalcGoodQty($uniqueId);
-    //         $this->modalOpen[$uniqueId] = false;
-    //     }
-
-    //     if ($this->hasError) {
-    //         $this->dispatch('hasErrorPren', $this->hasError);
-    //     } else {
-    //         $this->dispatch('dropdown-updated', [
-    //             'forms' => $this->forms
-    //         ]);
-    //     }
-    // }
 
 
     public function editHF($formId)

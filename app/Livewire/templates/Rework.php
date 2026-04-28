@@ -7,6 +7,7 @@ use App\Models\Worker;
 use App\Models\WorkerName;
 use Livewire\Component;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\On;
 
 class Rework extends Component
@@ -215,27 +216,32 @@ class Rework extends Component
 
     public function CheckHf()
     {
-        if (empty($this->hfno)) {
-            $this->hfname[$this->formId] = null;
-            $this->resetErrorBag('hfno');
-            return;
-        }
+        try {
+            if (empty($this->hfno)) {
+                $this->hfname[$this->formId] = null;
+                $this->resetErrorBag('hfno');
+                return;
+            }
 
-        $searchValue = (strlen($this->hfno[$this->formId]) === 2) ? ' ' . $this->hfno : $this->hfno;
-        $hf = Worker::where('作業員CD', $searchValue)->first();
+            $searchValue = (strlen($this->hfno[$this->formId]) === 2) ? ' ' . $this->hfno[$this->formId] : $this->hfno[$this->formId];
+            $hf = Worker::where('作業員CD', $searchValue)->first();
 
-        if ($hf) {
-            $name = WorkerName::where('社員CD', $hf->社員CD)->first();
-            $this->hfname = $name ? $name->名前 : null;
-            $this->resetErrorBag('hfno');
-        } else {
-            $this->addError('hfno', 'This Operator does not exist');
+            if ($hf) {
+                $name = WorkerName::where('社員CD', $hf->社員CD)->first();
+                $this->hfname[$this->formId] = $name ? $name->名前 : null;
+                $this->resetErrorBag('hfno');
+            } else {
+                $this->addError('hfno', 'This Operator does not exist');
+                $this->hfno[$this->formId] = "";
+                $this->hfname[$this->formId] = null;
+            }
+        } catch (\Exception $e) {
+            $this->addError('hfno', 'An error occurred while validating the HF number');
+            Log::error('Error validating HF number: ' . $e->getMessage());
             $this->hfno[$this->formId] = "";
-            $this->hfname = null;
+            $this->hfname[$this->formId] = null;
         }
     }
-
-
     public function deleteRework($hfno, $type)
     {
         $hfno = trim($hfno);
@@ -255,9 +261,9 @@ class Rework extends Component
         // Send to the other component
         // $this->dispatch('FromReworks', reworksData: $reworksData);
         $this->dispatch('NeedToDeleteRework', [
-             'hfno' => $hfno,
-             'type' => $type,
-             'formId' => $this->formId
+            'hfno' => $hfno,
+            'type' => $type,
+            'formId' => $this->formId
         ]);
 
         $this->dispatch($this->dispatchPrefix . '.defects-updated', [

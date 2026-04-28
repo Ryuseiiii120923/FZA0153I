@@ -15,7 +15,7 @@ class DropdownService
     public function __construct(
         protected DropDownRepository $dropdownRepo,
     ) {}
-    public function saveHF($formId, $forms, $hf_id, $total_inspect)
+    public function saveHF($formId, $forms, $hf_id, $total_inspect, $finishingProcedure = null)
     {
         $data = [
             'forms' => $forms,
@@ -47,6 +47,11 @@ class DropdownService
         $forms[$formId]['hf_id'] = $forms[$formId]['hf_id'] ?? $hf_id;
         $forms[$formId]['total_inspect'] = $forms[$formId]['total_inspect'] ?? $total_inspect;
 
+        if (!is_null($finishingProcedure)) {
+            $forms[$formId]['finishingProcedure'] =
+                $forms[$formId]['finishingProcedure'] ?? $finishingProcedure;
+        }
+
         return $forms;
     }
 
@@ -73,7 +78,6 @@ class DropdownService
             : $currentHfId;
 
         $hf = Worker::where('作業員CD', $searchValue)
-            ->where('区分', 1)
             ->first();
 
         if (!$hf) {
@@ -89,24 +93,24 @@ class DropdownService
         $forms[$formId]['hf_name'] = $name?->名前;
 
         // duplicate check
-        foreach ($forms as $id => $form) {
-            if ($id === $formId) continue;
+        // foreach ($forms as $id => $form) {
+        //     if ($id === $formId) continue;
 
-            $otherDate = isset($form['created_at'])
-                ? Carbon::parse($form['created_at'])->format('Y-m-d')
-                : null;
+        //     $otherDate = isset($form['created_at'])
+        //         ? Carbon::parse($form['created_at'])->format('Y-m-d')
+        //         : null;
 
-            if (
-                isset($form['hf_id']) &&
-                $form['hf_id'] === $currentHfId &&
-                $currentDate === $otherDate
-            ) {
-                return [
-                    'error' => 'This Operator is already used in another form with the same date',
-                    'forms' => $forms
-                ];
-            }
-        }
+        //     if (
+        //         isset($form['hf_id']) &&
+        //         $form['hf_id'] === $currentHfId &&
+        //         $currentDate === $otherDate
+        //     ) {
+        //         return [
+        //             'error' => 'This Operator is already used in another form with the same date',
+        //             'forms' => $forms
+        //         ];
+        //     }
+        // }
 
         return [
             'error' => null,
@@ -286,6 +290,7 @@ class DropdownService
                 'hf_id' => $h->hf_id,
                 'ppfno' => $h->ppfno,
                 'total_inspect' => $h->total_inspect,
+                'finishingProcedure' => $h->finishingProcedure ?? '',
                 'open' => true,
                 'defects' => $operatorDefects,
                 'created_at' => $h->created_at ?? null,
@@ -295,9 +300,9 @@ class DropdownService
                 'isRework' => (bool) $h->IsDoneRework,
                 'ForRework' => (bool) $h->ForRework,
                 'rework' => $operatorRework,
+                'formId' => $h->formId ?? null,
             ];
         }
-
         return compact('forms', 'defectNg', 'reworkNg');
     }
 

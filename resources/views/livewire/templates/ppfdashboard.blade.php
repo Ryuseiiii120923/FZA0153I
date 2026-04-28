@@ -15,7 +15,7 @@
                     <td class="px-4 py-2 text-center">{{ $data->total_inspect }} / {{ $data->expct }}</td>
                     <td class="px-4 py-2 text-center">{{ $data->DateEncode }}</td>
                     <td class="px-4 py-2 flex justify-center gap-2">
-                        <button class="text-white bg-green-700 px-4 py-2 rounded" wire:click="confirm_ppf('{{ $data->PPFNo }}')">Confirm</button>
+                        <button class="text-white bg-green-700 px-4 py-2 rounded" wire:loading.attr="disabled" wire:click.throttle.5000ms="confirm_ppf('{{ $data->PPFNo }}')">Confirm</button>
                     </td>
                 </tr>
             @empty

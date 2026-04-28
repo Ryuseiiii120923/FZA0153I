@@ -385,7 +385,6 @@ class Checkppf extends Component
             $ppf = request()->input('ppf');
         }
         $this->ppf = (int) $ppf;
-        Log::debug('PPF received from JS:', ['ppf' => $this->ppf]);
 
         $reinspects = DB::table('FinalInspection')
             ->where('PPFNO', $ppf)

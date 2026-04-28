@@ -131,117 +131,55 @@ class Add extends Component
         $this->submitMethod = $data;
     }
 
-
-    // public function Reworks(array $reworksData)
-    // {
-    //     $data = $reworksData['reworksData'] ?? $reworksData;
-    //     $hfno = $data['newhfno'] ?? $data['hfno'] ?? null;
-    //     dd($hfno);
-    //     $type = strtoupper(trim($data['newtype'] ?? $data['type'] ?? ''));
-
-    //     if (!$hfno || !$type) return;
-
-    //     $quan = (int) ($data['newquan'] ?? $data['quan'] ?? 0);
-    //     $totalinsp = (int) ($data['totalinsp'] ?? 0);
-
-    //     $this->rework = $this->rework ?? [];
-
-    //     if (($data['action'] ?? '') === 'delete') {
-    //         // Remove this type under the HFNO
-    //         if (isset($this->rework[$hfno])) {
-    //             $this->rework[$hfno] = collect($this->rework[$hfno])
-    //                 ->reject(fn($r) => $r['type'] === $type)
-    //                 ->values()
-    //                 ->toArray();
-
-    //             // Remove HFNO if no types left
-    //             if (empty($this->rework[$hfno])) {
-    //                 unset($this->rework[$hfno]);
-    //             }
-    //         }
-    //     } else {
-    //         // Add or update
-    //         $this->rework[$hfno] = $this->rework[$hfno] ?? [];
-
-    //         // Remove any existing type
-    //         $this->rework[$hfno] = collect($this->rework[$hfno])
-    //             ->reject(fn($r) => $r['type'] === $type)
-    //             ->values()
-    //             ->toArray();
-
-    //         // Add the new type
-    //         $this->rework[$hfno][] = [
-    //             'type' => $type,
-    //             'quan' => $quan,
-    //             'totalinsp' => $totalinsp,
-    //         ];
-    //     }
-
-    //     // Recalculate total quantity (sum all types of all HFNOs)
-    //     $this->totalngrework = collect($this->rework)
-    //         ->map(fn($types) => collect($types)->sum('quan'))
-    //         ->sum();
-
-    //     // Recalculate hfno1..hfno5 (keys)
-    //     $hfnos = array_keys($this->rework);
-    //     $this->hfno1 = $hfnos[0] ?? '';
-    //     $this->hfno2 = $hfnos[1] ?? '';
-    //     $this->hfno3 = $hfnos[2] ?? '';
-    //     $this->hfno4 = $hfnos[3] ?? '';
-    //     $this->hfno5 = $hfnos[4] ?? '';
-    // }
-
     public function Reworks(array $reworksData)
-{
-    $items = $reworksData['reworksData'] ?? $reworksData;
+    {
+        $items = $reworksData['reworksData'] ?? $reworksData;
 
-    // If it's a Collection, convert to array
-    if ($items instanceof \Illuminate\Support\Collection) {
-        $items = $items->toArray();
-    }
-
-    $this->rework = $this->rework ?? [];
-
-    foreach ($items as $data) {
-
-        $hfno = $data['hfno'] ?? null;
-        $type = strtoupper(trim($data['type'] ?? ''));
-
-        if (!$hfno || !$type) {
-            continue;
+        if ($items instanceof \Illuminate\Support\Collection) {
+            $items = $items->toArray();
         }
 
-        $quan = (int) ($data['quan'] ?? 0);
-        $totalinsp = (int) ($data['totalinsp'] ?? 0);
+        $this->rework = $this->rework ?? [];
 
-        // ADD / UPDATE
-        $this->rework[$hfno] = $this->rework[$hfno] ?? [];
+        foreach ($items as $data) {
 
-        $this->rework[$hfno] = collect($this->rework[$hfno])
-            ->reject(fn($r) => $r['type'] === $type)
-            ->values()
-            ->toArray();
+            $hfno = $data['hfno'] ?? null;
+            $type = strtoupper(trim($data['type'] ?? ''));
 
-        $this->rework[$hfno][] = [
-            'type' => $type,
-            'quan' => $quan,
-            'totalinsp' => $totalinsp,
-        ];
+            if (!$hfno || !$type) {
+                continue;
+            }
+
+            $quan = (int) ($data['quan'] ?? 0);
+            $totalinsp = (int) ($data['totalinsp'] ?? 0);
+
+            // ADD / UPDATE
+            $this->rework[$hfno] = $this->rework[$hfno] ?? [];
+
+            $this->rework[$hfno] = collect($this->rework[$hfno])
+                ->reject(fn($r) => $r['type'] === $type)
+                ->values()
+                ->toArray();
+
+            $this->rework[$hfno][] = [
+                'type' => $type,
+                'quan' => $quan,
+                'totalinsp' => $totalinsp,
+            ];
+        }
+
+        // totals
+        $this->totalngrework = collect($this->rework)
+            ->map(fn($types) => collect($types)->sum('quan'))
+            ->sum();
+
+        $hfnos = array_keys($this->rework);
+        $this->hfno1 = $hfnos[0] ?? '';
+        $this->hfno2 = $hfnos[1] ?? '';
+        $this->hfno3 = $hfnos[2] ?? '';
+        $this->hfno4 = $hfnos[3] ?? '';
+        $this->hfno5 = $hfnos[4] ?? '';
     }
-
-    // totals
-    $this->totalngrework = collect($this->rework)
-        ->map(fn($types) => collect($types)->sum('quan'))
-        ->sum();
-
-    $hfnos = array_keys($this->rework);
-    $this->hfno1 = $hfnos[0] ?? '';
-    $this->hfno2 = $hfnos[1] ?? '';
-    $this->hfno3 = $hfnos[2] ?? '';
-    $this->hfno4 = $hfnos[3] ?? '';
-    $this->hfno5 = $hfnos[4] ?? '';
-
-}
 
     public function ReworksData($data)
     {
@@ -269,64 +207,6 @@ class Add extends Component
         $this->insp5 = $data['insp5'] ?? '';
     }
 
-    // public function Defects($payload = [])
-    // {
-    //     if (!$payload) return;
-
-    //     $defectData = $payload['defectData'] ?? $payload;
-
-    //     $newDefect = trim($defectData['newDefect'] ?? '');
-    //     $newQuan   = (float)($defectData['newQuan'] ?? '');
-    //     $action    = $defectData['action'] ?? 'add';
-
-    //     if (!$newDefect) return;
-
-    //     $normalized = [];
-    //     foreach ($this->defects as $def) {
-    //         $type = $def['type'] ?? $def['newDefect'] ?? '';
-    //         $qty  = (float)($def['qty'] ?? $def['newQuan'] ?? '');
-
-    //         if ($type === '') continue;
-
-    //         if (isset($normalized[strtolower($type)])) {
-    //             $normalized[strtolower($type)]['qty'] += $qty;
-    //         } else {
-    //             $normalized[strtolower($type)] = [
-    //                 'type' => $type,
-    //                 'qty'  => (int) $qty
-    //             ];
-    //         }
-    //     }
-
-
-    //     $key = strtolower($newDefect);
-    //     if ($action === 'delete') {
-    //         unset($normalized[$key]);
-    //         $this->defects = array_values($normalized);
-    //         return;
-    //     }
-
-
-    //     if ($action === 'update') {
-
-    //         if (isset($normalized[$key])) {
-    //             $normalized[$key]['qty'] = $newQuan;
-    //         }
-    //     } else {
-    //         if (isset($normalized[$key])) {
-    //             $normalized[$key]['qty'] += $newQuan;
-    //         } else {
-
-    //             $normalized[$key] = [
-    //                 'type' => $newDefect,
-    //                 'qty'  => $newQuan
-    //             ];
-    //         }
-    //     }
-
-    //     $this->defects = array_values($normalized);
-    //     dd($this->defects);
-    // }
 
     public function Defects($payload = [])
     {
@@ -812,12 +692,16 @@ class Add extends Component
             $this->loadingSave = false;
             return;
         }
-        if (!$isDone) {
-            $this->dispatch('haserror', ['message' => 'This PPF rework is not yet marked as done. Please resolve them before Saving.']);
-            $this->loadingAdd = false;
-            $this->loadingSave = false;
-            return;
+
+        if ($hasRework) {
+            if (!$isDone) {
+                $this->dispatch('haserror', ['message' => 'This PPF rework is not yet marked as done. Please resolve them before Saving.']);
+                $this->loadingAdd = false;
+                $this->loadingSave = false;
+                return;
+            }
         }
+
 
         if ($isDone && !$isEncoded) {
             $this->dispatch('haserror', ['message' => 'This PPF rework is not yet encode in Operator. Please resolve them before Saving.']);

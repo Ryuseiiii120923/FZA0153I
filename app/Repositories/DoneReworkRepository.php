@@ -101,13 +101,6 @@ class DoneReworkRepository
     public function saveSmallDefects(int $hfId, array $smalldefects, string $ppfno, string $encoder, string $inspectRec)
     {
         try {
-            // $exists = DB::table('dr_small')
-            //     ->where('ppfno', $ppfno)
-            //     ->exists();
-
-            // if ($exists) {
-            //     throw new \Exception("PPF already exists: " . $ppfno);
-            // }
             $drsmallrows = [];
             $inspectorSmallRows = [];
             foreach ($smalldefects as $large => $smalls) {

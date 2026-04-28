@@ -3,6 +3,7 @@
 namespace App\Traits;
 
 use App\Services\ForReworkService;
+use App\Services\Helpers\CalculateGoodQty;
 
 trait CalculatesGoodQty
 {
@@ -18,7 +19,7 @@ trait CalculatesGoodQty
         if (!isset($this->forms[$formId])) return null;
 
         // Use the service
-        $result = app(ForReworkService::class)->calculateGoodQtyForm($this->forms[$formId]);
+        $result = app(CalculateGoodQty::class)->calculateForm($this->forms[$formId]);
 
         // Update component arrays if they exist
         if (property_exists($this, 'defectNg')) {

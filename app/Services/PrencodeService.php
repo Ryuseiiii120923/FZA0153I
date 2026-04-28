@@ -12,17 +12,6 @@ class PrencodeService
         $this->prencodeRepo = $prencodeRepo;
     }
 
-    public function calculateGoodQty($totalInspect, $defects, $reworks)
-    {
-        $defectQty = collect($defects)->sum('qty');
-        $reworkQty = collect($reworks)->sum('quan');
-
-        $totalNg = $defectQty + $reworkQty;
-
-        return $totalInspect - $totalNg;
-    }
-
-
     public function handleReworks(array $currentReworks, array $reworksData): array
     {
         $type = $reworksData['newtype'] ?? $reworksData['type'] ?? null;

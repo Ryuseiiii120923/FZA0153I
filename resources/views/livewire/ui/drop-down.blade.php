@@ -103,6 +103,12 @@
                 <div class="flex flex-col gap-4 mt-4 p-4 bg-gray-50 rounded">
 
                     <div class="flex flex-col sm:flex-row gap-4">
+                         <div class="w-full sm:w-1/2">
+                            <label class="block text-sm font-medium">Finishing Procedure</label>
+                            <div class="flex items-center gap-3">
+                                <input type="text" wire:model="forms.{{ $formId }}.finishingProcedure" class="w-full border bg-gray-500 p-2 rounded" readonly>
+                            </div>
+                        </div>
                         <div class="w-full sm:w-1/2">
                             <label class="block text-sm font-medium">HF ID</label>
                             <div class="flex items-center gap-3">
@@ -127,15 +133,33 @@
                         @keydown.escape.window="open = false">
                         <div class="bg-white rounded-lg p-6 w-11/12 sm:w-1/3">
                             <div class="flex flex-col gap-4">
+                                <div class="w-full mx-auto">
+                                    <label for="finishingMachine" class="block text-sm font-medium text-gray-700">
+                                        Finishing Procedure
+                                    </label>
+
+                                    <select id="finishingMachine"
+                                        class="mt-1 block w-full border border-black rounded-md px-2 py-1"
+                                        wire:model="forms.{{ $formId }}.finishingProcedure"
+                                        required>  
+                                        <option value="">--- Select Finishing Procedure ---</option>
+                                        <option value="Hand Finishing">Hand Finishing</option>
+                                        <option value="Cold Deflushing">Cold Deflushing</option>
+                                        <option value="Milling">Milling</option>
+                                        <option value="Post Curing">Post Curing</option>
+                                        <option value="Cutting">Cutting</option>
+                                        <option value="Punching">Punching</option>
+                                    </select>
+                                </div>
                                 <div>
                                     <label class="block text-sm font-medium">HF ID</label>
                                     @if(!empty($form['hf_name'])) <p class="text-sm font-medium text-black">{{ $form['hf_name'] }}</p> @endif
-                                    <input type="number"
+                                    <input type="text"
                                         wire:model.lazy="forms.{{ $formId }}.hf_id"
                                         wire:blur="CheckHf('{{ $formId }}')"
                                         class="w-full border p-2 rounded"
                                         placeholder="Enter HF ID"
-                                        maxlength="4" pattern="\d{4}">
+                                        maxlength="4" pattern="\d{4}" oninput="this.value = this.value.toUpperCase()">
 
                                     @error('forms.' . $formId . '.hf_id') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
                                 </div>

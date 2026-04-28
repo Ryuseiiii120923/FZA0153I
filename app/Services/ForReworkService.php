@@ -18,22 +18,6 @@ class ForReworkService
         $this->reworkRepo = $reworkRepo;
     }
 
-     public function calculateGoodQtyForm(array $form): array
-    {
-        $defectQty = collect($form['defects'] ?? [])->sum('qty');
-        $reworkQty = collect($form['rework'] ?? [])->sum('quan');
-
-        $totalNg = $defectQty + $reworkQty;
-
-        $goodQty = ($form['total_inspect'] ?? 0) - $totalNg;
-
-        return [
-            'goodQty' => $goodQty,
-            'defectNg' => $defectQty,
-            'reworkNg' => $reworkQty,
-        ];
-    }
-
      public function FetchForRework($ppf)
     {
         return $this->reworkRepo->fetchForRework($ppf);

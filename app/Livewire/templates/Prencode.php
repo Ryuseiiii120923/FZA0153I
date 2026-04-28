@@ -142,6 +142,7 @@ class Prencode extends Component
     #[On('LoadReworksPren')]
     public function LoadReworksPren($ppf)
     {
+        dd('here');
         $result = $this->prencodeService()->LoadReworksPrencode($ppf, $this->inspectorID);
 
         $this->rework = $result['reworks'];
@@ -337,7 +338,7 @@ class Prencode extends Component
 
     public function editPrencode()
     {
-        
+
         Db::beginTransaction();
         try {
             $this->loading = true;
@@ -466,7 +467,6 @@ class Prencode extends Component
 
             session()->flash('failed', 'Edit failed!');
         }
-
     }
 
     #[On('fetchTotalInspection')]
@@ -513,12 +513,12 @@ class Prencode extends Component
             $mergedDefects = [];
             $mergedSmallDefects = [];
             $mergedReworks = [];
-
             // 🔵 LOOP FORMS
+            // dd($this->dropdownForms);
             foreach ($this->dropdownForms as $formId => $formData) {
 
 
-                $hf_id = isset($formData['hf_id']) ? (int)$formData['hf_id'] : null;
+                $hf_id = isset($formData['hf_id']) ? $formData['hf_id'] : null;
                 $goodQty = $formData['GoodQty'] ?? 0;
                 $totalGoodQty += $goodQty;
 
@@ -529,9 +529,11 @@ class Prencode extends Component
                     'updated_by'    => $this->inspectorID,
                     'ppfno'         => $this->ppf,
                     'inspect_REC'   => $formData['inspect_REC'],
+                    'formId' => $formData['formId'] ?? null,
                     'created_at'    => $now,
                     'updated_date'  => $now,
                     'IsDoneRework'  =>  0,
+                    'finishingProcedure' => $formData['finishingProcedure'] ?? null,
                     'ForRework' => !empty($formData['ForRework']) ? 1 : 0,
                     'GoodQty' => $goodQty
                 ];
@@ -553,6 +555,7 @@ class Prencode extends Component
                         'updated_by'  => $this->inspectorID,
                         'ppfno'       => $this->ppf,
                         'inspect_REC' => $formData['inspect_REC'],
+                        'formId' => $formData['formId'] ?? null
                     ];
 
                     // merge
@@ -599,6 +602,7 @@ class Prencode extends Component
                             'updated_by'    => $this->inspectorID,
                             'ppfno'         => $this->ppf,
                             'inspect_REC'   => $formData['inspect_REC'],
+                            'formId' => $formData['formId'] ?? null
                         ];
 
                         $key = $type . '_' . ($formData['ForRework'] ? 1 : 0);
@@ -639,6 +643,7 @@ class Prencode extends Component
                         'updated_by'  => $this->inspectorID,
                         'ppfno'       => $this->ppf,
                         'inspect_REC' => $formData['inspect_REC'],
+                        'formId' => $formData['formId'] ?? null
                     ];
 
                     $key = $hfno . '_' . $type;
@@ -656,10 +661,10 @@ class Prencode extends Component
                     $mergedReworks[$key]['qty'] += $qty;
                 }
             }
-            DB::table('hf_forms')->upsert($hfRows, ['hf_id', 'ppfno', 'updated_by'], ['total_inspect', 'GoodQty']);
-            DB::table('hf_defect')->upsert($defectRows, ['hf_id', 'defect', 'ppfno', 'updated_by'], ['qty']);
-            DB::table('hf_small')->upsert($smallRows, ['hf_id', 'large_defect', 'small_defect', 'ppfno', 'updated_by'], ['qty']);
-            DB::table('hf_rework')->upsert($reworkRows, ['hfno', 'ppfno', 'updated_by', 'inspect_REC', 'rework_type'], ['qty', 'totalinsp',]);
+            DB::table('hf_forms')->upsert($hfRows, ['hf_id', 'ppfno', 'updated_by','formId'], ['total_inspect', 'GoodQty']);
+            DB::table('hf_defect')->upsert($defectRows, ['hf_id', 'defect', 'ppfno', 'updated_by','formId'], ['qty']);
+            DB::table('hf_small')->upsert($smallRows, ['hf_id', 'large_defect', 'small_defect', 'ppfno', 'updated_by', 'formId'], ['qty']);
+            DB::table('hf_rework')->upsert($reworkRows, ['hfno', 'ppfno', 'updated_by', 'inspect_REC', 'rework_type', 'formId'], ['qty', 'totalinsp',]);
 
             // 🚀 BULK UPSERTS
 
