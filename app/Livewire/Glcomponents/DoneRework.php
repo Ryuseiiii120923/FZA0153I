@@ -200,27 +200,7 @@ class DoneRework extends Component
         $this->defectNg[$formId] = (int) $data['defectNg'];
         $this->CalcGoodQty($formId);
     }
-
-    public function checkWorkerField($formId, $idField, $nameField)
-    {
-        $result = $this->workerService()->validateWorker($formId, $this->forms, $idField);
-
-        if (isset($result['error'])) {
-            $this->addError(
-                'forms.' . $formId . '.' . $idField,
-                $result['error']
-            );
-            $this->forms[$formId][$nameField] = null;
-            $this->hasErrorForm[$formId] = true;
-            return;
-        }
-
-        // Set the name for display
-        $this->forms[$formId][$nameField] = $result['worker_name'];
-        $this->resetErrorBag('forms.' . $formId . '.' . $idField);
-        $this->hasErrorForm[$formId] = false;
-    }
-
+    
     public function CloseModal($formId)
     {
         $this->modalOpen[$formId] = false;

@@ -2,13 +2,8 @@
 
 namespace App\Livewire\Templates;
 
-use App\Http\Livewire\FetchDataHandler;
 use App\Models\AddDefect;
 use App\Models\AddRwk;
-use App\Models\CheckHF;
-use App\Models\Defects;
-use App\Models\Operator\PRInsp;
-use App\Models\Rework;
 use App\Models\SmallDef;
 use App\Models\ViCheck;
 use App\Models\WorkerName;
@@ -16,17 +11,17 @@ use App\Services\DefectService;
 use App\Services\PPFService;
 use App\Services\ReworkService;
 use Illuminate\Support\Facades\Auth as UserAuth;
-use DateTime;
 use Livewire\Component;
+use App\Traits\NormalizeSmallDefects;
 use Carbon\Carbon;
-use Exception;
-use Illuminate\Support\Facades\Log;
-use Livewire\Livewire;
 use Livewire\Attributes\On;
 use Illuminate\Support\Facades\DB;
+use App\Traits\NormalizeDefects;
 
 class Add extends Component
 {
+    use NormalizeSmallDefects;
+    use NormalizeDefects;
     public $ppf;
     public $lotno;
     public $partno;
@@ -198,144 +193,6 @@ class Add extends Component
         $this->opt = $data['opt'];
         $this->expct = $data['expct'];
     }
-    public function Insp($data)
-    {
-        $this->insp1 = $data['insp1'] ?? '';
-        $this->insp2 = $data['insp2'] ?? '';
-        $this->insp3 = $data['insp3'] ?? '';
-        $this->insp4 = $data['insp4'] ?? '';
-        $this->insp5 = $data['insp5'] ?? '';
-    }
-
-
-    public function Defects($payload = [])
-    {
-        if (!$payload) return;
-
-        $defectData = $payload['defectData'] ?? $payload;
-
-        if (isset($defectData['newDefect'])) {
-            $defectData = [$defectData];
-        }
-
-        $normalized = [];
-
-        // ✅ Step 1: Normalize existing (include process)
-        foreach ($this->defects as $def) {
-            $type = trim($def['type'] ?? '');
-            $qty  = (float)($def['qty'] ?? 0);
-            $process = $def['process'] ?? null;
-
-            if ($type === '') continue;
-
-            $key = strtolower($type . '_' . $process);
-
-            if (isset($normalized[$key])) {
-                $normalized[$key]['qty'] += $qty;
-            } else {
-                $normalized[$key] = [
-                    'type'    => $type,
-                    'qty'     => $qty,
-                    'process' => $process
-                ];
-            }
-        }
-
-        // ✅ Step 2: Apply new data
-        foreach ($defectData as $data) {
-            $newDefect = trim($data['newDefect'] ?? '');
-            $newQuan   = (float)($data['newQuan'] ?? 0);
-            $process   = $data['process'] ?? null;
-            $action    = $data['action'] ?? 'add';
-
-            if (!$newDefect) continue;
-
-            $key = strtolower($newDefect . '_' . $process);
-
-            if ($action === 'delete') {
-                unset($normalized[$key]);
-            } elseif ($action === 'update') {
-                $normalized[$key] = [
-                    'type'    => $newDefect,
-                    'qty'     => $newQuan,
-                    'process' => $process
-                ];
-            } elseif ($action === 'add') {
-                if (isset($normalized[$key])) {
-                    $normalized[$key]['qty'] += $newQuan;
-                } else {
-                    $normalized[$key] = [
-                        'type'    => $newDefect,
-                        'qty'     => $newQuan,
-                        'process' => $process
-                    ];
-                }
-            } else { // initial load
-                $normalized[$key] = [
-                    'type'    => $newDefect,
-                    'qty'     => $newQuan,
-                    'process' => $process
-                ];
-            }
-        }
-
-        $this->defects = array_values($normalized);
-    }
-
-
-    public function SmallDefects($smalldefectData)
-    {
-        $large  = $smalldefectData['SelectedLargeDefect'];
-        $type   = $smalldefectData['type'] ?? $smalldefectData['newSmallDefect'];
-        $qty    = $smalldefectData['qty'] ?? $smalldefectData['newSmallQuan'];
-        $action = $smalldefectData['action'] ?? 'add';
-
-        if (!isset($this->smalldefects[$large])) {
-            $this->smalldefects[$large] = [];
-        }
-
-        // Normalize existing small defects by lowercase type
-        $normalized = [];
-        foreach ($this->smalldefects[$large] as $small) {
-            $smallType = strtolower($small['type'] ?? '');
-            if ($smallType === '') continue;
-
-            if (isset($normalized[$smallType])) {
-                $normalized[$smallType]['qty'] += $small['qty'];
-            } else {
-                $normalized[$smallType] = [
-                    'type' => $small['type'],
-                    'qty'  => $small['qty']
-                ];
-            }
-        }
-
-        $key = strtolower($type);
-
-        if ($action === 'delete') {
-            // Remove the small defect
-            //dd('here');
-            unset($normalized[$key]);
-        } elseif ($action === 'update') {
-            // Update the quantity if it exists
-            if (isset($normalized[$key])) {
-                $normalized[$key]['qty'] = $qty;
-            }
-        } else {
-            // Add new small defect
-            if (isset($normalized[$key])) {
-                $normalized[$key]['qty'] += $qty;
-            } else {
-                $normalized[$key] = [
-                    'type' => $type,
-                    'qty'  => $qty
-                ];
-            }
-        }
-
-        // Save back normalized array
-        $this->smalldefects[$large] = array_values($normalized);
-    }
 
 
     public function GoodNg($data)
@@ -353,26 +210,7 @@ class Add extends Component
         $this->goodqty = $data;
     }
 
-    public function onInspectorsValidated($payload)
-    {
-        $this->canAdd = $payload['isValid'];
-        $this->haserror = !$this->canAdd;
-    }
 
-    public function submitAction()
-    {
-        if ($this->submitMethod === 'addToDb') {
-            $this->AddtoDb();
-        }
-        if ($this->submitMethod === 'deleteToDb') {
-            $this->dispatch('confirm-delete');
-        }
-
-
-        if ($this->submitMethod === 'editToDb') {
-            $this->EditoDb();
-        }
-    }
     public function render()
     {
         return view('livewire.templates.add');
@@ -393,7 +231,7 @@ class Add extends Component
     {
         $ppf = $this->resolvePpf($data);
         if (!$this->loadMainRecord($ppf)) {
-            return; // stop the rest of FetchDatas if record not found
+            return; 
         }
         $this->loadPlant($ppf);
         $this->loadDefects($ppf);
@@ -451,6 +289,20 @@ class Add extends Component
         }
 
         $this->totalngrework = $result['total'];
+    }
+      public function submitAction()
+    {
+        if ($this->submitMethod === 'addToDb') {
+            $this->AddtoDb();
+        }
+        if ($this->submitMethod === 'deleteToDb') {
+            $this->dispatch('confirm-delete');
+        }
+
+
+        if ($this->submitMethod === 'editToDb') {
+            $this->EditoDb();
+        }
     }
 
     public function InspectorUpdate($inspectorId)
@@ -527,12 +379,6 @@ class Add extends Component
     #[On('CalculateQuantities')]
     public function calculateQuantities()
     {
-        // $this->goodqty = (float)$this->expct
-        //     - (float)$this->totalngrework
-        //     + (float)$this->excssqty
-        //     - (float)$this->lackqty
-        //     - (float)$this->reworkqty
-        //     - (float)$this->sampleqty;
 
         $goodQtyNumeric = is_numeric($this->goodqty) ? $this->goodqty : 0;
         $totalNgNumeric = is_numeric(value: $this->Ng) ? $this->Ng : 0;
@@ -852,7 +698,7 @@ class Add extends Component
                 //     ->delete();
                 foreach ($this->smalldefects as $largeDefect => $smalls) {
                     foreach ($smalls as $small) {
-                        DB::table('DefectSMALL')->create([
+                        DB::table('DefectSMALL')->insert([
                             'PPFNo'       => $this->ppf,
                             'LargeDefect' => $largeDefect, // <-- the name, not the array
                             'SmallDefect' => $small['newSmallDefect'] ?? $small['type'],
@@ -869,7 +715,7 @@ class Add extends Component
 
                 foreach ($this->smalldefects as $largeDefect => $smalls) {
                     foreach ($smalls as $small) {
-                        DB::table('DefectSMALL')->create([
+                        DB::table('DefectSMALL')->insert([
                             'PPFNo'       => $this->ppf,
                             'LargeDefect' => $largeDefect, // <-- the name, not the array
                             'SmallDefect' => $small['newSmallDefect'] ?? $small['type'],

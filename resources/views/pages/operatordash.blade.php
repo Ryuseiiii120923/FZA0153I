@@ -1,3 +1,3 @@
 <x-layout>
-    <livewire:templates.operatordash>
+    @livewire('templates.operatordash')
 </x-layout>

@@ -1,5 +1,5 @@
 <x-layout>
     <div>
-    <livewire:components.selector />
+    @livewire('components.selector')
     </div>
 </x-layout>

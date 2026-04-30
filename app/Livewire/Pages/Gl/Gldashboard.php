@@ -1,15 +1,19 @@
 <?php
 
-namespace App\Livewire\Templates;
+namespace App\Livewire\Pages\Gl;
 
 use App\Services\DefectService;
 use App\Services\PPFService;
 use App\Services\ReworkService;
 use Livewire\Attributes\On;
 use Livewire\Component;
+use App\Traits\NormalizeSmallDefects; 
+use App\Traits\NormalizeDefects; 
 
 class Gldashboard extends Component
 {
+     use NormalizeSmallDefects; 
+     use NormalizeDefects;
     public $wireAction;
     public $submitMethod = null;
     public $currentAction = null;
@@ -88,7 +92,6 @@ class Gldashboard extends Component
         $this->actiondash = $data['actiondash'];
     }
 
-    // temporary function to navigate to hf rework encoding page
     public function GoToHF()
     {
         return redirect()->route('hf.dashboard');
@@ -100,15 +103,6 @@ class Gldashboard extends Component
     {
         if ($data['actiondash'] === 'Add') {
             $this->setAction('Add', true);
-            //  $this->dispatch('ProgDis'); //deactivate the auto progress in check ppf
-            //     $this->dispatch('addbutton');
-            //     $this->dispatch('EditAction', 'Add');
-            //     $this->dispatch('locked', false);
-            //     // $this->dispatch('ppfcheck');
-            //     // $this->dispatch('dash-ppf-check', $this->ppf);
-            //     //  $this->dispatch('post-ppf', ['ppf' => $this->ppf]);
-            //     //$this->dispatch('fromppf', $this->ppf);
-            //     $this->ClearForm();
         }
         $this->ppf = $data['ppf'];
 
@@ -137,7 +131,6 @@ class Gldashboard extends Component
         ];
 
         if (($reworksData['action'] ?? '') === 'delete') {
-            // DELETE only matching hfno + type
             $this->rework = collect($this->rework)
                 ->reject(
                     fn($r) =>
@@ -147,7 +140,6 @@ class Gldashboard extends Component
                 ->values()
                 ->toArray();
         } else {
-            // ADD or UPDATE based on hfno + type
             $this->rework = collect($this->rework)
                 ->reject(
                     fn($r) =>
@@ -158,8 +150,6 @@ class Gldashboard extends Component
                 ->values()
                 ->toArray();
         }
-
-        // Recalculate
         $this->totalngrework = collect($this->rework)->sum('quan');
     }
 
@@ -177,69 +167,6 @@ class Gldashboard extends Component
         $this->partno = $data['partno'];
         $this->matno = $data['matno'];
     }
-
-
-    //From adding defects
-    public function Defects($payload = [])
-    {
-        if (!$payload) return;
-
-        $defectData = $payload['defectData'] ?? $payload;
-
-        $newDefect = trim($defectData['newDefect'] ?? '');
-        $newQuan   = (float)($defectData['newQuan'] ?? '');
-        $action    = $defectData['action'] ?? 'add';
-
-        if (!$newDefect) return;
-
-        $normalized = [];
-        foreach ($this->defects as $def) {
-            $type = $def['type'] ?? $def['newDefect'] ?? '';
-            $qty  = (float)($def['qty'] ?? $def['newQuan'] ?? '');
-
-            if ($type === '') continue;
-
-            if (isset($normalized[strtolower($type)])) {
-                $normalized[strtolower($type)]['qty'] += $qty;
-            } else {
-                $normalized[strtolower($type)] = [
-                    'type' => $type,
-                    'qty'  => (int) $qty
-                ];
-            }
-        }
-
-
-        $key = strtolower($newDefect);
-
-        if ($action === 'delete') {
-            unset($normalized[$key]);
-            $this->defects = array_values($normalized);
-            return;
-        }
-
-
-        if ($action === 'update') {
-
-            if (isset($normalized[$key])) {
-                $normalized[$key]['qty'] = $newQuan;
-            }
-        } else {
-
-            if (isset($normalized[$key])) {
-                $normalized[$key]['qty'] += $newQuan;
-            } else {
-                $normalized[$key] = [
-                    'type' => $newDefect,
-                    'qty'  => $newQuan
-                ];
-            }
-        }
-
-        $this->defects = array_values($normalized);
-    }
-
-
 
 
     public function ClearForm()
@@ -375,64 +302,9 @@ class Gldashboard extends Component
         $this->dispatch('fetchGoodQty', $ppf);
     }
 
-
-    public function SmallDefects($smalldefectData)
-    {
-        $large  = $smalldefectData['SelectedLargeDefect'];
-        $type   = $smalldefectData['type'] ?? $smalldefectData['newSmallDefect'];
-        $qty    = $smalldefectData['qty'] ?? $smalldefectData['newSmallQuan'];
-        $action = $smalldefectData['action'] ?? 'add';
-
-        if (!isset($this->smalldefects[$large])) {
-            $this->smalldefects[$large] = [];
-        }
-
-        // Normalize existing small defects by lowercase type
-        $normalized = [];
-        foreach ($this->smalldefects[$large] as $small) {
-            $smallType = strtolower($small['type'] ?? '');
-            if ($smallType === '') continue;
-
-            if (isset($normalized[$smallType])) {
-                $normalized[$smallType]['qty'] += $small['qty'];
-            } else {
-                $normalized[$smallType] = [
-                    'type' => $small['type'],
-                    'qty'  => $small['qty']
-                ];
-            }
-        }
-
-        $key = strtolower($type);
-
-        if ($action === 'delete') {
-            // Remove the small defect
-            //dd('here');
-            unset($normalized[$key]);
-        } elseif ($action === 'update') {
-            // Update the quantity if it exists
-            if (isset($normalized[$key])) {
-                $normalized[$key]['qty'] = $qty;
-            }
-        } else {
-            // Add new small defect
-            if (isset($normalized[$key])) {
-                $normalized[$key]['qty'] += $qty;
-            } else {
-                $normalized[$key] = [
-                    'type' => $type,
-                    'qty'  => $qty
-                ];
-            }
-        }
-
-        // Save back normalized array
-        $this->smalldefects[$large] = array_values($normalized);
-    }
-
     public function render()
     {
 
-        return view('livewire.templates.gldashboard');
+        return view('livewire.pages.gl.gldashboard');
     }
 }

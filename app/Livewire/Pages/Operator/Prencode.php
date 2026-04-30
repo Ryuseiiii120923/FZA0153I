@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Templates;
+namespace App\Livewire\Pages\Operator;
 
 use App\Models\HF\Defect;
 use App\Models\HF\HF;
@@ -19,9 +19,13 @@ use Illuminate\Support\Facades\Auth as UserAuth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\On;
+use App\Traits\NormalizeSmallDefects;
+use App\Traits\NormalizeDefects;
 
 class Prencode extends Component
 {
+    use NormalizeSmallDefects;
+    use NormalizeDefects;
     public $ppf;
     public $lotno;
     public $partno;
@@ -142,7 +146,6 @@ class Prencode extends Component
     #[On('LoadReworksPren')]
     public function LoadReworksPren($ppf)
     {
-        dd('here');
         $result = $this->prencodeService()->LoadReworksPrencode($ppf, $this->inspectorID);
 
         $this->rework = $result['reworks'];
@@ -172,12 +175,7 @@ class Prencode extends Component
             } else {
 
                 foreach ($formData as $key => $value) {
-
-                    if (is_array($value)) {
-                        $this->dropdownForms[$formId][$key] = $value;
-                    } else {
-                        $this->dropdownForms[$formId][$key] = $value;
-                    }
+                    $this->dropdownForms[$formId][$key] = $value;
                 }
             }
             $this->dispatch(
@@ -190,67 +188,10 @@ class Prencode extends Component
         $this->dropdownForms = $data['forms'];
     }
 
-
-
-    public function SmallDefects($smalldefectData)
-    {
-        $large  = $smalldefectData['SelectedLargeDefect'];
-        $type   = $smalldefectData['type'] ?? $smalldefectData['newSmallDefect'];
-        $qty    = $smalldefectData['qty'] ?? $smalldefectData['newSmallQuan'];
-        $action = $smalldefectData['action'] ?? 'add';
-
-        if (!isset($this->smalldefects[$large])) {
-            $this->smalldefects[$large] = [];
-        }
-
-        // Normalize existing small defects by lowercase type
-        $normalized = [];
-        foreach ($this->smalldefects[$large] as $small) {
-            $smallType = strtolower($small['type'] ?? '');
-            if ($smallType === '') continue;
-
-            if (isset($normalized[$smallType])) {
-                $normalized[$smallType]['qty'] += $small['qty'];
-            } else {
-                $normalized[$smallType] = [
-                    'type' => $small['type'],
-                    'qty'  => $small['qty']
-                ];
-            }
-        }
-
-        $key = strtolower($type);
-
-        if ($action === 'delete') {
-            // Remove the small defect
-            //dd('here');
-            unset($normalized[$key]);
-        } elseif ($action === 'update') {
-            // Update the quantity if it exists
-            if (isset($normalized[$key])) {
-                $normalized[$key]['qty'] = $qty;
-            }
-        } else {
-            // Add new small defect
-            if (isset($normalized[$key])) {
-                $normalized[$key]['qty'] += $qty;
-            } else {
-                $normalized[$key] = [
-                    'type' => $type,
-                    'qty'  => $qty
-                ];
-            }
-        }
-
-        // Save back normalized array
-        $this->smalldefects[$large] = array_values($normalized);
-    }
-
-
     public function render()
     {
 
-        return view('livewire.templates.prencode');
+        return view('livewire.pages.operator.prencode');
     }
 
     public function mount()
@@ -661,8 +602,8 @@ class Prencode extends Component
                     $mergedReworks[$key]['qty'] += $qty;
                 }
             }
-            DB::table('hf_forms')->upsert($hfRows, ['hf_id', 'ppfno', 'updated_by','formId'], ['total_inspect', 'GoodQty']);
-            DB::table('hf_defect')->upsert($defectRows, ['hf_id', 'defect', 'ppfno', 'updated_by','formId'], ['qty']);
+            DB::table('hf_forms')->upsert($hfRows, ['hf_id', 'ppfno', 'updated_by', 'formId'], ['total_inspect', 'GoodQty']);
+            DB::table('hf_defect')->upsert($defectRows, ['hf_id', 'defect', 'ppfno', 'updated_by', 'formId'], ['qty']);
             DB::table('hf_small')->upsert($smallRows, ['hf_id', 'large_defect', 'small_defect', 'ppfno', 'updated_by', 'formId'], ['qty']);
             DB::table('hf_rework')->upsert($reworkRows, ['hfno', 'ppfno', 'updated_by', 'inspect_REC', 'rework_type', 'formId'], ['qty', 'totalinsp',]);
 

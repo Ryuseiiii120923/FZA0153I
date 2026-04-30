@@ -36,17 +36,6 @@ class AuthController extends Controller
                     $user = Worker::where('作業員CD', $qrData['userid'])->first();
                     if ($user) {
                         $pass = (int)$user->社員CD . $user->RECNO;
-                        // if ((string)$pass === $qrData['password']) {
-                        //     try {
-                        //         Auth::guard('worker')->login($user);
-                        //         $request->session()->regenerate();
-                        //         return redirect()->route('selector');
-                        //     } catch (\Throwable $e) {
-                        //         dd('Error:', $e->getMessage(), get_class($user));
-                        //     }
-                        // } else {
-                        //     return back()->withErrors(['credentials' => 'Invalid QR code login']);
-                        // }
                         if ((string)$pass === $qrData['password']) {
                             Log::info('QR password matched', ['user_id' => $user->作業員CD]);
 

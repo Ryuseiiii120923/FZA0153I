@@ -1,3 +1,3 @@
 <x-layout>
-    <livewire:templates.ppfdashboard>
+    @livewire('templates.ppfdashboard')
 </x-layout>

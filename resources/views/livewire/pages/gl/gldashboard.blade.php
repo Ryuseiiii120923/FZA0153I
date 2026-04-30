@@ -34,33 +34,33 @@
     <div id="OuterPanel">
         <div class="w-full px-2 sm:px-6">
             <div @if($currentAction !='Add' ) class="hidden" @endif>
-                <livewire:templates.ppfdashboard>
+                @livewire('templates.ppfdashboard')
             </div>
-            <livewire:templates.checkppf :systemname="request()->input('systemname')" />
+            @livewire('templates.checkppf', ['systemname' => request()->input('systemname')])
             <div class="mt-6 mb-6">
-                <livewire:glcomponents.total-inspection />
+                @livewire('glcomponents.total-inspection')
             </div>
 
             <div class="flex flex-col sm:flex-row gap-6 mt-4 items-start justify-center w-full">
                 <div class="w-11/12 sm:w-1/2 flex justify-center">
-                    <livewire:glcomponents.defects />
+                    @livewire('glcomponents.defects')
                 </div>
                 <div class="w-11/12 sm:w-1/2 flex justify-center">
-                    <livewire:glcomponents.reworks />
+                    @livewire('glcomponents.reworks')
                 </div>
             </div>
 
             <div class="flex flex-col sm:flex-row gap-6 mt-4 items-start justify-center w-full">
                 <div class="w-11/12 sm:w-1/2 flex justify-center">
-                    <livewire:glcomponents.for-rework />
+                    @livewire('glcomponents.for-rework')
                 </div>
 
                 <div class="w-11/12 sm:w-1/2 flex justify-center">
-                    <livewire:glcomponents.done-rework />
+                    @livewire('glcomponents.done-rework')
                 </div>
             </div>
-            <livewire:templates.goodng />
-            <livewire:templates.add />
+            @livewire('templates.goodng')
+            @livewire('templates.add')
         </div>
     </div>
 </div>

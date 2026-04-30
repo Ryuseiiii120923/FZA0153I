@@ -1,3 +1,3 @@
 <x-layout>
-    <livewire:templates.gldashboard>
+    @livewire('pages.gl.gldashboard')
 </x-layout>

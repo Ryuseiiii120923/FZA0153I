@@ -1,3 +1,3 @@
 <x-layout>
-    <livewire:templates.prencode>
+    @livewire('pages.operator.prencode')
 </x-layout>

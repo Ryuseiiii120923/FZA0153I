@@ -61,8 +61,7 @@ class Operatordash extends Component
 
     #[On('IsLoading')]
     public function isLoading($data){
-        $this->loading = $data;
-        
+        $this->loading = $data;  
     }
 
     public function deletePPF($ppf)
@@ -73,9 +72,10 @@ class Operatordash extends Component
     {
         $this->dispatch("dash-ppf", [
             'ppf' => $ppf,
-            'actiondash' => 'view',
+            'actiondash' => 'View',
             'encoder' => $this->inspectorID
         ]);
         $this->dispatch('ClearFormDropdown');
     }
 }
+ 

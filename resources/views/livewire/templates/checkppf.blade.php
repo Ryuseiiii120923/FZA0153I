@@ -105,7 +105,7 @@
 
                 <button type="button"
                     wire:click="confirmAccept"
-                    class="@if($isAccept || $action != 'Add') hidden @endif px-4 py-1 ms-3 bg-blue-600 text-white rounded-md
+                    class="@if($isAccept || $actiondash != 'Add') hidden @endif px-4 py-1 ms-3 bg-blue-600 text-white rounded-md
                hover:bg-blue-700 hover:shadow-md transition duration-200">
                     Accept
                 </button>
