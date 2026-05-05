@@ -35,6 +35,7 @@ class DropDown extends Component
     public $total_inspect = '';
     public $finishingProcedure = '';
     public $modalOpen = [];
+    public string $processName;
 
     public $default = 'new';
     public $expectedQty = 0;
@@ -61,6 +62,8 @@ class DropDown extends Component
         foreach ($this->forms as $formId => $form) {
             $this->modalOpen[$formId] = false; // default all modals closed
         }
+
+
     }
 
     public function addNew()
@@ -86,10 +89,51 @@ class DropDown extends Component
         $this->modalOpen[$formId] = true;
     }
 
-    #[On('fetchppf')]
-    public function fetchppf($data)
+    public function addNewPL()
     {
-        $this->ppf = $data;
+        $this->toggles = true;
+        $formId = (string) Str::uuid();
+        $this->forms[$formId] = [
+            'hf_id' => '',
+            'inspect_REC' => uniqid(),
+            'formId' => $formId,
+            'hf_name' => '',
+            'finishingProcedure' => '',
+            'total_inspect' => '',
+            'open' => false, // start expanded by default
+            'defects' => [],
+            'smallDefects' => [],
+            'rework' => [],
+            'ForRework' => null,      
+            'TotalNg' => [],
+            'GoodQty' => [],
+            'TotalRework' => [],
+            'method' => 'PL',
+        ];
+        $this->modalOpen[$formId] = true;
+    }
+     public function addNewSF()
+    {
+        $this->toggles = true;
+        $formId = (string) Str::uuid();
+        $this->forms[$formId] = [
+            'hf_id' => '',
+            'inspect_REC' => uniqid(),
+            'formId' => $formId,
+            'hf_name' => '',
+            'finishingProcedure' => '',
+            'total_inspect' => '',
+            'open' => false, // start expanded by default
+            'defects' => [],
+            'ForRework' => null,
+            'smallDefects' => [],
+            'rework' => [],
+            'TotalNg' => [],
+            'GoodQty' => [],
+            'TotalRework' => [],
+            'method' => 'SF',
+        ];
+        $this->modalOpen[$formId] = true;
     }
 
 
@@ -120,6 +164,13 @@ class DropDown extends Component
             return;
         }
     }
+
+        #[On('fetchppf')]
+    public function fetchppf($data)
+    {
+        $this->ppf = $data;
+    }
+
     public function updatedForms()
     {
         $this->dispatch('dropdown-updated', [

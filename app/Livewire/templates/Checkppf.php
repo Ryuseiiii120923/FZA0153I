@@ -9,6 +9,7 @@ use App\Models\Operator\DefectInsp;
 use App\Models\Operator\PRInsp;
 use App\Models\Operator\ReworkInsp;
 use App\Models\Worker;
+use App\Services\PrencodeService;
 use App\Traits\ClearErrors;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\On;
@@ -18,36 +19,31 @@ use Illuminate\Support\Facades\Auth as UserAuth;
 class Checkppf extends Component
 {
     use ClearErrors;
-    public $ppf;
-    public $lotno;
-    public $partno;
-    public $matno;
-    public $moldno;
-    public $pressno;
-    public $shift;
-    public $opt;
-    public $errorexisting;
-    public $expct;
-    public $action;
-    public $isPPF = false;
-    public $defects = [];
-    public $smalldefects = [];
-    public $systemname;
-    public $locked = false;
-    public $ppfLoaded = false;
-    public $lastdef;
-    public $lastqty;
-    public $showInspectionModal = false; // controls the modal
-    public $totalInspection;
-    public $encoder, $inspectorID;
-    public $progressInsp;
-    public $isAccept = false;
-    public $canEditTotal = false;
-    public $actiondash;
-    public $method;
+    public string|null $ppf, $lotno, $partno, $matno, $moldno, $pressno, $shift, $opt, $expct;
+    public string|null $errorexisting;
+    public string $action;
+
+    public array $defects = [];
+    public array $smalldefects = [];
+    public string $systemname;
+
+    public string $lastdef;
+    public string $lastqty;
+    public string|null $actiondash;
+    public string $method;
+    public string $totalInspection;
+    public int|null $encoder, $inspectorID = 0;
+    public string|null $progressInsp;
+
+    public bool $isAccept = false;
+    public bool $canEditTotal = false;
+    public bool $locked = false;
+    public bool $ppfLoaded = false;
+    public bool $showInspectionModal = false; // controls the modal
+     public bool $isPPF = false;
 
     public $rules = ['ppf' => 'required|numeric'];
-    public $messages = [
+    public  $messages = [
         'ppf.required' => 'Please enter ppf',
         'ppf.integer' => 'PPF must be integer'
     ];
@@ -62,25 +58,25 @@ class Checkppf extends Component
         'Views' => 'Views',
         'totalInspectedProgress' => 'totalInspectedProgressFetch'
     ];
-    public function locked($data)
+    public function locked(bool $data)
     {
         $this->locked = $data;
     }
 
-    public function Views($data)
+    public function Views(array $data)
     {
         $this->ppf = $data['ppf'];
         $this->lotno = $data['lotno'];
         $this->matno = $data['matno'];
     }
 
-    public function SystemName($data)
+    public function SystemName(array|null $data)
     {
         $this->systemname = $data['systemname'];
     }
 
     #[On('fromppf')]
-    public function fromppf($data)
+    public function fromppf(array|null $data)
     {
         $this->ppf = $data;
         $this->checkPPF();
@@ -94,9 +90,6 @@ class Checkppf extends Component
         $this->showInspectionModal = false;
         $this->dispatch('fetchTotalInspection', $this->totalInspection);
     }
-
-
-    //This confirm if the total inspect
     public function confirmAccept()
     {
         $this->dispatch('confirm-accept');
@@ -122,7 +115,7 @@ class Checkppf extends Component
     }
 
     #[On('errorExisting')]
-    public function hasError($data)
+    public function hasError(string|null $data)
     {
         $this->errorexisting = $data;
     }
@@ -150,7 +143,7 @@ class Checkppf extends Component
         }
     }
 
-   
+
 
 
     public function totalInspectedProgressFetch()
@@ -165,71 +158,29 @@ class Checkppf extends Component
 
     private function loadProcessRecord()
     {
-        $ppfexisting = AddDefect::where('PPFNo', $this->ppf)->first();
-        $ppfrecord = DefectInsp::where('InspectorID', $this->inspectorID)
-            ->where('PPFNo', $this->ppf)
-            ->exists()
-            ||
-            ReworkInsp::where('InspectorID', $this->inspectorID)
-            ->where('PPFNo', $this->ppf)
-            ->exists()
-            || PRInsp::where('InspectorID', $this->inspectorID)
-            ->where('PPFNo', $this->ppf)
-            ->exists();
-        $check = ModelsCheckPPF::where('流動NO', $this->ppf)->first();
-        $hf = CheckHF::where('流動NO', $this->ppf)->first();
-        $totalinsp = PRInsp::where('PPFNo', $this->ppf)->where('InspectorID', $this->inspectorID)->first();
+        $this->actiondash = strtolower($this->actiondash);
+        $data = app(PrencodeService::class)->loadData($this->ppf, $this->inspectorID,$this->systemname, $this->actiondash);
+        if(isset($data['error'])){
+            $this->errorexisting = $data['error'];
+            return false;
+        }
+       
+
+        $this->showInspectionModal = $data['showModal'] ?? false;
 
         $this->dispatch('GoodNg');
-        if ($this->actiondash != 'Edit' && $this->actiondash != 'View') {
-            if ($this->systemname === 'ProcessRecord') {
-                if ($ppfrecord) {
-                    $this->errorexisting = 'This PPF is already encoded. Kindly review the table below for details.';
-                    return false;
-                }
-            }
-        }
-        if (!$check) {
-            $this->errorexisting = 'PPF No does not encoded on Molding Result!';
-            return false;
-        }
-        if (!$hf) {
-            $this->errorexisting = 'PPF No does not encoded on Hand Finishing Result!';
-            return false;
-        }
-
-        $pcValue = DB::table('Seihin')->where('', $check['品番']);
-        $pcValue = $pcValue ?? 0;
-        if ($pcValue != "0" && trim($check['金型NO']) != "") {
-            $postcure = DB::table('Postcure')->where('PPFNo', $this->ppf)->first();
-
-            if ($postcure) {
-                $pc = (int) $postcure->Good;
-                if (!$pc) {
-                    $this->errorexisting = 'PPFNo is not registered on Postcure!';
-                    return false;
-                }
-            }
-        }
-
-        if ($ppfexisting && $this->actiondash == 'Add') {
-            $this->errorexisting = 'Already Registered';
-            $this->dispatch('ppf-error', error: true, message: 'Already Registered');
-            return false;
-        }
-
         $this->clearErrors();
         $this->dispatch('ppf-valid', error: false, message: '');
 
-        $this->lotno   = $check ? preg_replace('/\s+/', '', $check->成形ﾛｯﾄ) : '';
-        $this->partno  = $check ? preg_replace('/\s+/', '', $check->品番) : '';
-        $this->matno   = $check ? preg_replace('/\s+/', '', $check->材料名) : '';
-        $this->moldno  = $check ? preg_replace('/\s+/', '', $check->金型NO) : '';
-        $this->pressno = $check ? preg_replace('/\s+/', '', $check->PRESSNO) : '';
-        $this->shift   = $check ? preg_replace('/\s+/', '', $check->班) : '';
-        $this->opt     = $check ? preg_replace('/\s+/', '', $check->作業員CD) : '';
-        $this->expct   = $hf ? round($hf->合格数) : 0;
-        $this->totalInspection = $totalinsp ? $totalinsp->total_inspect : 0;
+        $this->lotno   = $data['lotno'] ?? "";
+        $this->partno  = $data['partno'] ?? "";
+        $this->matno   = $data['matno'] ?? "";
+        $this->moldno  = $data['moldno'] ?? "";
+        $this->pressno = $data['pressno'] ?? "";
+        $this->shift   = $data['shift'] ?? "";
+        $this->opt     = $data['opt'] ?? "";
+        $this->expct   = $data['expct'] ?? 0;
+        $this->totalInspection = $data['totalInspection'] ?? 0;
         $this->dispatch('fetchTotalInspection', $this->totalInspection);
         $this->dispatch('sendExcpt', $this->expct);
         $this->dispatch('FromCheckppf', [
@@ -254,7 +205,7 @@ class Checkppf extends Component
 
 
 
-    public function handleFromView($data)
+    public function handleFromView(array|null $data)
     {
         $this->fetchData($data);
         $this->fetchGoodNg($data);
@@ -262,32 +213,32 @@ class Checkppf extends Component
         $this->fetchHF($data);
     }
 
-    public function ToUpdate($data)
+    public function ToUpdate(array|null $data)
     {
         $this->dispatch('FetchRework', $data);
     }
-    public function ToDefect($data)
+    public function ToDefect(array|null $data)
     {
         $this->dispatch('FetchDefect', $data);
     }
-    public function ToRework($data)
+    public function ToRework(array|null $data)
     {
         $this->dispatch('FetchRework', $data);
     }
-    public function fetchGoodNg($data)
+    public function fetchGoodNg(array|null $data)
     {
         $this->dispatch('FetchGoodNg', $data);
     }
-    public function fetchInsp($data)
+    public function fetchInsp(array|null $data)
     {
         $this->dispatch('fetchInsp', $data);
     }
 
-    public function fetchHF($data)
+    public function fetchHF(array|null $data)
     {
         $this->dispatch('fetchHF', $data);
     }
-    public function fetchData($data)
+    public function fetchData(array|null $data)
     {
         $this->ppf = $data['ppf'] ?? null;
         $this->lotno = $data['lotno'] ?? null;
@@ -300,7 +251,7 @@ class Checkppf extends Component
         $this->expct = $data['expct'] ?? 0;
     }
 
-    public function mount($systemname = null, $ppf = null)
+    public function mount(string|null $systemname = null, string|null $ppf = null)
     {
         $this->systemname = $systemname;
         $this->ppf = $ppf;
@@ -309,7 +260,7 @@ class Checkppf extends Component
         $this->inspectorID = Worker::where('社員CD', $this->encoder)
             ->value('作業員CD');
     }
-    public function EditActions($data)
+    public function EditActions(string|null $data)
     {
         $this->actiondash = null;
         $this->actiondash = $data;
@@ -332,7 +283,7 @@ class Checkppf extends Component
 
 
     #[On('dash-ppf')]
-    public function PPFCheckDash($data)
+    public function PPFCheckDash(array|null $data)
     {
 
         $this->ppf = $data['ppf'];
@@ -341,7 +292,7 @@ class Checkppf extends Component
     }
 
     #[On('dash-ppfGL')]
-    public function PPFCheck($data)
+    public function PPFCheck(array|null $data)
     {
         $this->ppf = $data['ppf'];
         $this->actiondash = $data['actiondash'];
@@ -358,14 +309,14 @@ class Checkppf extends Component
     {
         $this->dispatch('ClearFormDropdown');
         $this->dispatch('dash-ppf1', ['actiondash' => 'add']); // action in Prencode
-        if($this->systemname === 'ProcessRecord'){
+        if ($this->systemname === 'ProcessRecord') {
             $this->actiondash = 'Add';
         }
         $this->checkPPF();
     }
 
 
-     private function isLockedByFinalInspection(int $ppf): bool
+    private function isLockedByFinalInspection(int $ppf): bool
     {
         return DB::table('FinalInspection')
             ->where('PPFNO', $ppf)
@@ -391,7 +342,7 @@ class Checkppf extends Component
             ppf: $this->ppf,
             inspectorId: $this->inspectorID
         );
-        $this->dispatch('IsCheckPPF', true);
+        // $this->dispatch('IsCheckPPF', true); //para malaman kung nacheck ang ppf
         $this->dispatch('fetchppf', $this->ppf);
         $this->dispatch('GoodNg');
         $this->dispatch('IsLoading', false);
@@ -404,14 +355,14 @@ class Checkppf extends Component
         }
         $this->dispatch('FetchTotalInspectionTable', $this->ppf);
         match ($this->actiondash) {
-            'Add' => $this->handleGlAdd($this->ppf),
-            'Edit' => $this->handleGlEdit($this->ppf),
-            'Delete' => $this->handleGlDelete($this->ppf),
+            'add' => $this->handleGlAdd($this->ppf),
+            'edit' => $this->handleGlEdit($this->ppf),
+            'delete' => $this->handleGlDelete($this->ppf),
             default => $this->handleGlDefault($this->ppf),
         };
     }
 
-    private function handleGlAdd($ppf)
+    private function handleGlAdd(string $ppf)
     {
         $this->isPPF = true; //enable the inspection Progress
         $this->dispatch('LoadDefectsGL', $ppf);
@@ -420,7 +371,7 @@ class Checkppf extends Component
         $this->dispatch('fetchForRework', $ppf);
     }
 
-    private function handleGlEdit($ppf)
+    private function handleGlEdit(string $ppf)
     {
         $this->clearErrors();
         if ($this->ppf === null) {
@@ -428,23 +379,22 @@ class Checkppf extends Component
             return;
         }
 
-       if ($this->isLockedByFinalInspection($ppf)) {
-        $this->errorexisting = 'Updating Denied! PPFNo was already encoded to Final Inspection Process.';
-        return;
-    }
+        if ($this->isLockedByFinalInspection($ppf)) {
+            $this->errorexisting = 'Updating Denied! PPFNo was already encoded to Final Inspection Process.';
+            return;
+        }
 
         $this->clearErrors();
 
         $this->dispatch('FetchDataGL', $ppf);
     }
 
-    public function handleGlDelete($ppf)
+    public function handleGlDelete(string $ppf)
     {
-       if ($this->isLockedByFinalInspection($ppf)) {
-        $this->errorexisting = 'Updating Denied! PPFNo was already encoded to Final Inspection Process.';
-        return;
-    }
-
+        if ($this->isLockedByFinalInspection($ppf)) {
+            $this->errorexisting = 'Updating Denied! PPFNo was already encoded to Final Inspection Process.';
+            return;
+        }
         $this->errorexisting = null;
         $this->dispatch('FetchDataGL', $ppf);
         $this->dispatch('locked', true);
@@ -452,7 +402,7 @@ class Checkppf extends Component
         $this->dispatch('set-js-flag', ['flag' => 'lockAfterDelete', 'value' => true]);
     }
 
-    private function handleGlDefault($ppf)
+    private function handleGlDefault(string $ppf)
     {
         $this->clearErrors();
         $this->dispatch('FetchDataGL', $ppf);

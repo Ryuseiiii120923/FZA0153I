@@ -61,25 +61,6 @@ class Rework extends Component
         $this->hfno[$form_id] = $hf_id;
         $this->totalInsp[$form_id] = (int) $total_inspect;
     }
-    // public function fetchhfno($data)
-    // {
-    //     // Track the HF number and total inspection per form
-    //     $this->formId = $data['form_id'] ?? null;
-
-    //     $this->hfno[$this->formId] = $data['hf_id'];
-    //     (int) $this->totalInsp[$this->formId] = (int) $data['total_inspect'];
-    // }
-
-    //     #[On('FetchHfNo')]
-    // public function fetchhfno($data)
-    // {
-    //     $uniqueId = $data['uniqueId'];
-
-    //     $this->hfno[$uniqueId] = $data['hf_id'];
-    //     $this->totalInsp[$uniqueId] = $data['total_inspect'];
-    // }
-
-
 
     public function setReworks($loadedReworks)
     {
@@ -256,10 +237,6 @@ class Rework extends Component
             ->values()
             ->toArray();
 
-
-
-        // Send to the other component
-        // $this->dispatch('FromReworks', reworksData: $reworksData);
         $this->dispatch('NeedToDeleteRework', [
             'hfno' => $hfno,
             'type' => $type,

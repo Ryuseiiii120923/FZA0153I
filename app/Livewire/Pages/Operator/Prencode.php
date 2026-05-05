@@ -38,8 +38,6 @@ class Prencode extends Component
 
     public $actiondash;
     public $hasErrorForm = [];
-    public $defects = [];
-    public $smalldefects = [];
     public $rework = [];
     public $dropdownForms = [];
     public $totalngrework;
@@ -127,7 +125,7 @@ class Prencode extends Component
     #[On('LoadDefectsPren')]
     public function LoadDefectsPren($ppf)
     {
-        $result = $this->prencodeService()->LoadDefectsPrencode($ppf, $this->inspectorID);
+        $result = $this->prencodeService()->loadDefects($ppf, $this->inspectorID);
 
         $this->defects = $result['defects'];
         $this->smalldefects = $result['smallDefects'];
@@ -146,7 +144,7 @@ class Prencode extends Component
     #[On('LoadReworksPren')]
     public function LoadReworksPren($ppf)
     {
-        $result = $this->prencodeService()->LoadReworksPrencode($ppf, $this->inspectorID);
+        $result = $this->prencodeService()->loadReworks($ppf, $this->inspectorID);
 
         $this->rework = $result['reworks'];
         $this->totalngrework = $result['totalNgRework'];
@@ -454,15 +452,16 @@ class Prencode extends Component
             $mergedDefects = [];
             $mergedSmallDefects = [];
             $mergedReworks = [];
+            $methodProcess = '';
             // 🔵 LOOP FORMS
-            // dd($this->dropdownForms);
             foreach ($this->dropdownForms as $formId => $formData) {
-
+                Log::info('Calculating total_inspect for row:', ['row' => $formData['total_inspect'] ?? null]);
 
                 $hf_id = isset($formData['hf_id']) ? $formData['hf_id'] : null;
                 $goodQty = $formData['GoodQty'] ?? 0;
                 $totalGoodQty += $goodQty;
-
+                $method = isset($formData['method']) ? $formData['method'] : null;
+                $methodProcess = $method;
                 // ✅ HF TABLE
                 $hfRows[] = [
                     'hf_id'         => $hf_id,
@@ -475,8 +474,11 @@ class Prencode extends Component
                     'updated_date'  => $now,
                     'IsDoneRework'  =>  0,
                     'finishingProcedure' => $formData['finishingProcedure'] ?? null,
-                    'ForRework' => !empty($formData['ForRework']) ? 1 : 0,
-                    'GoodQty' => $goodQty
+                    'ForRework' => array_key_exists('ForRework', $formData)
+                        ? ($formData['ForRework'] ? 1 : 0)
+                        : null,
+                    'GoodQty' => $goodQty,
+                    'methodProcess' => $method ?? null
                 ];
 
                 // 🔵 DEFECTS
@@ -500,13 +502,19 @@ class Prencode extends Component
                     ];
 
                     // merge
-                    $key = $type . '_' . ($formData['ForRework'] ? 1 : 0);
+                    $key = $type . '_' . (
+                        is_null($formData['ForRework'] ?? null)
+                        ? ($formData['method'] ?? '')
+                        : ($formData['ForRework'] ? 1 : 0)
+                    );
 
                     if (!isset($mergedDefects[$key])) {
                         $mergedDefects[$key] = [
                             'type' => $type,
                             'qty' => 0,
-                            'ForRework' => $formData['ForRework'] ? 1 : 0
+                            'ForRework' => is_null($formData['ForRework'] ?? null)
+                                ? (null)
+                                : ($formData['ForRework'] ? 1 : 0)
                         ];
                     }
 
@@ -546,17 +554,27 @@ class Prencode extends Component
                             'formId' => $formData['formId'] ?? null
                         ];
 
-                        $key = $type . '_' . ($formData['ForRework'] ? 1 : 0);
+                        $key = $type . '_' . (
+                            is_null($formData['ForRework'] ?? null)
+                            ? ($formData['method'] ?? '')
+                            : ($formData['ForRework'] ? 1 : 0)
+                        );
 
                         // ✅ Merge ONLY if NOT ForRework
-                        $key = $large . '_' . $type . '_' . ($formData['ForRework'] ? 1 : 0);
+                        $key = $large . '_' . $type . '_' . (
+                            is_null($formData['ForRework'] ?? null)
+                            ? ($formData['method'] ?? '')
+                            : ($formData['ForRework'] ? 1 : 0)
+                        );
 
                         if (!isset($mergedSmallDefects[$key])) {
                             $mergedSmallDefects[$key] = [
                                 'large'     => $large,
                                 'type'      => $type,
                                 'qty'       => 0,
-                                'ForRework' => $formData['ForRework'] ? 1 : 0
+                                'ForRework' => is_null($formData['ForRework'] ?? null)
+                                    ? (null)
+                                    : ($formData['ForRework'] ? 1 : 0)
                             ];
                         }
 
@@ -595,7 +613,9 @@ class Prencode extends Component
                             'type'      => $type,
                             'totalinsp' => $rework['totalinsp'] ?? null,
                             'qty'       => 0,
-                            'ForRework' => $formData['ForRework'] ? 1 : 0
+                            'ForRework' => is_null($formData['ForRework'] ?? null)
+                                ? (null)
+                                : ($formData['ForRework'] ? 1 : 0)
                         ];
                     }
 
@@ -612,7 +632,11 @@ class Prencode extends Component
             $totalInspect = array_sum(
                 array_column(
                     array_filter($hfRows, function ($row) {
-                        return $row['ForRework'] == 0;
+                        return ($row['ForRework'] ?? 1) == 0
+                            && (
+                                (($row['methodProcess'] ?? $row['method'] ?? '') != 'PL') &&
+                                (($row['method'] ?? $row['methodProcess'] ?? '') != 'SF') 
+                            );
                     }),
                     'total_inspect'
                 )
@@ -645,7 +669,7 @@ class Prencode extends Component
                     'DateEncode'  => $now,
                     'InspectorID' => $this->inspectorID,
                     'Process'     => $this->process,
-                    'EncodeProcess' => $methodSave
+                    'EncodeProcess' => $methodSave ?? $methodProcess
                 ];
             }
 
@@ -668,7 +692,7 @@ class Prencode extends Component
                     'SmallDefect'   => $s['type'],
                     'Qty'           => $s['qty'],
                     'Process'       => $this->process,
-                    'EncodeProcess' => $encodeProcess,
+                    'EncodeProcess' => $encodeProcess ?? $methodProcess,
                 ];
             }
 
@@ -690,6 +714,7 @@ class Prencode extends Component
                     'DateEncode'   => $now,
                     'TotalInspQty' => $r['totalinsp'],
                     'Process'      => $this->process,
+                    'EncodeProcess' => $methodProcess ?? null,
                 ];
             }
 

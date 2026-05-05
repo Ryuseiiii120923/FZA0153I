@@ -7,19 +7,32 @@
 
     <!-- NORMAL BUTTON (in page) -->
     <div class="px-5 py-5 flex gap-3 bg-white shadow-md">
+        <!-- <p>{{ $isCheckPPF ? 'PPF Check Enabled' : 'PPF Check Disabled' }}</p> -->
         <button
-            @if (!$isCheckPPF) disabled @endif
             wire:click="addNew"
             class="bg-blue-600 text-white px-4 py-2 rounded-md">
             + Add Worker
         </button>
 
         <button
-            @if (!$isCheckPPF) disabled @endif
             wire:click="addNewDoneRework"
             class="text-white px-4 py-2 rounded-md"
             style="background-color:#0b9af3;">
             + Add Worker For Rework
+        </button>
+
+        <button
+            wire:click="addNewPL"
+            class="text-white px-4 py-2 rounded-md"
+            style="background-color:#02367B;">
+            + Add Worker For PL
+        </button>
+
+        <button
+            wire:click="addNewSF"
+            class="text-white px-4 py-2 rounded-md"
+            style="background-color:#006CA5;">
+            + Add Worker For SF
         </button>
     </div>
 
@@ -29,18 +42,30 @@
         class="fixed top-0 left-0 w-full z-50 bg-white shadow-lg px-5 py-5 flex gap-3">
 
         <button
-            @if (!$isCheckPPF) disabled @endif
             wire:click="addNew"
             class="bg-blue-600 text-white px-4 py-2 rounded-md">
             + Add Worker
         </button>
 
         <button
-            @if (!$isCheckPPF) disabled @endif
             wire:click="addNewDoneRework"
             class="text-white px-4 py-2 rounded-md"
             style="background-color:#0b9af3;">
             + Add Worker For Rework
+        </button>
+
+        <button
+            wire:click="addNewPL"
+            class="text-white px-4 py-2 rounded-md bg-green-400"
+            style="background-color:#02367B;">
+            + Add Worker For PL
+        </button>
+
+        <button
+            wire:click="addNewSF"
+            class="text-white px-4 py-2 rounded-md bg-yellow-400"
+            style="background-color:#006CA5;">
+            + Add Worker For SF
         </button>
     </div>
 
@@ -53,12 +78,15 @@
             wire:key="worker-form-{{ $formId }}"
             class="border rounded shadow p-3 relative"
             x-data="{ open: {{ $form['open'] ? 'true' : 'false' }} }">
-
             <!-- Header: Click to Toggle -->
             <div class="flex justify-between items-center cursor-pointer px-4 py-2"
-                x-bind:class="{'bg-cyan-400': @js($form['ForRework']), 'bg-gray-100': !@js($form['ForRework'])}"
+                x-bind:class="{
+                'bg-cyan-400': @js($form['ForRework'] ?? false),
+                'bg-blue-900': @js(($form['method'] ?? '') === 'PL'),
+                'bg-sky-600': @js(($form['method'] ?? '') === 'SF'),        
+                'bg-gray-100': !@js($form['ForRework'] ?? false) && !@js(in_array(($form['method'] ?? ''), ['PL','SF']))
+                    }"
                 @click="open = !open; $wire.toggle('{{ $formId }}')">
-
                 <span class="font-medium">Worker Form #{{ $form['hf_id'] ?? 'Unknown' }}</span>
                 <span class="font-medium">Date Created: {{ $form['created_at'] ?? now()->format('Y-m-d') }}</span>
                 <span class="font-medium">Date Updated: {{ $form['updated_date'] ?? 'Not Yet Updated' }}</span>
@@ -103,7 +131,9 @@
                 <div class="flex flex-col gap-4 mt-4 p-4 bg-gray-50 rounded">
 
                     <div class="flex flex-col sm:flex-row gap-4">
-                         <div class="w-full sm:w-1/2">
+                        <div class="w-full sm:w-1/2"  @if (in_array(($form['method'] ?? '' ), ['PL', 'SF' ]))
+                                        hidden
+                                        @endif>
                             <label class="block text-sm font-medium">Finishing Procedure</label>
                             <div class="flex items-center gap-3">
                                 <input type="text" wire:model="forms.{{ $formId }}.finishingProcedure" class="w-full border bg-gray-500 p-2 rounded" readonly>
@@ -133,7 +163,9 @@
                         @keydown.escape.window="open = false">
                         <div class="bg-white rounded-lg p-6 w-11/12 sm:w-1/3">
                             <div class="flex flex-col gap-4">
-                                <div class="w-full mx-auto">
+                                <div class="w-full mx-auto"  @if (in_array(($form['method'] ?? '' ), ['PL', 'SF' ]))
+                                        hidden
+                                        @endif>
                                     <label for="finishingMachine" class="block text-sm font-medium text-gray-700">
                                         Finishing Procedure
                                     </label>
@@ -141,7 +173,8 @@
                                     <select id="finishingMachine"
                                         class="mt-1 block w-full border border-black rounded-md px-2 py-1"
                                         wire:model="forms.{{ $formId }}.finishingProcedure"
-                                        required>  
+                                        required 
+                                       >
                                         <option value="">--- Select Finishing Procedure ---</option>
                                         <option value="Hand Finishing">Hand Finishing</option>
                                         <option value="Cold Deflushing">Cold Deflushing</option>

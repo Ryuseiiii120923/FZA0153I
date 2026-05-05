@@ -298,9 +298,10 @@ class DropdownService
                 'smallDefects' => $operatorSmallDefects,
                 'selectedLargeDefect' => $selectedLarge,
                 'isRework' => (bool) $h->IsDoneRework,
-                'ForRework' => (bool) $h->ForRework,
+                'ForRework' => (bool) $h->ForRework ?? null,
                 'rework' => $operatorRework,
                 'formId' => $h->formId ?? null,
+                'method' => $h->methodProcess ?? null,
             ];
         }
         return compact('forms', 'defectNg', 'reworkNg');

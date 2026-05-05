@@ -15,7 +15,6 @@ trait NormalizeDefects
         $newDefect = trim($defectData['newDefect'] ?? '');
         $newQuan   = (float)($defectData['newQuan'] ?? '');
         $action    = $defectData['action'] ?? 'add';
-
         if (!$newDefect) return;
 
         $normalized = [];

@@ -11,16 +11,16 @@ class CheckInsp extends Component
     public array $inspectors = [1 => '', 2 => '', 3 => '', 4 => '', 5 => ''];
     public array $names      = [1 => '', 2 => '', 3 => '', 4 => '', 5 => ''];
     public array $errors     = [1 => null, 2 => null, 3 => null, 4 => null, 5 => null];
-    public $duplicateIndex = [];
-    public $locked = false;
+    public array $duplicateIndex = [];
+    public bool $locked = false;
 
-    public $listeners = [
+    public array $listeners = [
         'fetchInsp' => 'FetchInsp',
         'locked' => 'locked',
         'ClearForm' => 'ClearForm'
     ];
 
-    public function FetchInsp($data)
+    public function FetchInsp(array|null $data)
     {
         for($i = 0; $i < 5; $i++) {
             $this->inspectors[$i + 1] = $data['insp' . ($i + 1)] ?? null;
@@ -28,7 +28,7 @@ class CheckInsp extends Component
         $this->CheckInsp();
     }
 
-    public function locked($data)
+    public function locked(bool $data)
     {
         $this->locked = $data;
     }

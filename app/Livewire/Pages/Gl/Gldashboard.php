@@ -45,8 +45,6 @@ class Gldashboard extends Component
     public $sampleqty;
     public $isAdd = false;
 
-    public $defects = [];
-    public $smalldefects = [];
     public $rework = [];
     public $plant;
 

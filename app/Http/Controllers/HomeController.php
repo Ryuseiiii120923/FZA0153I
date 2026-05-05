@@ -48,4 +48,8 @@ class HomeController extends Controller
     public function hfreworkdash(){
         return view('pages.hfdashboard');
     }
+
+    public function sf(){
+        return view('livewire.operator.sf-encoding');
+    }
 }

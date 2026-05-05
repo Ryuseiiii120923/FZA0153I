@@ -231,7 +231,7 @@ class Add extends Component
     {
         $ppf = $this->resolvePpf($data);
         if (!$this->loadMainRecord($ppf)) {
-            return; 
+            return;
         }
         $this->loadPlant($ppf);
         $this->loadDefects($ppf);
@@ -290,7 +290,7 @@ class Add extends Component
 
         $this->totalngrework = $result['total'];
     }
-      public function submitAction()
+    public function submitAction()
     {
         if ($this->submitMethod === 'addToDb') {
             $this->AddtoDb();
@@ -532,12 +532,15 @@ class Add extends Component
             $this->loadingSave = false;
             return;
         }
-        if (!$hasReworkHf) {
-            $this->dispatch('haserror', ['message' => 'There are pending reworks in HF for this PPF. Please resolve them before Saving.']);
-            $this->loadingAdd = false;
-            $this->loadingSave = false;
-            return;
+        if ($hasRework) {
+            if (!$hasReworkHf) {
+                $this->dispatch('haserror', ['message' => 'There are pending reworks in HF for this PPF. Please resolve them before Saving.']);
+                $this->loadingAdd = false;
+                $this->loadingSave = false;
+                return;
+            }
         }
+
 
         if ($hasRework) {
             if (!$isDone) {

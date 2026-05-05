@@ -15,10 +15,10 @@
             <tbody class="bg-gray-700">
                 @forelse ( $inspections ?? [] as $inspection )
                 <tr>
-                    <td class="px-4 py-2">{{ $inspection->InspectorID ?? '-' }}</td>
+                    <td class="px-4 py-2">{{ $inspection->updated_by ?? '-' }}</td>
                     <td class="px-4 py-2">{{ $inspection->worker?->employeeName?->名前 ?? '-' }}</td>
                     <td class="px-4 py-2">{{ $inspection->total_inspect ?? '-' }}</td>
-                    <td class="px-4 py-2">{{ $inspection->DateEncode ?? '-' }}</td>
+                    <td class="px-4 py-2">{{ $inspection->updated_date ?? '-' }}</td>
                 </tr>
                 @empty
                 <tr>
