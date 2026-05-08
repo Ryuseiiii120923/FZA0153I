@@ -62,7 +62,6 @@ class DropdownService
         }
 
         $currentHfId = $forms[$formId]['hf_id'] ?? null;
-        $currentDate = now()->format('Y-m-d');
 
         if (empty($currentHfId)) {
             $forms[$formId]['hf_name'] = null;
@@ -91,27 +90,6 @@ class DropdownService
 
         $name = WorkerName::where('社員CD', $hf->社員CD)->first();
         $forms[$formId]['hf_name'] = $name?->名前;
-
-        // duplicate check
-        // foreach ($forms as $id => $form) {
-        //     if ($id === $formId) continue;
-
-        //     $otherDate = isset($form['created_at'])
-        //         ? Carbon::parse($form['created_at'])->format('Y-m-d')
-        //         : null;
-
-        //     if (
-        //         isset($form['hf_id']) &&
-        //         $form['hf_id'] === $currentHfId &&
-        //         $currentDate === $otherDate
-        //     ) {
-        //         return [
-        //             'error' => 'This Operator is already used in another form with the same date',
-        //             'forms' => $forms
-        //         ];
-        //     }
-        // }
-
         return [
             'error' => null,
             'forms' => $forms

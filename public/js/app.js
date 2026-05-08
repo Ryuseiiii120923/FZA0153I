@@ -10436,7 +10436,6 @@ document.addEventListener("DOMContentLoaded", function () {
     allowInput: true // allows typing manually
   });
   lockFormFields();
-  lockbuttons();
   // const alreadyReloaded = localStorage.getItem("alreadyReloaded");
 
   // if (savedBtn && !alreadyReloaded) {
@@ -10550,7 +10549,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
   window.addEventListener("confirm-deleteHF", function () {
-    console.log('here');
+    console.log("here");
     if (confirm("Are you sure you want to delete this?")) {
       Livewire.dispatch("deleteForRework");
     }
@@ -10577,32 +10576,19 @@ document.addEventListener("DOMContentLoaded", function () {
       Livewire.dispatch("DeleteToDb");
     }
   });
-  document.addEventListener("livewire:navigated", function () {
-    initGoodNgInputs();
-  });
-  document.addEventListener("livewire:load", function () {
-    initGoodNgInputs();
-    lockbuttons();
-  });
-  document.addEventListener("livewire:updated", function () {
-    initGoodNgInputs();
-    lockbuttons();
-  });
   Livewire.on("set-readonly", function (mode) {
     return makeReadOnlyAll(mode);
   });
-  // window.addEventListener("enable-buttons", enableButtons);
-
-  function lockbuttons() {
-    document.getElementById("scan-ppf").disabled = true;
-    document.getElementById("PPF").readOnly = true;
-    document.getElementById("PPF").classList.add("bg-gray-500");
-    document.getElementById("OuterPanel").classList.add("blur-sm");
-    document.getElementById("OuterPanel").classList.add("pointer-events-none");
-  }
   window.addEventListener("removelock", function () {
     removelockbuttonsPren();
   });
+  if (!window.lockbuttonsListenerAdded) {
+    window.lockbuttonsListenerAdded = true;
+    window.addEventListener("lockbuttons", function () {
+      lockbuttons();
+      console.log("Buttons locked");
+    });
+  }
   window.addEventListener("ProcessVI", function () {
     ProcessVI();
   });
@@ -10705,19 +10691,22 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("title").textContent = "VI Defect (Inquire)";
     document.getElementById("Init-inquire").classList.add("bg-yellow-900", "scale-95", "shadow-inner", "transition-all", "border-2", "border-double", "border-yellow-400");
   });
-  function enableButtons() {
-    var fieldss = ["add-rework", "add-defect", "scan-ppf"];
-    fieldss.forEach(function (ids) {
-      var els = document.getElementById(ids);
-      if (els) {
-        els.disabled = false;
-      }
-    });
-    document.getElementById("PPF").readOnly = false;
-    document.getElementById("PPF").classList.remove("bg-gray-500");
-    document.getElementById("OuterPanel").classList.remove("blur-sm");
-    document.getElementById("OuterPanel").classList.remove("pointer-events-none");
-  }
+  // function enableButtons() {
+  //     const fieldss = ["add-rework", "add-defect", "scan-ppf"];
+  //     fieldss.forEach((ids) => {
+  //         const els = document.getElementById(ids);
+  //         if (els) {
+  //             els.disabled = false;
+  //         }
+  //     });
+  //     document.getElementById("PPF").readOnly = false;
+  //     document.getElementById("PPF").classList.remove("bg-gray-500");
+  //     document.getElementById("OuterPanel").classList.remove("blur-sm");
+
+  //     document
+  //         .getElementById("OuterPanel")
+  //         .classList.remove("pointer-events-none");
+  // }
 
   // function persistAction(action, buttonId) {
   //     sessionStorage.setItem("lastAction", action);

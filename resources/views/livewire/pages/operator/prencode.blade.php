@@ -109,8 +109,14 @@
     @endif
 
 
-    <div id="OuterPanel">
-        <livewire:templates.checkppf :systemname="request()->input('systemname')" />
+
+    <livewire:templates.checkppf :systemname="request()->input('systemname')" />
+    <div
+        id="OuterPanel"
+        x-data="{ locked: true }"
+        x-on:lockbuttons.window="locked = true"
+        x-on:removelock.window="locked = false"
+        :class="{ 'blur-sm pointer-events-none': locked }">
         <div @if($actiondash=='view' ) class="pointer-events-none opacity-50 " @endif>
             <livewire:ui.drop-down />
             <div class="flex items-center gap-2 justify-center p-6" id="buttons-action">
@@ -155,7 +161,7 @@
         </div>
     </div>
 
-      <div
+    <div
         wire:loading.flex
         wire:target="addPrencode"
         class="fixed inset-0 z-50 items-center justify-center bg-black/50 backdrop-blur-sm">

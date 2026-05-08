@@ -11,12 +11,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const inspectorInputs = document.querySelectorAll("#inspectors input");
 
     flatpickr("#inspectDate", {
-        dateFormat: "Y-m-d",  // matches wire:model format
-        allowInput: true,      // allows typing manually
+        dateFormat: "Y-m-d", // matches wire:model format
+        allowInput: true, // allows typing manually
     });
 
     lockFormFields();
-    lockbuttons();
     // const alreadyReloaded = localStorage.getItem("alreadyReloaded");
 
     // if (savedBtn && !alreadyReloaded) {
@@ -50,7 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
             .enumerateDevices()
             .then((devices) => {
                 const videoInputDevices = devices.filter(
-                    (device) => device.kind === "videoinput"
+                    (device) => device.kind === "videoinput",
                 );
 
                 if (videoInputDevices.length === 0) {
@@ -92,7 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         if (err && !(err instanceof ZXing.NotFoundException)) {
                             console.error(err);
                         }
-                    }
+                    },
                 );
             })
             .catch((err) => {
@@ -144,7 +143,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     window.addEventListener("confirm-deleteHF", () => {
-        console.log('here');
+        console.log("here");
         if (confirm("Are you sure you want to delete this?")) {
             Livewire.dispatch("deleteForRework");
         }
@@ -175,35 +174,18 @@ document.addEventListener("DOMContentLoaded", () => {
             Livewire.dispatch("DeleteToDb");
         }
     });
-    document.addEventListener("livewire:navigated", () => {
-        initGoodNgInputs();
-    });
-    document.addEventListener("livewire:load", () => {
-        initGoodNgInputs();
-        lockbuttons();
-    });
-    document.addEventListener("livewire:updated", () => {
-        initGoodNgInputs();
-        lockbuttons();
-    });
-
     Livewire.on("set-readonly", (mode) => makeReadOnlyAll(mode));
-    // window.addEventListener("enable-buttons", enableButtons);
-
-    function lockbuttons() {
-        document.getElementById("scan-ppf").disabled = true;
-        document.getElementById("PPF").readOnly = true;
-        document.getElementById("PPF").classList.add("bg-gray-500");
-
-        document.getElementById("OuterPanel").classList.add("blur-sm");
-        document
-            .getElementById("OuterPanel")
-            .classList.add("pointer-events-none");
-    }
-
     window.addEventListener("removelock", () => {
         removelockbuttonsPren();
     });
+    if (!window.lockbuttonsListenerAdded) {
+        window.lockbuttonsListenerAdded = true;
+
+        window.addEventListener("lockbuttons", () => {
+            lockbuttons();
+            console.log("Buttons locked");
+        });
+    }
     window.addEventListener("ProcessVI", () => {
         ProcessVI();
     });
@@ -268,7 +250,7 @@ document.addEventListener("DOMContentLoaded", () => {
             "transition-all",
             "border-2",
             "border-double",
-            "border-yellow-400"
+            "border-yellow-400",
         );
 
         buttons.forEach((id) => {
@@ -285,7 +267,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 "border-red-400",
                 "bg-green-900",
                 "bg-blue-900",
-                "bg-red-900"
+                "bg-red-900",
             );
         });
     }
@@ -308,7 +290,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 "hover:bg-green-800",
                 "focus:outline-none",
                 "focus:ring-4",
-                "focus:ring-green-300"
+                "focus:ring-green-300",
             );
         document
             .getElementById("Init-add")
@@ -319,7 +301,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 "transition-all",
                 "border-2",
                 "border-double",
-                "border-green-400"
+                "border-green-400",
             );
     });
 
@@ -334,7 +316,7 @@ document.addEventListener("DOMContentLoaded", () => {
             "hover:bg-green-800",
             "focus:outline-none",
             "focus:ring-4",
-            "focus:ring-green-300"
+            "focus:ring-green-300",
         );
 
         document
@@ -346,7 +328,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 "transition-all",
                 "border-2",
                 "border-double",
-                "border-green-400"
+                "border-green-400",
             );
     });
     document.addEventListener("haserror", (event) => {
@@ -383,7 +365,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 "hover:bg-blue-800",
                 "focus:outline-none",
                 "focus:ring-4",
-                "focus:ring-blue-300"
+                "focus:ring-blue-300",
             );
         document
             .getElementById("Init-update")
@@ -394,7 +376,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 "transition-all",
                 "border-2",
                 "border-double",
-                "border-blue-400"
+                "border-blue-400",
             );
     });
 
@@ -410,7 +392,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 "hover:bg-red-800",
                 "focus:outline-none",
                 "focus:ring-4",
-                "focus:ring-red-300"
+                "focus:ring-red-300",
             );
         document
             .getElementById("Init-delete")
@@ -421,7 +403,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 "transition-all",
                 "border-2",
                 "border-double",
-                "border-red-400"
+                "border-red-400",
             );
     });
     window.addEventListener("viewbutton", () => {
@@ -436,25 +418,25 @@ document.addEventListener("DOMContentLoaded", () => {
                 "transition-all",
                 "border-2",
                 "border-double",
-                "border-yellow-400"
+                "border-yellow-400",
             );
     });
-    function enableButtons() {
-        const fieldss = ["add-rework", "add-defect", "scan-ppf"];
-        fieldss.forEach((ids) => {
-            const els = document.getElementById(ids);
-            if (els) {
-                els.disabled = false;
-            }
-        });
-        document.getElementById("PPF").readOnly = false;
-        document.getElementById("PPF").classList.remove("bg-gray-500");
-        document.getElementById("OuterPanel").classList.remove("blur-sm");
+    // function enableButtons() {
+    //     const fieldss = ["add-rework", "add-defect", "scan-ppf"];
+    //     fieldss.forEach((ids) => {
+    //         const els = document.getElementById(ids);
+    //         if (els) {
+    //             els.disabled = false;
+    //         }
+    //     });
+    //     document.getElementById("PPF").readOnly = false;
+    //     document.getElementById("PPF").classList.remove("bg-gray-500");
+    //     document.getElementById("OuterPanel").classList.remove("blur-sm");
 
-        document
-            .getElementById("OuterPanel")
-            .classList.remove("pointer-events-none");
-    }
+    //     document
+    //         .getElementById("OuterPanel")
+    //         .classList.remove("pointer-events-none");
+    // }
 
     // function persistAction(action, buttonId) {
     //     sessionStorage.setItem("lastAction", action);

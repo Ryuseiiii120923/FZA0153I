@@ -7,12 +7,13 @@ use Illuminate\Support\Facades\DB;
 class ReworkRepository
 {
     public function fetchForRework($ppf){
-        return DB::table('hf_rework')
-        ->select('PPFNo', DB::raw('SUM(qty) as total_rework'))
-        ->where('FlgDone', 0)
-        ->where('ProceedToRework', 0)
-        ->where('PPFNo', $ppf)
-        ->groupBy('PPFNo')
+        return DB::table('hf_rework as r')
+        ->join('hf_forms as f', 'r.ppfno', '=', 'f.ppfno')
+        ->select('r.PPFNo', DB::raw('SUM(r.qty) as total_rework'))
+        ->where('r.FlgDone', 0)
+        ->where('r.ProceedToRework', 0)
+        ->where('f.finishingProcedure', 'Hand Finishing')
+        ->groupBy('r.PPFNo')
         ->get();
     }
 

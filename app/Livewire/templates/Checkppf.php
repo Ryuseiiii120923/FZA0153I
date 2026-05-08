@@ -162,9 +162,10 @@ class Checkppf extends Component
         $data = app(PrencodeService::class)->loadData($this->ppf, $this->inspectorID,$this->systemname, $this->actiondash);
         if(isset($data['error'])){
             $this->errorexisting = $data['error'];
+            $this->dispatch('lockbuttons');
             return false;
         }
-       
+       $this->dispatch('removelock');
 
         $this->showInspectionModal = $data['showModal'] ?? false;
 
@@ -411,6 +412,7 @@ class Checkppf extends Component
     #[On('post-ppf')]
     public function checkPPF()
     {
+        $this->dispatch('lockbuttons');
         $this->validate();
         $ppf = $this->ppf; // fallback
         if ($this->ppf === null) {

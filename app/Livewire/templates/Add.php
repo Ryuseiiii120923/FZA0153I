@@ -36,8 +36,6 @@ class Add extends Component
     public $reworkqty = '';
     public $sampleqty = '';
     public $goodqty = 0;
-    public $defects = [];
-    public $smalldefects = [];
     public $rework = [];
     public $totalngrework;
     public $Ng;
@@ -470,9 +468,11 @@ class Add extends Component
         $totalInspected = DB::table('Inspector_PR')->where('PPFNo', $this->ppf)
             ->sum('total_inspect');
 
-        $hasRework = DB::table('hf_rework')
-            ->where('PPFNo', $this->ppf)
-            ->Where('ProceedToRework', 0)
+        $hasRework = DB::table('hf_rework as r')
+            ->join('hf_forms as f', 'r.ppfno', '=', 'f.ppfno')
+            ->where('r.PPFNo', $this->ppf)
+            ->Where('r.ProceedToRework', 0)
+            ->Where('f.finishingProcedure', 'Hand Finishing')
             ->exists();
         $hasReworkHf = DB::table('dr_forms')
             ->where('PPFNo', $this->ppf)
