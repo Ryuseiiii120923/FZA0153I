@@ -113,41 +113,43 @@
     <livewire:templates.checkppf :systemname="request()->input('systemname')" />
     <div
         id="OuterPanel"
-        x-data="{ locked: true }"
+        x-data="{ locked: true, lockview: false }"
         x-on:lockbuttons.window="locked = true"
         x-on:removelock.window="locked = false"
-        :class="{ 'blur-sm pointer-events-none': locked }">
-        <div @if($actiondash=='view' ) class="pointer-events-none opacity-50 " @endif>
-            <livewire:ui.drop-down />
-            <div class="flex items-center gap-2 justify-center p-6" id="buttons-action">
-                <button
-                    @if (($hasAnyError ?? false))
-                    disabled
-                    @endif
-                    type="button"
-                    id="SubmitBtns"
-                    class="w-40 rounded-lg bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 text-white font-medium text-sm text-center me-2 mb-2 px-6 py-3.5 @if ($actiondash == 'view') hidden @endif"
-                    @class([ 'opacity-50 cursor-not-allowed'=> ($hasAnyError ?? false)
-                    ])
-                    @if($actiondash==='edit' )
-                    wire:click="editPrencode"
-                    @elseif($actiondash==='delete' )
-                    wire:click="deletePrencode"
-                    @else
-                    wire:click="addPrencode"
-                    @endif>
-                    @if ($actiondash === 'edit')
-                    Save
-                    @elseif ($actiondash === 'delete')
-                    Delete
-                    @else
-                    Add
-                    @endif
+        x-on:lockview.window="lockview = true"
+        x-on:removelockview.window="lockview = false"
+        :class="{
+    'blur-sm pointer-events-none': locked,
+    'pointer-events-none opacity-50 ': lockview
+    }">
+        <livewire:ui.drop-down />
+        <div class="flex items-center gap-2 justify-center p-6" id="buttons-action">
+            <button
+                @if (($hasAnyError ?? false))
+                disabled
+                @endif
+                type="button"
+                id="SubmitBtns"
+                class="w-40 rounded-lg bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 text-white font-medium text-sm text-center me-2 mb-2 px-6 py-3.5 @if($actiondash == 'View') hidden @endif"
+                @class([ 'opacity-50 cursor-not-allowed'=> ($hasAnyError ?? false)
+                ])
+                @if($actiondash==='edit' )
+                wire:click="editPrencode"
+                @elseif($actiondash==='delete' )
+                wire:click="deletePrencode"
+                @else
+                wire:click="addPrencode"
+                @endif>
+                @if ($actiondash === 'edit')
+                Save
+                @elseif ($actiondash === 'delete')
+                Delete
+                @else
+                Add
+                @endif
 
-                </button>
-            </div>
+            </button>
         </div>
-
     </div>
     <div class="mt-3">
         <livewire:templates.operatordash />

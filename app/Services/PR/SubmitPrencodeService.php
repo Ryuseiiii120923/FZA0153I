@@ -131,7 +131,6 @@ class SubmitPrencodeService
 
     public function prepareDataForSubmission(array $data): void
     {
-        dd($data['form']);
         $now = now();
         $this->updatedBy = $data['updated_by'] ?? null;
         $this->ppfno     = $data['ppfno'] ?? null;
@@ -139,7 +138,7 @@ class SubmitPrencodeService
 
         foreach ($data['form'] as $formId => $formData) {
             $hf_id    = $formData['hf_id'] ?? null;
-            $goodQty  = $formData['GoodQty'] ?? 0;
+            $goodQty  = $goodQty = (int) ($formData['GoodQty'] ?? 0);
             $method   = $formData['method'] ?? null;
             $inspectREC = $formData['inspect_REC'] ?? null;
 

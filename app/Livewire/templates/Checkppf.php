@@ -40,7 +40,7 @@ class Checkppf extends Component
     public bool $locked = false;
     public bool $ppfLoaded = false;
     public bool $showInspectionModal = false; // controls the modal
-     public bool $isPPF = false;
+    public bool $isPPF = false;
 
     public $rules = ['ppf' => 'required|numeric'];
     public  $messages = [
@@ -159,13 +159,18 @@ class Checkppf extends Component
     private function loadProcessRecord()
     {
         $this->actiondash = strtolower($this->actiondash);
-        $data = app(PrencodeService::class)->loadData($this->ppf, $this->inspectorID,$this->systemname, $this->actiondash);
-        if(isset($data['error'])){
+        $data = app(PrencodeService::class)->loadData($this->ppf, $this->inspectorID, $this->systemname, $this->actiondash);
+        if (isset($data['error'])) {
             $this->errorexisting = $data['error'];
             $this->dispatch('lockbuttons');
             return false;
         }
-       $this->dispatch('removelock');
+
+        $this->dispatch('removelock');
+        if($this->actiondash == 'view'){
+            $this->dispatch('lockview');
+        }
+
 
         $this->showInspectionModal = $data['showModal'] ?? false;
 
@@ -413,6 +418,7 @@ class Checkppf extends Component
     public function checkPPF()
     {
         $this->dispatch('lockbuttons');
+        $this->dispatch('removelockview');
         $this->validate();
         $ppf = $this->ppf; // fallback
         if ($this->ppf === null) {

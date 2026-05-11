@@ -166,7 +166,7 @@ class DropdownService
         return $dropdownForms;
     }
 
-    public function calcGoodQty($formId, &$forms, $defectNg = [], $reworkNg = [])
+    public function calcGoodQty($formId, $forms, $defectNg = [], $reworkNg = [])
     {
         if (!isset($forms[$formId])) {
             return null;
@@ -190,11 +190,10 @@ class DropdownService
 
         $forms[$formId]['TotalNg'] = $totalNg;
         $forms[$formId]['TotalRework'] = $reworkQty;
-
         // ✅ EXACT same return format as your original
         return [
-            $forms[$formId]['GoodQty'],
-            $forms[$formId]['TotalNg']
+            'GoodQty' => $forms[$formId]['GoodQty'],
+           'TotalNg' => $forms[$formId]['TotalNg']
         ];
     }
 

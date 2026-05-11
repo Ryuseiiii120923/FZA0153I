@@ -367,12 +367,15 @@ class DropDown extends Component
 
     public function CalcGoodQty($formId)
     {
-        return app(DropdownService::class)->calcGoodQty(
+        $result =  app(DropdownService::class)->calcGoodQty(
             $formId,
             $this->forms,
             $this->defectNg,
             $this->reworkNg
         );
+        
+        $this->forms[$formId]['GoodQty'] = $result['GoodQty'];
+        $this->forms[$formId]['TotalNg'] = $result['TotalNg'];
     }
 
 

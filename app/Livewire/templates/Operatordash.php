@@ -75,7 +75,9 @@ class Operatordash extends Component
             'actiondash' => 'View',
             'encoder' => $this->inspectorID
         ]);
+         $this->dispatch('lockbuttons');
         $this->dispatch('ClearFormDropdown');
+       
     }
 }
  

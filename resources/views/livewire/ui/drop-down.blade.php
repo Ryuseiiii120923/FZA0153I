@@ -20,7 +20,7 @@
             style="background-color:#0b9af3;">
             + Add Worker For Rework
         </button>
-
+<!-- 
         <button
             wire:click="addNewPL"
             class="text-white px-4 py-2 rounded-md"
@@ -33,7 +33,7 @@
             class="text-white px-4 py-2 rounded-md"
             style="background-color:#006CA5;">
             + Add Worker For SF
-        </button>
+        </button> -->
     </div>
 
     <!-- FLOATING BUTTON (appears on scroll) -->
@@ -54,7 +54,7 @@
             + Add Worker For Rework
         </button>
 
-        <button
+        <!-- <button
             wire:click="addNewPL"
             class="text-white px-4 py-2 rounded-md bg-green-400"
             style="background-color:#02367B;">
@@ -66,7 +66,7 @@
             class="text-white px-4 py-2 rounded-md bg-yellow-400"
             style="background-color:#006CA5;">
             + Add Worker For SF
-        </button>
+        </button> -->
     </div>
 
     <!-- CONTENT -->
@@ -177,7 +177,7 @@
                                        >
                                         <option value="">--- Select Finishing Procedure ---</option>
                                         <option value="Hand Finishing">Hand Finishing</option>
-                                        <option value="Cold Deflushing">Cold Deflushing</option>
+                                        <option value="Cold Deflushing">Cold Deflashing</option>
                                         <option value="Milling">Milling</option>
                                         <option value="Post Curing">Post Curing</option>
                                         <option value="Cutting">Cutting</option>
