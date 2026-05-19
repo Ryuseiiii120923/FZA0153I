@@ -1,0 +1,153 @@
+
+body {
+    font-family:
+        'Times New Roman', Times, serif;
+    font-size: 10px;
+}
+
+.title {
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    border: 1px solid #000;
+    vertical-align: middle;
+}
+
+.no-border {
+    border: none !important;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-left {
+    text-align: left;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.bold {
+    font-weight: bold;
+}
+
+.small {
+    font-size: 5px;
+}
+
+.defect-table th {
+    font-size: 7px;
+}
+
+.defect-table td {
+    font-size: 8px;
+}
+
+.footer-note {
+    font-size: 10px;
+    margin-top: 5px;
+}
+
+.defect-table th,
+.defect-table td {
+    border: 1px solid #000;
+    text-align: center;
+    vertical-align: middle;
+    padding: 2px;
+}
+
+.vertical-header {
+    height: 60px;
+    /* IMPORTANT */
+    width: 13px;
+    padding: 0;
+    position: relative;
+}
+
+.vertical-header > div {
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+
+    transform: translateX(-50%) rotate(-90deg);
+
+    transform-origin: center;
+    white-space: nowrap;
+
+    font-size: 6px;
+    line-height: 1;
+}
+
+.small-defect-header > div {
+    bottom: 15px;
+    padding-bottom: 10px;
+}
+
+.header-container {
+    width: 100%;
+    font-size: 0;
+}
+
+.header-right,
+.header-left {
+    display: inline-block;
+    vertical-align: top;
+    font-size: 10px;
+}
+
+.header-right {
+    width: 70%;
+}
+
+.header-left {
+    width: 29%;
+    text-align: right;
+}
+
+.top-options {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.left-options {
+    float: left;
+}
+
+.right-options {
+    float: right;
+    text-align: left;
+}
+
+.check-group {
+    margin-bottom: 3px;
+    white-space: nowrap;
+}
+
+.check-box {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 1px solid #000;
+    vertical-align: middle;
+    margin-right: 5px;
+}
+
+.filled {
+    background: #000;
+}
+
+.clearfix {
+    clear: both;
+}

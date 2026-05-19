@@ -19,4 +19,8 @@ class Defect extends Model
         'ppfno',
         'inspect_REC'
     ];
+
+    public function children(){
+        return $this->hasMany(SmallDefect::class, 'large_defect', 'defect');
+    }
 }

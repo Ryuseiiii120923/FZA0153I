@@ -64,6 +64,8 @@ class Add extends Component
     public $canAdd = false;
     public $haserror = false;
     public $loadingSave = false, $loadingAdd = false, $loadingDelete = false;
+    public $record = [];
+    public $rows = [];
 
     public $listeners = [
         'FromCheckppf' => 'Checkppf',
@@ -83,8 +85,7 @@ class Add extends Component
         'loadProcessRecord' => 'loadProcessRecord',
         'InspectorUpdate' => 'InspectorUpdate'
     ];
-
-
+    
     private function ppfService(): PPFService
     {
         return  app(PPFService::class);

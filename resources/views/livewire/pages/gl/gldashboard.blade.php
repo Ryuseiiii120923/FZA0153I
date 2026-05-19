@@ -1,66 +1,110 @@
-<div class="p-4">
-    <div id="buttons-action" class="flex flex-col sm:flex-row sm:flex-wrap justify-center gap-4 mb-6">
-        <button type="button" id="Init-add"
-            class="w-full sm:w-32 md:w-36 lg:w-40 px-4 py-2 text-white bg-green-700 hover:bg-green-800 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-black"
-            wire:click.debounce.500ms="setAction('Add')" wire:loading.attr="disabled">
-            Add
-        </button>
+<div
+    class="p-2"
+    x-data="{ currentPage: 'dashboard' }"
+    @navigate-to.window="currentPage = $event.detail.page"
+>
 
-        <button type="button" id="Init-update"
-            class="w-full sm:w-32 md:w-36 lg:w-40 px-4 py-2 text-white bg-blue-700 hover:bg-blue-800 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-black"
-            wire:click.debounce.500ms="setAction('Edit')" wire:loading.attr="disabled">
-            Edit
-        </button>
+    {{-- ========================== --}}
+    {{-- DASHBOARD VIEW             --}}
+    {{-- ========================== --}}
+    {{-- x-show is fine here — dashboard is the default, Livewire owns this content --}}
+    <div
+        x-show="currentPage === 'dashboard'"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 translate-y-1"
+        x-transition:enter-end="opacity-100 translate-y-0"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100 translate-y-0"
+        x-transition:leave-end="opacity-0 translate-y-1"
+    >
+        {{-- Action Buttons --}}
+        <div id="buttons-action" class="flex flex-col sm:flex-row sm:flex-wrap justify-center gap-4 mb-6">
+            <button type="button" id="Init-add"
+                class="w-full sm:w-32 md:w-36 lg:w-40 px-4 py-2 text-white bg-green-700 hover:bg-green-800 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-black"
+                wire:click.debounce.500ms="setAction('Add')" wire:loading.attr="disabled">
+                Add
+            </button>
+            <button type="button" id="Init-update"
+                class="w-full sm:w-32 md:w-36 lg:w-40 px-4 py-2 text-white bg-blue-700 hover:bg-blue-800 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-black"
+                wire:click.debounce.500ms="setAction('Edit')" wire:loading.attr="disabled">
+                Edit
+            </button>
+            <button type="button" id="Init-delete"
+                class="w-full sm:w-32 md:w-36 lg:w-40 px-4 py-2 text-white bg-red-700 hover:bg-red-800 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-black"
+                wire:click.debounce.500ms="setAction('Delete')" wire:loading.attr="disabled">
+                Delete
+            </button>
+            <button type="button" id="Init-inquire"
+                class="w-full sm:w-32 md:w-36 lg:w-40 px-4 py-2 text-white bg-yellow-700 hover:bg-yellow-800 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-black"
+                wire:click.debounce.500ms="setAction('View')" wire:loading.attr="disabled">
+                Inquire
+            </button>
+            <button type="button" id="HFDash"
+                class="w-full sm:w-32 md:w-36 lg:w-40 px-4 py-2 text-white bg-yellow-700 hover:bg-yellow-800 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-black"
+                wire:click="GoToHF" wire:loading.attr="disabled">
+                HF Dashboard
+            </button>
+        </div>
 
-        <button type="button" id="Init-delete"
-            class="w-full sm:w-32 md:w-36 lg:w-40 px-4 py-2 text-white bg-red-700 hover:bg-red-800 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-black"
-            wire:click.debounce.500ms="setAction('Delete')" wire:loading.attr="disabled">
-            Delete
-        </button>
-
-        <button type="button" id="Init-inquire"
-            class="w-full sm:w-32 md:w-36 lg:w-40 px-4 py-2 text-white bg-yellow-700 hover:bg-yellow-800 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-black"
-            wire:click.debounce.500ms="setAction('View')" wire:loading.attr="disabled">
-            Inquire
-        </button>
-          <button type="button" id="HFDash"
-            class="w-full sm:w-32 md:w-36 lg:w-40 px-4 py-2 text-white bg-yellow-700 hover:bg-yellow-800 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-black"
-            wire:click="GoToHF" wire:loading.attr="disabled">
-            HF Dashboard
-        </button>
-    </div>
-
-
-    <div id="OuterPanel">
-        <div class="w-full px-2 sm:px-6">
-            <div @if($currentAction !='Add' ) class="hidden" @endif>
-                @livewire('templates.ppfdashboard')
-            </div>
-            @livewire('templates.checkppf', ['systemname' => request()->input('systemname')])
-            <div class="mt-6 mb-6">
-                @livewire('glcomponents.total-inspection')
-            </div>
-
-            <div class="flex flex-col sm:flex-row gap-6 mt-4 items-start justify-center w-full">
-                <div class="w-11/12 sm:w-1/2 flex justify-center">
-                    @livewire('glcomponents.defects')
+        {{-- Main Dashboard Content --}}
+        <div id="OuterPanel">
+            <div class="w-full px-2 sm:px-6">
+                <div @if($currentAction != 'Add') class="hidden" @endif>
+                    @livewire('templates.ppfdashboard')
                 </div>
-                <div class="w-11/12 sm:w-1/2 flex justify-center">
-                    @livewire('glcomponents.reworks')
+                @livewire('templates.checkppf', ['systemname' => request()->input('systemname')])
+                <div class="mt-6 mb-6">
+                    @livewire('glcomponents.total-inspection')
                 </div>
+                <div class="flex flex-col sm:flex-row mt-4 items-start justify-center w-full">
+                    <div class="w-full mt-6 mb-6 flex justify-center">
+                        @livewire('glcomponents.defects')
+                    </div>
+                    <div class="w-full mt-6 mb-6 flex justify-center">
+                        @livewire('glcomponents.reworks')
+                    </div>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-6 mt-4 items-start justify-center w-full">
+                    <div class="w-11/12 sm:w-1/2 flex justify-center">
+                        @livewire('glcomponents.for-rework')
+                    </div>
+                    <div class="w-11/12 sm:w-1/2 flex justify-center">
+                        @livewire('glcomponents.done-rework')
+                    </div>
+                </div>
+                @livewire('templates.goodng')
+                @livewire('templates.add')
             </div>
-
-            <div class="flex flex-col sm:flex-row gap-6 mt-4 items-start justify-center w-full">
-                <div class="w-11/12 sm:w-1/2 flex justify-center">
-                    @livewire('glcomponents.for-rework')
-                </div>
-
-                <div class="w-11/12 sm:w-1/2 flex justify-center">
-                    @livewire('glcomponents.done-rework')
-                </div>
-            </div>
-            @livewire('templates.goodng')
-            @livewire('templates.add')
         </div>
     </div>
+
+    {{-- ========================== --}}
+    {{-- ENROLL OPERATOR VIEW       --}}
+    {{-- ========================== --}}
+    {{-- x-if completely removes this from the DOM when not active.            --}}
+    {{-- The inner Livewire component only mounts when the user navigates here --}}
+    {{-- and is fully destroyed when they leave — no ghost rendering.          --}}
+    <template x-if="currentPage === 'enroll-operator'">
+        <div
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 translate-y-1"
+            x-transition:enter-end="opacity-100 translate-y-0"
+        >
+            <x-layout.enroll-operator-panel />
+        </div>
+    </template>
+
+    {{-- ========================== --}}
+    {{-- GENERATE PROCESS RECORD    --}}
+    {{-- ========================== --}}
+    <template x-if="currentPage === 'PR'">
+        <div
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 translate-y-1"
+            x-transition:enter-end="opacity-100 translate-y-0"
+        >
+            <x-layout.process-record-generator />
+        </div>
+    </template>
+
 </div>
