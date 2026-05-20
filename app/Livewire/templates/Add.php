@@ -10,6 +10,7 @@ use App\Models\WorkerName;
 use App\Services\DefectService;
 use App\Services\PPFService;
 use App\Services\ReworkService;
+use App\Traits\InitializesInspector;
 use Illuminate\Support\Facades\Auth as UserAuth;
 use Livewire\Component;
 use App\Traits\NormalizeSmallDefects;
@@ -22,6 +23,8 @@ class Add extends Component
 {
     use NormalizeSmallDefects;
     use NormalizeDefects;
+    use InitializesInspector;
+
     public $ppf;
     public $lotno;
     public $partno;
@@ -52,7 +55,6 @@ class Add extends Component
     public $isAdd = true;
     public $ngratioqty;
 
-    public $encoder, $username;
     public $Largedefects = [];
     public $dropdownForms = [];
     public $SmallDef;
@@ -85,7 +87,7 @@ class Add extends Component
         'loadProcessRecord' => 'loadProcessRecord',
         'InspectorUpdate' => 'InspectorUpdate'
     ];
-    
+
     private function ppfService(): PPFService
     {
         return  app(PPFService::class);
@@ -218,10 +220,7 @@ class Add extends Component
     {
         //->employeeName->名前 ?? '';
         $this->InspectDates = Carbon::now()->format('Y-m-d');
-        $userencoder = UserAuth::user()->社員CD;
-        $this->encoder = (int)$userencoder;
-        $UserName = WorkerName::select('名前 ')->Where('社員CD', $this->encoder)->first();
-        $this->username = $UserName->名前 ?? '';
+        $this->initializeInspector();
     }
 
 
