@@ -1,19 +1,11 @@
 <div
     class="w-full"
     x-data="{
-        showAdd:     false,
-        showConfirm: false,
-        toast:       '',
-        openAdd()     { this.showAdd = true },
-        closeAdd()    { this.showAdd = false; $wire.resetForm() },
-        openConfirm() { this.showConfirm = true },
-        closeConfirm(){ this.showConfirm = false },
+        toast: '',
         showToast(msg){ this.toast = msg; setTimeout(() => this.toast = '', 3000) }
     }"
-    @operator-saved.window="closeAdd(); showToast('Operator enrolled successfully.')"
-    @operator-deleted.window="closeConfirm(); showToast('Operator removed.')"
-    @open-confirm.window="openConfirm()"
-    @keydown.escape.window="showAdd = false; showConfirm = false"
+    @operator-saved.window="showToast('Operator enrolled successfully.')"
+    @operator-deleted.window="showToast('Operator removed.')"
 >
 
     {{-- Toast --}}
@@ -38,7 +30,7 @@
 
     {{-- Panel Header --}}
     <div class="mb-6">
-        <h2 class="text-lg font-semibold text-gray-800">Enroll Operator</h2>
+        <h2 class="text-lg font-semibold text-white">Enroll Operator</h2>
         <p class="text-sm text-gray-500 mt-1">Register and manage operators in the system.</p>
     </div>
 
@@ -61,7 +53,7 @@
         </div>
         <button
             type="button"
-            @click="openAdd()"
+            wire:click="openModal"
             class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold
                    bg-[#0F3C89] text-white rounded-lg hover:bg-blue-800
                    transition-colors duration-150 shadow-sm whitespace-nowrap"
@@ -72,8 +64,6 @@
             New Operator
         </button>
     </div>
-
-    {{-- Card Grid --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
 
         @forelse ($records as $record)
@@ -86,11 +76,13 @@
                 );
             @endphp
 
-            <div class="bg-white border border-gray-200 rounded-xl p-4
-                        flex items-center gap-3
-                        hover:border-blue-300 hover:bg-blue-50
-                        transition-colors duration-150 group">
-
+            <div
+                wire:key="op-{{ $record->OperatorID }}"
+                class="bg-white border border-gray-200 rounded-xl p-4
+                       flex items-center gap-3
+                       hover:border-blue-300 hover:bg-blue-50
+                       transition-colors duration-150 group"
+            >
                 <div class="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100
                             flex items-center justify-center text-sm font-semibold text-blue-800">
                     {{ $initials }}
@@ -105,7 +97,6 @@
                 </div>
 
                 <div class="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                    {{-- Delete --}}
                     <button
                         type="button"
                         wire:click="setDeleting({{ $record->OperatorID }})"
@@ -123,7 +114,10 @@
             </div>
 
         @empty
-            <div class="col-span-full flex flex-col items-center justify-center py-16 text-gray-400">
+            <div
+                wire:key="op-empty"
+                class="col-span-full flex flex-col items-center justify-center py-16 text-gray-400"
+            >
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
                 </svg>
@@ -132,58 +126,47 @@
             </div>
         @endforelse
 
-        @if($records->count() > 0)
-            <button
-                type="button"
-                @click="openAdd()"
-                class="bg-white border border-dashed border-gray-300 rounded-xl p-4
-                       flex items-center justify-center gap-2 text-sm text-gray-400
-                       hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50
-                       transition-colors duration-150"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-                </svg>
-                Add operator
-            </button>
-        @endif
+        {{-- Always in the DOM — hidden when empty, never inserted/removed --}}
+        <button
+            wire:key="op-add-card"
+            type="button"
+            wire:click="openModal"
+            @class([
+                'bg-white border border-dashed border-gray-300 rounded-xl p-4',
+                'flex items-center justify-center gap-2 text-sm text-gray-400',
+                'hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50',
+                'transition-colors duration-150',
+                'hidden' => $totalCount === 0,
+            ])
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+            </svg>
+            Add operator
+        </button>
     </div>
 
-    @if($records->count() > 0)
+    @if($totalCount > 0)
         <p class="mt-4 text-xs text-gray-400">
-            {{ $records->count() }} {{ Str::plural('operator', $records->count()) }} enrolled
+            {{ $totalCount }} {{ Str::plural('operator', $totalCount) }} enrolled
         </p>
     @endif
 
-    {{-- ================================================== --}}
-    {{-- ADD MODAL — fully Alpine controlled                  --}}
-    {{-- ================================================== --}}
-    <template x-teleport="body">
+    @if($showAdd)
         <div
-            x-show="showAdd"
-            x-transition:enter="transition ease-out duration-200"
-            x-transition:enter-start="opacity-0"
-            x-transition:enter-end="opacity-100"
-            x-transition:leave="transition ease-in duration-150"
-            x-transition:leave-start="opacity-100"
-            x-transition:leave-end="opacity-0"
             class="fixed inset-0 z-50 flex items-center justify-center"
-            style="display:none"
+            x-data
+            @keydown.escape.window="$wire.call('closeModal')"
         >
             {{-- Backdrop --}}
-            <div class="absolute inset-0 bg-black/50" @click="closeAdd()"></div>
+            <div
+                class="absolute inset-0 bg-black/50"
+                wire:click="closeModal"
+            ></div>
 
             {{-- Panel --}}
-            <div
-                x-show="showAdd"
-                x-transition:enter="transition ease-out duration-200"
-                x-transition:enter-start="opacity-0 scale-95"
-                x-transition:enter-end="opacity-100 scale-100"
-                x-transition:leave="transition ease-in duration-150"
-                x-transition:leave-start="opacity-100 scale-100"
-                x-transition:leave-end="opacity-0 scale-95"
-                class="relative z-10 w-full max-w-md mx-4 bg-white rounded-2xl shadow-xl overflow-hidden"
-            >
+            <div class="relative z-10 w-full max-w-md mx-4 bg-white rounded-2xl shadow-xl overflow-hidden">
+
                 {{-- Header --}}
                 <div class="flex items-center justify-between px-6 py-4 bg-[#0F3C89]">
                     <div class="flex items-center gap-3">
@@ -197,7 +180,7 @@
                             <p class="text-xs text-white/70">Enter the operator ID to auto-fill the name.</p>
                         </div>
                     </div>
-                    <button type="button" @click="closeAdd()" class="text-white/60 hover:text-white transition-colors">
+                    <button type="button" wire:click="closeModal" class="text-white/60 hover:text-white transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
@@ -249,11 +232,10 @@
                         <label class="block text-xs font-medium text-gray-600 mb-1">
                             Operator Name <span class="text-red-500">*</span>
                         </label>
-            
                         <input
-                        readonly
+                            readonly
                             type="text"
-                            wire:model.defer="operatorName"
+                            wire:model="operatorName"
                             placeholder="Auto-filled"
                             class="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-300 rounded-lg
                                    text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500
@@ -270,20 +252,18 @@
                 <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50">
                     <button
                         type="button"
-                        @click="closeAdd()"
+                        wire:click="closeModal"
                         class="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300
                                rounded-lg hover:bg-gray-100 transition-colors duration-150"
                     >
                         Cancel
                     </button>
                     <button
-                    @error('operatorID')
-                        disabled
-                    @enderror
                         type="button"
                         wire:click="save"
                         wire:loading.attr="disabled"
                         wire:target="save"
+                        @error('operatorID') disabled @enderror
                         class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold
                                bg-[#0F3C89] text-white rounded-lg hover:bg-blue-800
                                disabled:opacity-60 transition-colors duration-150"
@@ -300,37 +280,17 @@
 
             </div>
         </div>
-    </template>
+    @endif
 
-    {{-- ================================================== --}}
-    {{-- DELETE CONFIRM MODAL — fully Alpine controlled       --}}
-    {{-- ================================================== --}}
-    <template x-teleport="body">
+    @if($showConfirm)
         <div
-            x-show="showConfirm"
-            x-transition:enter="transition ease-out duration-200"
-            x-transition:enter-start="opacity-0"
-            x-transition:enter-end="opacity-100"
-            x-transition:leave="transition ease-in duration-150"
-            x-transition:leave-start="opacity-100"
-            x-transition:leave-end="opacity-0"
             class="fixed inset-0 z-50 flex items-center justify-center"
-            style="display:none"
+            x-data
+            @keydown.escape.window="$wire.call('cancelDelete')"
         >
-            {{-- Backdrop --}}
-            <div class="absolute inset-0 bg-black/50" @click="closeConfirm()"></div>
+            <div class="absolute inset-0 bg-black/50" wire:click="cancelDelete"></div>
 
-            {{-- Panel --}}
-            <div
-                x-show="showConfirm"
-                x-transition:enter="transition ease-out duration-200"
-                x-transition:enter-start="opacity-0 scale-95"
-                x-transition:enter-end="opacity-100 scale-100"
-                x-transition:leave="transition ease-in duration-150"
-                x-transition:leave-start="opacity-100 scale-100"
-                x-transition:leave-end="opacity-0 scale-95"
-                class="relative z-10 w-full max-w-sm mx-4 bg-white rounded-2xl shadow-xl overflow-hidden"
-            >
+            <div class="relative z-10 w-full max-w-sm mx-4 bg-white rounded-2xl shadow-xl overflow-hidden">
                 <div class="flex flex-col items-center px-6 pt-6 pb-4 text-center">
                     <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-3">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -346,7 +306,7 @@
                 <div class="flex items-center justify-center gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50">
                     <button
                         type="button"
-                        @click="closeConfirm()"
+                        wire:click="cancelDelete"
                         class="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300
                                rounded-lg hover:bg-gray-100 transition-colors duration-150"
                     >
@@ -372,6 +332,6 @@
                 </div>
             </div>
         </div>
-    </template>
+    @endif
 
 </div>

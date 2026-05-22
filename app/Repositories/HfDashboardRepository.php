@@ -9,27 +9,36 @@ class HfDashboardRepository
     public function fetchForRework()
     {
         return DB::table('hf_rework')
-            ->select('PPFNo', DB::raw('SUM(qty) as total_rework'))
+            ->select(
+                'PPFNo',
+                'ReworkNo',
+                DB::raw('SUM(qty) as total_rework')
+            )
             ->where('FlgDone', 0)
             ->where('ProceedToRework', 1)
-            ->groupBy('PPFNo')
+            ->groupBy('PPFNo', 'ReworkNo')
             ->get();
     }
 
     public function fetchDoneRework()
     {
         return DB::table('hf_rework')
-            ->select('PPFNo', DB::raw('SUM(qty) as total_rework'))
+            ->select(
+                'PPFNo',
+                'ReworkNo',
+                DB::raw('SUM(qty) as total_rework')
+            )
             ->where('FlgDone', 1)
             ->where('ProceedToRework', 1)
-            ->groupBy('PPFNo')
+            ->groupBy('PPFNo', 'ReworkNo')
             ->get();
     }
 
-    public function updateflagdoneforDelete($ppf)
+    public function updateflagdoneforDelete($ppf, $reworkNo)
     {
         return DB::table('hf_rework')
             ->where('PPFNo', $ppf)
+            ->where('ReworkNo', $reworkNo)
             ->update(['FlgDone' => 0]);
     }
 
@@ -57,20 +66,20 @@ class HfDashboardRepository
             ->get();
     }
 
-    public function deleteDoneReworkByPPF($ppf)
+    public function deleteDoneReworkByPPF($ppf, $reworkNo)
     {
         $tables = ['dr_forms', 'dr_defect', 'dr_small'];
 
-        DB::transaction(function () use ($tables, $ppf) {
+        DB::transaction(function () use ($tables, $ppf, $reworkNo) {
             foreach ($tables as $table) {
                 DB::table($table)
                     ->where('ppfno', $ppf)
+                    ->where('ReworkNo', $reworkNo)
                     ->delete();
             }
         });
 
-         $tables = ['Inspector_Defect','Inspector_Small'];
-
+        $tables = ['Inspector_Defect', 'Inspector_Small'];
         DB::transaction(function () use ($tables, $ppf) {
             foreach ($tables as $table) {
                 DB::table($table)

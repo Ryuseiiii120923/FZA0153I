@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Repositories\HfDashboardRepository;
+use Illuminate\Support\Facades\DB;
 
 class HfDashboardService
 {
@@ -16,28 +17,32 @@ class HfDashboardService
 
     public function fetchHfReworkData()
     {
-        //check if there are any pending rework items
-        //check if there are any done rework items
-        //return the data to the component
-        //set the status Not confirmed for pending rework and confirmed for done rework
+        $reworks = DB::table('hf_rework')
+            ->select(
+                'PPFNo',
+                'ReworkNo',
+                'FlgDone',
+                DB::raw('SUM(qty) as total_rework')
+            )
+            ->where('ProceedToRework', 1)
+            ->groupBy('PPFNo', 'ReworkNo', 'FlgDone')
+            ->orderBy('PPFNo')
+            ->orderBy('ReworkNo')
+            ->get();
 
-        $pendingRework = $this->repository->fetchForRework();
-        $doneRework = $this->repository->fetchDoneRework();
         $data = [];
-        foreach ($pendingRework as $item) {
+
+        foreach ($reworks as $item) {
             $data[] = [
                 'ppfno' => $item->PPFNo,
+                'rework_no' => $item->ReworkNo,
                 'total_rework' => (int) $item->total_rework,
-                'status' => 'Not Confirmed'
+                'status' => (int) $item->FlgDone === 1
+                    ? 'Confirmed'
+                    : 'Not Confirmed'
             ];
         }
-        foreach ($doneRework as $item) {
-            $data[] = [
-                'ppfno' => $item->PPFNo,
-                'total_rework' => (int) $item->total_rework,
-                'status' => 'Confirmed'
-            ];
-        }
+
         return $data;
     }
 
@@ -115,11 +120,13 @@ class HfDashboardService
         ];
     }
 
-    public function deleteDoneRework($ppf){
-        $result = $this->repository->deleteDoneReworkByPPF($ppf);
-             
-        if($result){
-            $this->repository->updateflagdoneforDelete($ppf);
+    public function deleteDoneRework($ppf,$reworkNo)
+    {
+        $result = $this->repository->deleteDoneReworkByPPF($ppf,$reworkNo);
+
+        if ($result) {
+ 
+            $this->repository->updateflagdoneforDelete($ppf,$reworkNo);
             return true;
         } else {
             throw new \Exception("Failed to delete done rework for PPF: " . $ppf);

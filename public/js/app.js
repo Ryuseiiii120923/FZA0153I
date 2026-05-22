@@ -10632,7 +10632,6 @@ document.addEventListener("DOMContentLoaded", function () {
   window.addEventListener("addbutton", function () {
     lockFormFields();
     resetActionButtons();
-    enableButtons();
     document.getElementById("SubmitBtn").textContent = "Confirm";
     document.getElementById("SubmitBtn").hidden = false;
     document.getElementById("SubmitBtn").disabled = false;

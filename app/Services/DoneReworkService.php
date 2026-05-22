@@ -62,21 +62,22 @@ class DoneReworkService
             foreach ($data['forms'] as $form) {
 
                 $hfId = $form['hf_id'];
-
                 $this->doneReworkRepo->saveMainForm([
                     'hf_id' => $hfId,
                     'total_inspect' => $form['total_inspect'],
                     'encoder' => $data['encoder'],
                     'ppfno' => $data['ppfno'],
                     'goodQty' => $form['GoodQty'] ?? 0,
-                    'inspect_REC' => $form['inspect_REC']
+                    'inspect_REC' => $form['inspect_REC'],
+                    'reworkNo' => $data['reworkNo']
                 ]);
                 $this->doneReworkRepo->saveDefects(
                     $hfId,
                     $form['defects'] ?? [],
                     $data['ppfno'],
                     $data['encoder'],
-                    $form['inspect_REC']
+                    $form['inspect_REC'],
+                    $data['reworkNo']
                 );
 
                 $this->doneReworkRepo->saveSmallDefects(
@@ -84,12 +85,13 @@ class DoneReworkService
                     $form['smallDefects'] ?? [],
                     $data['ppfno'],
                     $data['encoder'],
-                    $form['inspect_REC']
+                    $form['inspect_REC'],
+                    $data['reworkNo']
                 );
             }
 
             // ✅ update flag once per PPF
-            $this->doneReworkRepo->updateFlag($data['ppfno']);
+            $this->doneReworkRepo->updateFlag($data['ppfno'], $data['reworkNo']);
         });
     }
 }

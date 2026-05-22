@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Templates;
 
+use App\Models\GL\EnrollOperator;
 use App\Models\Operator\DefectInsp;
 use App\Models\Operator\PRInsp;
 use App\Models\Operator\ReworkInsp;
@@ -49,6 +50,12 @@ class Operatordash extends Component
 
     public function editPPF($ppf)
     {
+          $optExist = EnrollOperator::where('OperatorID', $this->inspectorID)->exists();
+
+        if (!$optExist) {
+            session()->flash('failed', 'Operator Not Enrolled. Please Coordinate to GL');
+            return;
+        }
         $this->dispatch('ClearFormDropdown');
         $this->loading = true;
         $this->dispatch("dash-ppf", [
@@ -56,12 +63,12 @@ class Operatordash extends Component
             'actiondash' => 'edit',
             'encoder' => $this->inspectorID
         ]);
-        
     }
 
     #[On('IsLoading')]
-    public function isLoading($data){
-        $this->loading = $data;  
+    public function isLoading($data)
+    {
+        $this->loading = $data;
     }
 
     public function deletePPF($ppf)
@@ -75,9 +82,7 @@ class Operatordash extends Component
             'actiondash' => 'View',
             'encoder' => $this->inspectorID
         ]);
-         $this->dispatch('lockbuttons');
+        $this->dispatch('lockbuttons');
         $this->dispatch('ClearFormDropdown');
-       
     }
 }
- 

@@ -172,7 +172,7 @@ $css = file_get_contents(resource_path('css/genpro.css'));
                 <th colspan="{{ $items->count() }}">{{ $largeCategory }}</th>
                 @endforeach
 
-                @foreach($reworks as $rework)
+                @foreach($groupedReworks as $rework)
                 <th rowspan="2" class="vertical-header">
                     <div>{{ $rework['type'] }}</div>
                 </th>
@@ -231,10 +231,14 @@ $css = file_get_contents(resource_path('css/genpro.css'));
                 @endforeach
 
                 {{-- REWORK --}}
-                @foreach($reworks as $rework)
-                <td class="text-center">
-                    {{ collect($row['reworks'])->where('type', $rework['type'])->sum('qty') }}
-                </td>
+                @foreach($groupedReworks as $groupedRework)
+                @php
+                $reworkQty = collect($row['reworks'])
+                    ->first(function ($item) use ($groupedRework) {
+                        return $item['type'] === $groupedRework['type'];
+                    });
+                @endphp
+                <td class="text-center">{{ $reworkQty['qty'] ?? '' }}</td>
                 @endforeach
 
                 <td class="text-center">{{ $row['total_good_qty'] ?? 0 }}</td>

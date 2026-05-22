@@ -22,13 +22,14 @@ class DoneReworkRepository
                 'updated_by' => $data['encoder'],
                 'ppfno' => $data['ppfno'],
                 'GoodQty' => $data['goodQty'],
-                'inspect_REC' => $data['inspect_REC']
+                'inspect_REC' => $data['inspect_REC'],
+                'ReworkNo' => $data['reworkNo']
             ];
 
 
             DB::table('dr_forms')->upsert(
                 $forms,
-                ['inspect_REC', 'ppfno'],
+                ['inspect_REC', 'ppfno','ReworkNo'],
                 ['GoodQty', 'updated_by', 'total_inspect', 'hf_id']
             );
         } catch (\Throwable $e) {
@@ -36,7 +37,7 @@ class DoneReworkRepository
         }
     }
 
-    public function saveDefects(int $hfId, array $defects, int $ppfno, int $encoder, string $inspectRec)
+    public function saveDefects(int $hfId, array $defects, int $ppfno, int $encoder, string $inspectRec,int $reworkNo)
     {
         try {
 
@@ -55,7 +56,8 @@ class DoneReworkRepository
                     'qty' => $defect['qty'],
                     'updated_by' => $encoder,
                     'ppfno' => $ppfno,
-                    'inspect_REC' => $inspectRec
+                    'inspect_REC' => $inspectRec,
+                    'ReworkNo' => $reworkNo
                 ];
             }
 
@@ -85,7 +87,7 @@ class DoneReworkRepository
             DB::table('dr_defect')->upsert(
                 $drRows,
                 ['hf_id', 'ppfno', 'defect', 'inspect_REC'],
-                ['qty', 'updated_by', 'hf_id', 'ppfno']
+                ['qty', 'updated_by', 'hf_id', 'ppfno','ReworkNo']
             );
 
             DB::table('Inspector_Defect')->upsert(
@@ -98,7 +100,7 @@ class DoneReworkRepository
         }
     }
 
-    public function saveSmallDefects(int $hfId, array $smalldefects, string $ppfno, string $encoder, string $inspectRec)
+    public function saveSmallDefects(int $hfId, array $smalldefects, string $ppfno, string $encoder, string $inspectRec, int $reworkNo)
     {
         try {
             $drsmallrows = [];
@@ -117,7 +119,8 @@ class DoneReworkRepository
                         'qty' => $small['qty'],
                         'updated_by' => $encoder,
                         'ppfno' => $ppfno,
-                        'inspect_REC' => $inspectRec
+                        'inspect_REC' => $inspectRec,
+                        'ReworkNo' => $reworkNo
                     ];
                 }
             }
@@ -161,7 +164,7 @@ class DoneReworkRepository
                 DB::table('dr_small')->upsert(
                     $drsmallrows,
                     ['hf_id', 'ppfno', 'large_defect', 'small_defect', 'inspect_REC'], // better unique key
-                    ['qty', 'hf_id',]
+                    ['qty', 'hf_id','ReworkNo']
                 );
             }
 
@@ -177,11 +180,12 @@ class DoneReworkRepository
         }
     }
 
-    public function updateFlag($ppf)
+    public function updateFlag($ppf,$reworkNo)
     {
         try {
             Db::table('hf_rework')
                 ->where('ppfno', $ppf)
+                ->where('ReworkNo', $reworkNo)
                 ->update([
                     'FlgDone' => 1
                 ]);

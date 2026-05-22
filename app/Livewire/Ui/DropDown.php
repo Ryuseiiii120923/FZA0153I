@@ -62,8 +62,6 @@ class DropDown extends Component
         foreach ($this->forms as $formId => $form) {
             $this->modalOpen[$formId] = false; // default all modals closed
         }
-
-
     }
 
     public function addNew()
@@ -85,8 +83,20 @@ class DropDown extends Component
             'TotalNg' => [],
             'GoodQty' => [],
             'TotalRework' => [],
+            'Remarks' => [],
         ];
         $this->modalOpen[$formId] = true;
+    }
+
+    public function saveRemarks($formId)
+    {
+        $remarks = $this->forms[$formId]['Remarks'] ?? '';
+
+        $this->forms[$formId]['Remarks'] = trim($remarks);
+
+        // refresh dropdown data if needed
+        $this->receiveDropdownData($this->forms);
+    
     }
 
     public function addNewPL()
@@ -104,15 +114,16 @@ class DropDown extends Component
             'defects' => [],
             'smallDefects' => [],
             'rework' => [],
-            'ForRework' => null,      
+            'ForRework' => null,
             'TotalNg' => [],
             'GoodQty' => [],
             'TotalRework' => [],
             'method' => 'PL',
+            'Remarks' => [],
         ];
         $this->modalOpen[$formId] = true;
     }
-     public function addNewSF()
+    public function addNewSF()
     {
         $this->toggles = true;
         $formId = (string) Str::uuid();
@@ -132,6 +143,7 @@ class DropDown extends Component
             'GoodQty' => [],
             'TotalRework' => [],
             'method' => 'SF',
+            'Remarks' => [],
         ];
         $this->modalOpen[$formId] = true;
     }
@@ -149,6 +161,7 @@ class DropDown extends Component
             $formId = (string) Str::uuid();
             $this->forms[$formId] = [
                 'hf_id' => '',
+                'formId' => $formId,
                 'inspect_REC' => uniqid(),
                 'hf_name' => '',
                 'total_inspect' => '',
@@ -157,6 +170,7 @@ class DropDown extends Component
                 'smallDefects' => [],
                 'rework' => [],
                 'ForRework' => true,
+                'Remarks' => [],
             ];
             $this->modalOpen[$formId] = true;
         } else {
@@ -165,7 +179,7 @@ class DropDown extends Component
         }
     }
 
-        #[On('fetchppf')]
+    #[On('fetchppf')]
     public function fetchppf($data)
     {
         $this->ppf = $data;
@@ -373,7 +387,7 @@ class DropDown extends Component
             $this->defectNg,
             $this->reworkNg
         );
-        
+
         $this->forms[$formId]['GoodQty'] = $result['GoodQty'];
         $this->forms[$formId]['TotalNg'] = $result['TotalNg'];
     }

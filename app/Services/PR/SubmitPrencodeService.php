@@ -2,7 +2,10 @@
 
 namespace App\Services\PR;
 
+use App\Models\HF\HF;
+use App\Models\HF\Rework;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class SubmitPrencodeService
 {
@@ -27,7 +30,7 @@ class SubmitPrencodeService
         DB::table('hf_forms')->upsert(
             $this->hfRows,
             ['hf_id', 'ppfno', 'updated_by', 'formId'],
-            ['total_inspect', 'GoodQty']
+            ['total_inspect', 'GoodQty', 'TotalNg', 'remarks','updated_date']
         );
 
         DB::table('hf_defect')->upsert(
@@ -135,13 +138,22 @@ class SubmitPrencodeService
         $this->updatedBy = $data['updated_by'] ?? null;
         $this->ppfno     = $data['ppfno'] ?? null;
         $this->username  = $data['username'] ?? '';
-
         foreach ($data['form'] as $formId => $formData) {
             $hf_id    = $formData['hf_id'] ?? null;
             $goodQty  = $goodQty = (int) ($formData['GoodQty'] ?? 0);
             $method   = $formData['method'] ?? null;
             $inspectREC = $formData['inspect_REC'] ?? null;
-
+            $totalng = 0;
+            foreach ($formData['defects'] as $defects) {
+                $totalng += $defects['qty'];
+            }
+            $dateupdated = null;
+            $isUpdated = $data['isDropdownUpdate'][$formId] ?? false;
+            if (!$isUpdated) {
+                $dateupdated = HF::select('updated_date')
+                    ->where('inspect_REC', $formData['inspect_REC'])
+                    ->first();
+            }
             $this->totalGoodQty += $goodQty;
             $this->methodProcess = $method ?? $this->methodProcess;
 
@@ -153,16 +165,17 @@ class SubmitPrencodeService
                 'inspect_REC'        => $inspectREC,
                 'formId'             => $formData['formId'] ?? null, // ← from formData, like original
                 'created_at'         => $now,
-                'updated_date'       => $now,
+                'updated_date'       => $dateupdated->updated_date ?? $now,
                 'IsDoneRework'       => 0,
                 'finishingProcedure' => $formData['finishingProcedure'] ?? null,
                 'ForRework'          => array_key_exists('ForRework', $formData)
                     ? ($formData['ForRework'] ? 1 : 0)
                     : null,
                 'GoodQty'            => $goodQty,
+                'TotalNg'            => $totalng,
                 'methodProcess'      => $method ?? null,
+                'remarks' => $formData['Remarks'] ?? null
             ];
-
             $this->prepareDefect($formData, $hf_id, $inspectREC);
             $this->prepareSmallDefect($formData, $formId, $hf_id, $inspectREC, $data['needToDeleteDefect'] ?? [], $data['needToDeleteDefectSmall'] ?? []);
             $this->prepareRework($formData, $formId, $hf_id, $inspectREC);
@@ -196,8 +209,8 @@ class SubmitPrencodeService
 
             $key = $type . '_' . (
                 is_null($forRework)
-                    ? ($formData['method'] ?? '')
-                    : $forRework
+                ? ($formData['method'] ?? '')
+                : $forRework
             );
 
             $this->mergedDefects[$key] ??= [
@@ -255,8 +268,8 @@ class SubmitPrencodeService
 
                 $key = $large . '_' . $type . '_' . (
                     is_null($forRework)
-                        ? ($formData['method'] ?? '')
-                        : $forRework
+                    ? ($formData['method'] ?? '')
+                    : $forRework
                 );
 
                 $this->mergedSmallDefects[$key] ??= [
@@ -276,7 +289,7 @@ class SubmitPrencodeService
     {
         foreach ($formData['rework'] ?? [] as $rework) {
             $type     = $rework['type'] ?? null;
-            $qty      = (float) ($rework['quan'] ?? 0);   // ← 'quan' like original
+            $qty      = (float) ($rework['quan'] ?? 0);
             $hfno     = $rework['hfno'] ?? '';
             $totalInsp = (string) ($rework['totalinsp'] ?? 0);
 
@@ -288,13 +301,13 @@ class SubmitPrencodeService
             $this->reworkRows[] = [
                 'hf_id'       => $hf_id,
                 'hfno'        => $hfno,
-                'rework_type' => $type,               // ← 'rework_type' like original
+                'rework_type' => $type,
                 'qty'         => $qty,
                 'totalinsp'   => $totalInsp,
                 'updated_by'  => $this->updatedBy,
                 'ppfno'       => $this->ppfno,
                 'inspect_REC' => $inspectREC,
-                'formId'      => $formData['formId'] ?? null,
+                'formId'      => $formData['formId'] ?? null
             ];
 
             $key = $hfno . '_' . $type;

@@ -234,7 +234,7 @@
                                 :formId="$formId"
                                 :loadedRework="$form['rework']"
                                 :dispatchPrefix="'operator'"
-                                :key="'reworks-'.$formId" />
+                                :key="'reworks-'.$formId"/>
                         </div>
                     </div>
                     <div class="w-full">
@@ -244,6 +244,16 @@
                                 wire:model="forms.{{ $formId }}.GoodQty"
                                 class="w-full border p-2 rounded"
                                 readonly>
+                        </div>
+                    </div>
+
+                     <div class="w-full">
+                        <div>
+                            <label class="block text-sm font-medium">Remarks</label>
+                            <input type="text"
+                                wire:model="forms.{{ $formId }}.Remarks"
+                                wire:blur="saveRemarks('{{ $formId }}')"
+                                class="w-full border p-2 rounded">
                         </div>
                     </div>
 

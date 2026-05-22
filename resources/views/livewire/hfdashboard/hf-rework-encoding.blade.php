@@ -1,5 +1,8 @@
 <div x-data="{ open: false }"> <!-- sync Alpine with Livewire -->
-
+    <div class="mb-6">
+        <h2 class="text-lg font-semibold text-white">Hand Finishing Rework Encoding</h2>
+        <p class="text-sm text-gray-500 mt-1">Record and encode hand finishing rework data</p>
+    </div>
     @if (session()->has('success'))
     <div
         x-data="{ open: true }"
@@ -43,6 +46,7 @@
             <thead class="bg-gray-900 text-white text-left">
                 <tr>
                     <th class="px-4 py-2  text-center">PPFNO</th>
+                    <th class="px-4 py-2  text-center">Rework No</th>
                     <th class="px-4 py-2  text-center">Total Rework</th>
                     <th class="px-4 py-2 text-center">Action</th>
                     <th class="px-4 py-2  text-center">Status</th>
@@ -53,22 +57,23 @@
                 @foreach ($pendingRework as $data )
                 <tr>
                     <td class="px-4 py-2  text-center">{{ (int) $data['ppfno'] ?? '' }}</td>
+                    <td class="px-4 py-2  text-center">{{ (int) $data['rework_no'] ?? 0 }}</td>
                     <td class="px-4 py-2 text-center">{{ $data['total_rework'] ?? '' }}</td>
                     <td class=" py-2 flex justify-center gap-2">
 
                         <button
-                            class="text-white bg-green-700 px-4 py-2 rounded  @if (($status[$data['ppfno']] ?? '') == 'Confirmed') opacity-50  @endif"
-                            @if (($status[$data['ppfno']] ?? '' )=='Confirmed' ) disabled @endif
-                            @click="open = true; $wire.confirm_ppf('{{ $data['ppfno'] }}')">
+                            class="text-white bg-green-700 px-4 py-2 rounded  @if (($data['status'] ?? '') == 'Confirmed') opacity-50  @endif"
+                            @if (($data['status'] ?? '' )=='Confirmed' ) disabled @endif
+                            @click="open = true; $wire.confirm_ppf('{{ $data['ppfno'] }}', '{{ $data['rework_no'] }}')">
                             Confirm
                         </button>
                         <button
                             class="text-white bg-blue-700 px-4 py-2 rounded"
-                            @click="open = true; $wire.editPPFFromChild('{{ $data['ppfno'] }}')">
+                            @click="open = true; $wire.editPPFFromChild('{{ $data['ppfno'] }}', '{{ $data['rework_no'] }}')">
                             Edit
                         </button>
                         <button
-                            wire:click="confirmDelete('{{ $data['ppfno'] }}')"
+                            wire:click="confirmDelete('{{ $data['ppfno'] }}', '{{ $data['rework_no'] }}')"
                             class="bg-red-500 text-white px-3 py-1 rounded">
                             Delete
                         </button>
@@ -97,7 +102,7 @@
                         </div>
                         @endif
                     </td>
-                    <td class="px-4 py-2 text-center">{{ $status[$data['ppfno']] ?? '' }}</td>
+                    <td class="px-4 py-2 text-center">{{ $data['status'] ?? '' }}</td>
                 </tr>
                 @endforeach
             </tbody>

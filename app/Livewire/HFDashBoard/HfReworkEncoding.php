@@ -41,6 +41,7 @@ class HfReworkEncoding extends Component
     public $needdeleteSmall = [], $needdeleteDefect = [], $needdeleteForm = [];
     public $inspectRec = [];
     public $isSaved = false;
+    public $reworkNo;
     private function ppfService(): PPFService
     {
         return $this->ppfService ?? app(PPFService::class);
@@ -256,9 +257,10 @@ class HfReworkEncoding extends Component
         return view('livewire.hfdashboard.hf-rework-encoding');
     }
 
-    public function confirm_ppf($ppf)
+    public function confirm_ppf($ppf,$reworkNo)
     {
 
+    $this->reworkNo = $reworkNo;
         $this->selectedPPF = $ppf;
         $this->open = true;
         $this->dispatch('transferHf', [
@@ -323,8 +325,7 @@ class HfReworkEncoding extends Component
     public function delete_ppf()
     {
         try {
-
-            $this->HfdashboardService()->deleteDoneRework($this->ppfToDelete);
+            $this->HfdashboardService()->deleteDoneRework($this->ppfToDelete,$this->reworkNo);
             $this->resetModal();
             session()->flash('success', 'Deleted Successfully!');
         } catch (\Throwable $e) {
@@ -332,8 +333,9 @@ class HfReworkEncoding extends Component
         }
     }
 
-    public function confirmDelete($ppf)
+    public function confirmDelete($ppf,$reworkNo)
     {
+        $this->reworkNo = $reworkNo;
         $this->ppfToDelete = $ppf;
         $this->confirmingDelete = true;
     }
@@ -521,13 +523,16 @@ class HfReworkEncoding extends Component
             $data = [
                 'ppfno' => $this->selectedPPF,
                 'encoder' => $this->encoder ?? 'system',
-                'forms' => $forms
+                'forms' => $forms,
+                'reworkNo' => $this->reworkNo
             ];
             if ($this->isEdit == false) {
                 $this->doneReworkService()->saveDoneRework($data);
+                
             } else {
                 $this->doneReworkService()->editDonerework($data, $this->needdeleteSmall,$this->needdeleteDefect,$this->needdeleteForm);
                 $this->isEdit == false;
+                
             }
             // reset AFTER everything
             $this->removeSelectedPPF();
@@ -538,13 +543,14 @@ class HfReworkEncoding extends Component
         }
     }
 
-    public function editPPFFromChild($ppf)
+    public function editPPFFromChild($ppf,$reworkNo)
     {
+        $this->reworkNo = $reworkNo;
         $this->selectedPPF = $ppf;
         $this->defectNg = [];
         $this->isEdit = true;
 
-        $data = app(DropdownService::class)->editFormsforFinishing($ppf, $this->encoder);
+        $data = app(DropdownService::class)->editFormsforFinishing($ppf, $this->encoder,$reworkNo);
         if (empty($data['forms'])) return;
 
         $this->toggles = true;

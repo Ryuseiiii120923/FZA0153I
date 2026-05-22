@@ -32,6 +32,7 @@ class Defects extends Component
     public $newCategory;
     public $formId;
     public $dispatchPrefix;
+    public $action;
 
 
     public $rules = [
@@ -201,7 +202,6 @@ class Defects extends Component
     public function addDefect()
     {
         $this->validate();
-
         $normalizedNewDefect = strtolower(trim($this->newDefect));
         $category = $this->newCategory ?? 'large'; // make sure you have a category selector in your form
 
@@ -224,7 +224,7 @@ class Defects extends Component
             $this->addError('newDefect', 'This defect type in this category already exists');
             return;
         }
-
+        $this->dispatch('isDropdownUpdate',$this->formId);
         $this->defects[] = [
             'type' => trim($this->newDefect),
             'category' => $category,
@@ -241,7 +241,6 @@ class Defects extends Component
             'defects' => $this->defects,
             'formId' => $this->formId
         ]);
-
 
         $this->sendDefect();
     }
@@ -331,6 +330,7 @@ class Defects extends Component
 
         // Trigger recalculation of good / ng quantities
         $this->sendDefect();
+        $this->dispatch('isDropdownUpdate',$this->formId);
     }
 
     public function deleteDefectSmall($largeDefect, $type)
@@ -358,7 +358,8 @@ class Defects extends Component
             'formId' => $this->formId,
             'action' => 'delete'
         ]);
-        $this->dispatch('NeedToDeleteSmall', ['formId' => $this->formId, 'type' => $type, 'largeDefect' => $largeDefect ]);
+        $this->dispatch('NeedToDeleteSmall', ['formId' => $this->formId, 'type' => $type, 'largeDefect' => $largeDefect]);
+        $this->dispatch('isDropdownUpdate',$this->formId);
         // Reset inputs
         $this->newSmallDefect = '';
         $this->newSmallQuan = '';
@@ -434,6 +435,7 @@ class Defects extends Component
             'selectedLargeDefect' => $this->selectedLargeDefect,
             'formId' => $this->formId
         ]);
+        $this->dispatch('isDropdownUpdate',$this->formId);
     }
 
     public function updateDefectArray()
@@ -488,6 +490,7 @@ class Defects extends Component
         ]);
 
         $this->sendDefect();
+        $this->dispatch('isDropdownUpdate',$this->formId);
 
         $this->editingType = null;
         $this->newQuan = '';
@@ -553,7 +556,7 @@ class Defects extends Component
             'formId' => $this->formId,
             'action' => 'update'
         ]);
-
+        $this->dispatch('isDropdownUpdate',$this->formId);
         $this->editingTypeSmall = null;
         $this->newSmallQuan = '';
     }

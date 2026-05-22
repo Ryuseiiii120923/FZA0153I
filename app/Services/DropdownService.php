@@ -279,18 +279,19 @@ class DropdownService
                 'rework' => $operatorRework,
                 'formId' => $h->formId ?? null,
                 'method' => $h->methodProcess ?? null,
+                'Remarks' => $h->remarks ?? null
             ];
         }
         return compact('forms', 'defectNg', 'reworkNg');
     }
 
-    public function editFormsforFinishing($ppf, $inspectorId)
+    public function editFormsforFinishing($ppf, $inspectorId, $reworkNo)
     {
         $forms = [];
         $defectNg = [];
         $reworkNg = [];
 
-        $hfRecords = $this->dropdownRepo->getByPpfAndInspectorInFinishing($ppf, $inspectorId);
+        $hfRecords = $this->dropdownRepo->getByPpfAndInspectorInFinishing($ppf, $inspectorId,$reworkNo);
 
         if ($hfRecords->isEmpty()) {
             return compact('forms', 'defectNg', 'reworkNg');

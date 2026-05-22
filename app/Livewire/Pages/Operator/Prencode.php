@@ -54,6 +54,7 @@ class Prencode extends Component
     public $needToDeleteForm = [], $needToDeleteDefect = [], $needToDeleteRework = [], $needToDeleteDefectSmall = [];
     public $loading = false;
     public bool $locked = false;
+    public array $isDropdownUpdate = [];
 
 
     protected function prencodeService()
@@ -418,6 +419,14 @@ class Prencode extends Component
         $this->isCheckPPF = $data;
     }
 
+    #[On('isDropdownUpdate')]
+    public function isDropdownUpdate($formId)
+    {
+        if ($formId !== null) {
+            $this->isDropdownUpdate[$formId] = true;
+        }
+    }
+
     public function submitPrencode()
     {
         if (empty($this->ppf) || $this->ppf === "0") {
@@ -434,6 +443,7 @@ class Prencode extends Component
                     'form' => $this->dropdownForms,
                     'needToDeleteDefect' => $this->needToDeleteDefect,
                     'needToDeleteDefectSmall' => $this->needToDeleteDefectSmall,
+                    'isDropdownUpdate' => $this->isDropdownUpdate
                 ]
             );
             session()->flash('successAdd', 'Data inserted successfully!');

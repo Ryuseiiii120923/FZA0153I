@@ -13,6 +13,10 @@ class EnrollOperatorPanel extends Component
 
     public string $search = '';
 
+    // Modal visibility — entangled with Alpine so they survive every re-render
+    public bool $showAdd     = false;
+    public bool $showConfirm = false;
+
     // Form fields
     public string $operatorName = '';
     public string $operatorID   = '';
@@ -52,6 +56,7 @@ class EnrollOperatorPanel extends Component
             ],
         ];
     }
+
     protected $messages = [
         'operatorName.required' => 'Operator name is required.',
         'operatorID.required'   => 'Operator ID is required.',
@@ -61,6 +66,26 @@ class EnrollOperatorPanel extends Component
     public function mount(): void
     {
         $this->initializeInspector();
+    }
+
+    // ── Modal open / close ────────────────────────────────────
+
+    public function openModal(): void
+    {
+        $this->showAdd = true;
+    }
+
+    public function closeModal(): void
+    {
+        $this->showAdd = false;
+        $this->reset(['operatorName', 'operatorID']);
+        $this->resetValidation();
+    }
+
+    public function cancelDelete(): void
+    {
+        $this->showConfirm = false;
+        $this->deletingId  = null;
     }
 
     // ── Real-time duplicate check as user types ─────────────────
@@ -87,17 +112,14 @@ class EnrollOperatorPanel extends Component
 
     public function FetchWorkerName(): void
     {
-        $isExist = Worker::with('employeeName')
-            ->where('作業員CD', (string) $this->operatorID)
-            ->exists();
         $worker = Worker::with('employeeName')
             ->where('作業員CD', (string) $this->operatorID)
             ->first();
 
         $this->operatorName = $worker?->employeeName?->名前 ?? '';
 
-        if (!$isExist) {
-            $this->addError('operatorID', "Operator ID \"{$this->operatorID}\" is not Exist.");
+        if (!$worker) {
+            $this->addError('operatorID', "Operator ID \"{$this->operatorID}\" does not exist.");
         }
     }
 
@@ -115,10 +137,10 @@ class EnrollOperatorPanel extends Component
                 'ProgramID'    => 'VI',
             ]);
 
+            $this->showAdd = false;
             $this->reset(['operatorName', 'operatorID']);
             $this->resetValidation();
 
-            // Tell Alpine to close the modal and show success
             $this->dispatch('operator-saved');
         } catch (\Throwable $e) {
             logger()->error($e->getMessage());
@@ -130,42 +152,38 @@ class EnrollOperatorPanel extends Component
 
     public function setDeleting(int $OperatorID): void
     {
-        $this->deletingId = $OperatorID;
-        // Tell Alpine to open the confirm modal
-        $this->dispatch('open-confirm');
+        $this->deletingId  = $OperatorID;
+        $this->showConfirm = true;
     }
 
     public function deleteOperator(): void
     {
-        EnrollOperator::Where('OperatorID',$this->deletingId)->delete();
-        $this->deletingId = null;
-        // Tell Alpine to close the confirm modal
+        EnrollOperator::where('OperatorID', $this->deletingId)->delete();
+        $this->deletingId  = null;
+        $this->showConfirm = false;
         $this->dispatch('operator-deleted');
-    }
-
-    public function resetForm(): void
-    {
-        $this->reset(['operatorName', 'operatorID']);
-        $this->resetValidation();
     }
 
     // ── Render ────────────────────────────────────────────────
 
     public function render()
     {
+        $totalCount = EnrollOperator::where('GLID', $this->encoder)->count();
+
         $records = EnrollOperator::select('OperatorID', 'OperatorName')
             ->where('GLID', $this->encoder)
             ->when(
                 $this->search !== '',
                 fn($q) =>
                 $q->where('OperatorName', 'like', '%' . $this->search . '%')
-                    ->orWhere('OperatorID',  'like', '%' . $this->search . '%')
+                    ->orWhere('OperatorID', 'like', '%' . $this->search . '%')
             )
             ->orderBy('OperatorName')
             ->get();
 
         return view('livewire.glcomponents.enroll-operator-panel', [
-            'records' => $records,
+            'records'    => $records,
+            'totalCount' => $totalCount,
         ]);
     }
 }

@@ -51,10 +51,11 @@ class DropDownRepository{
             ->whereNotNull('large_defect')
             ->get();
     }
-      public function getByPpfAndInspectorInFinishing($ppf, $inspectorId)
+      public function getByPpfAndInspectorInFinishing($ppf, $inspectorId,$reworkNo)
     {
         return DB::table('dr_forms')->where('ppfno', $ppf)
             ->where('updated_by', $inspectorId)
+            ->where('ReworkNo', $reworkNo)
             ->get();
     }
 
