@@ -10,6 +10,7 @@ use App\Models\WorkerName;
 use App\Services\DefectService;
 use App\Services\PPFService;
 use App\Services\ReworkService;
+use App\Services\TotalofProcessService;
 use App\Traits\InitializesInspector;
 use Illuminate\Support\Facades\Auth as UserAuth;
 use Livewire\Component;
@@ -739,10 +740,17 @@ class Add extends Component
             $this->ppf
         ]);
 
+        $this->TotalForPR();
+
         if ($this->submitMethod == 'addToDb') {
             $this->loadingAdd = false;
         } elseif ($this->submitMethod == 'editToDb') {
             $this->loadingSave = false;
         }
+    }
+
+    public function TotalForPR()
+    {
+       app()->make(TotalofProcessService::class)->AddToDb($this->ppf, '100% VI');
     }
 }
