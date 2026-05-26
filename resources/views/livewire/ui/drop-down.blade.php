@@ -20,7 +20,7 @@
             style="background-color:#0b9af3;">
             + Add Worker For Rework
         </button>
-<!-- 
+        <!-- 
         <button
             wire:click="addNewPL"
             class="text-white px-4 py-2 rounded-md"
@@ -131,9 +131,9 @@
                 <div class="flex flex-col gap-4 mt-4 p-4 bg-gray-50 rounded">
 
                     <div class="flex flex-col sm:flex-row gap-4">
-                        <div class="w-full sm:w-1/2"  @if (in_array(($form['method'] ?? '' ), ['PL', 'SF' ]))
-                                        hidden
-                                        @endif>
+                        <div class="w-full sm:w-1/2" @if (in_array(($form['method'] ?? '' ), ['PL', 'SF' ]))
+                            hidden
+                            @endif>
                             <label class="block text-sm font-medium">Finishing Procedure</label>
                             <div class="flex items-center gap-3">
                                 <input type="text" wire:model="forms.{{ $formId }}.finishingProcedure" class="w-full border bg-gray-500 p-2 rounded" readonly>
@@ -163,9 +163,9 @@
                         @keydown.escape.window="open = false">
                         <div class="bg-white rounded-lg p-6 w-11/12 sm:w-1/3">
                             <div class="flex flex-col gap-4">
-                                <div class="w-full mx-auto"  @if (in_array(($form['method'] ?? '' ), ['PL', 'SF' ]))
-                                        hidden
-                                        @endif>
+                                <div class="w-full mx-auto" @if (in_array(($form['method'] ?? '' ), ['PL', 'SF' ]))
+                                    hidden
+                                    @endif>
                                     <label for="finishingMachine" class="block text-sm font-medium text-gray-700">
                                         Finishing Procedure
                                     </label>
@@ -173,8 +173,7 @@
                                     <select id="finishingMachine"
                                         class="mt-1 block w-full border border-black rounded-md px-2 py-1"
                                         wire:model="forms.{{ $formId }}.finishingProcedure"
-                                        required 
-                                       >
+                                        required>
                                         <option value="">--- Select Finishing Procedure ---</option>
                                         <option value="Hand Finishing">Hand Finishing</option>
                                         <option value="Cold Deflushing">Cold Deflashing</option>
@@ -234,7 +233,7 @@
                                 :formId="$formId"
                                 :loadedRework="$form['rework']"
                                 :dispatchPrefix="'operator'"
-                                :key="'reworks-'.$formId"/>
+                                :key="'reworks-'.$formId" />
                         </div>
                     </div>
                     <div class="w-full">
@@ -247,16 +246,46 @@
                         </div>
                     </div>
 
-                     <div class="w-full">
+                    <div class="w-full">
                         <div>
                             <label class="block text-sm font-medium">Remarks</label>
-                            <input type="text"
-                                wire:model="forms.{{ $formId }}.Remarks"
-                                wire:blur="saveRemarks('{{ $formId }}')"
-                                class="w-full border p-2 rounded">
+
+                            <div
+                                x-data="{
+                saveTimer: null,
+                buttonTimer: null,
+
+                typing() {
+
+                    // Disable button immediately
+                    window.dispatchEvent(new CustomEvent('remarks-typing', {
+                        detail: { disabled: true }
+                    }));
+
+                    // Reset timers
+                    clearTimeout(this.saveTimer);
+                    clearTimeout(this.buttonTimer);
+
+                    // Save after 1 second
+                    this.saveTimer = setTimeout(() => {
+                        $wire.saveRemarks('{{ $formId }}');
+                    }, 500);
+
+                    this.buttonTimer = setTimeout(() => {
+                        window.dispatchEvent(new CustomEvent('remarks-typing', {
+                            detail: { disabled: false }
+                        }));
+                    }, 1000);
+                }
+            }">
+                                <input
+                                    type="text"
+                                    wire:model="forms.{{ $formId }}.Remarks"
+                                    @input="typing()"
+                                    class="w-full border p-2 rounded">
+                            </div>
                         </div>
                     </div>
-
                 </div>
             </div>
 

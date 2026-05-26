@@ -9,12 +9,16 @@ class ReworkRepository
     public function fetchForRework($ppf)
     {
         return DB::table('hf_rework as r')
-            ->join('hf_forms as f', 'r.ppfno', '=', 'f.ppfno')
             ->select('r.PPFNo', DB::raw('SUM(r.qty) as total_rework'))
             ->where('r.FlgDone', 0)
             ->where('r.ProceedToRework', 0)
             ->where('r.ppfno', $ppf)
-            ->where('f.finishingProcedure', 'Hand Finishing')
+            ->whereExists(function ($query) {
+                $query->select(DB::raw(1))
+                    ->from('hf_forms as f')
+                    ->whereColumn('f.ppfno', 'r.ppfno')
+                    ->where('f.finishingProcedure', 'Hand Finishing');
+            })
             ->groupBy('r.PPFNo')
             ->get();
     }
@@ -39,7 +43,7 @@ class ReworkRepository
 
         DB::table('hf_rework')
             ->where('PPFNo', $ppf)
-            ->where('ReworkNo',NULL)
+            ->where('ReworkNo', NULL)
             ->update(['ProceedToRework' => 1, 'ReworkNo' => $newReworkNo]);
     }
 

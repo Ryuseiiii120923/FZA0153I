@@ -31,7 +31,7 @@ class DefectService
                 'type'          => $row->Defect,
                 'qty'           => (int)$row->total_qty,
                 'dateEncode'    => $row->latest_date,
-                'encodeProcess' => $row->EncodeProcess, // ✅ NEW
+                'Process' => $row->Process, // ✅ NEW
             ];
 
             // ✅ Small defects (still per encoder + defect)
@@ -39,28 +39,28 @@ class DefectService
                 $ppf,
                 $row->InspectorID,
                 $row->Defect,
-                $row->EncodeProcess // ✅ NEW
+                $row->Process // ✅ NEW
             );
 
             foreach ($smalls as $s) {
-                $smallDefects[$row->Defect][$row->EncodeProcess][$row->InspectorID][] = [
+                $smallDefects[$row->Defect][$row->Process][$row->InspectorID][] = [
                     'type' => $s->SmallDefect,
                     'qty'  => (int)$s->total_qty,
                 ];
             }
         }
 
-        // ✅ Normalize (OPTIONAL — now includes EncodeProcess)
+        // ✅ Normalize (OPTIONAL — now includes Process)
         $normalized = [];
 
         foreach ($defects as $d) {
-            $key = strtolower(trim($d['type'])) . '_' . $d['encodeProcess'];
+            $key = strtolower(trim($d['type'])) . '_' . $d['Process'];
 
             if (!isset($normalized[$key])) {
                 $normalized[$key] = [
                     'type' => $d['type'],
                     'qty'  => 0,
-                    'encodeProcess' => $d['encodeProcess']
+                    'Process' => $d['Process']
                 ];
             }
 
@@ -70,7 +70,7 @@ class DefectService
         $defectPayload = array_map(fn($d) => [
             'newDefect' => $d['type'],
             'newQuan'   => $d['qty'],
-            'encodeProcess' => $d['encodeProcess'], // ✅ NEW
+            'Process' => $d['Process'], // ✅ NEW
             'action'    => '',
         ], array_values($normalized));
 

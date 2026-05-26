@@ -194,11 +194,11 @@ $css = file_get_contents(resource_path('css/genpro.css'));
         <tbody>
         @php
             $rowsByProcess = collect($rows)->groupBy('process');
-            $hfRows        = $rowsByProcess->get('HF', collect());
-            $otherRows     = $rowsByProcess->except('HF');
+            $hfRows        = $rowsByProcess->get('VI', collect());
+            $otherRows     = $rowsByProcess->except('VI');
         @endphp
 
-        {{-- HF ROWS --}}
+        {{-- VI ROWS --}}
         @forelse($hfRows as $row)
         <tr>
             <td class="text-center">{{ $row['mm'] ?? '' }}</td>
@@ -263,7 +263,7 @@ $css = file_get_contents(resource_path('css/genpro.css'));
         </tr>
         @endforelse
 
-        {{-- TOTALS ROW — HF only --}}
+        {{-- TOTALS ROW — VI only --}}
         @if($hfRows->isNotEmpty())
         @php
             $totalGoodSum     = $totals['summary']['total_good'] ?? 0;
@@ -308,11 +308,11 @@ $css = file_get_contents(resource_path('css/genpro.css'));
             <td class="text-center">{{ $row['nqr_criteria'] ?? '' }}</td>
             <td class="text-center">{{ $row['nqr_judgement'] ?? '' }}</td>
             <td colspan="5"></td>
-            <td class="text-center">7:45 pm</td>
+            <td class="text-center">{{$row['remarks'] ?? ''}}</td>
         </tr>
         @endif
 
-        {{-- OTHER PROCESS ROWS (VI, QC, etc.) rendered after TOTAL, grouped by process --}}
+        {{-- OTHER PROCESS ROWS (HF, QC, etc.) rendered after TOTAL, grouped by process --}}
         @foreach($otherRows as $process => $processRows)
             @foreach($processRows as $row)
             <tr>

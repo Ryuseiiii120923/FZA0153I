@@ -123,23 +123,29 @@
     'pointer-events-none opacity-50 ': lockview
     }">
         <livewire:ui.drop-down />
-        <div class="flex items-center gap-2 justify-center p-6" id="buttons-action">
+        <div
+            class="flex items-center gap-2 justify-center p-6"
+            id="buttons-action"
+            x-data="{ typingDisabled: false }"
+            @remarks-typing.window="typingDisabled = $event.detail.disabled">
             <button
+                :disabled="typingDisabled"
                 @if (($hasAnyError ?? false))
                 disabled
                 @endif
                 type="button"
                 id="SubmitBtns"
-                class="w-40 rounded-lg bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 text-white font-medium text-sm text-center me-2 mb-2 px-6 py-3.5 @if($actiondash == 'View') hidden @endif"
+                class="w-40 rounded-lg bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 text-white font-medium text-sm text-center me-2 mb-2 px-6 py-3.5 disabled:opacity-50 disabled:cursor-not-allowed @if($actiondash == 'View') hidden @endif"
                 @class([ 'opacity-50 cursor-not-allowed'=> ($hasAnyError ?? false)
                 ])
-                @if($actiondash==='edit' )
+                @if($actiondash === 'edit')
                 wire:click="editPrencode"
-                @elseif($actiondash==='delete' )
+                @elseif($actiondash === 'delete')
                 wire:click="deletePrencode"
                 @else
                 wire:click="addPrencode"
-                @endif>
+                @endif
+                >
                 @if ($actiondash === 'edit')
                 Save
                 @elseif ($actiondash === 'delete')
@@ -147,7 +153,6 @@
                 @else
                 Add
                 @endif
-
             </button>
         </div>
     </div>

@@ -23,7 +23,9 @@ class DoneReworkRepository
                 'ppfno' => $data['ppfno'],
                 'GoodQty' => $data['goodQty'],
                 'inspect_REC' => $data['inspect_REC'],
-                'ReworkNo' => $data['reworkNo']
+                'ReworkNo' => $data['reworkNo'],
+                'Process' => 'HFRW',
+                'Operation' => 'VI'
             ];
 
 
@@ -80,8 +82,8 @@ class DoneReworkRepository
                     'Defect' => $defect['type'],
                     'Quantity' => $defect['qty'],
                     'DateEncode' => now(),
-                    'Process' => 'HF',
-                    'EncodeProcess' => 'reRework',
+                    'Process' => 'HFRW',
+                    'Operation' => 'VI',
                 ];
             }
             DB::table('dr_defect')->upsert(
@@ -92,7 +94,7 @@ class DoneReworkRepository
 
             DB::table('Inspector_Defect')->upsert(
                 $inspectorRows,
-                ['PPFNo',  'Defect', 'EncodeProcess', 'InspectorID'], // unique keys
+                ['PPFNo',  'Defect', 'Process', 'InspectorID'], // unique keys
                 ['Quantity', 'insp_name', 'InspectorID', 'DateEncode']              // columns to update
             );
         } catch (\Throwable $e) {
@@ -154,8 +156,8 @@ class DoneReworkRepository
                     'LargeDefect' => $small['large'],
                     'SmallDefect' => $small['type'],
                     'Qty' => $small['qty'],
-                    'Process' => 'HF',
-                    'EncodeProcess' => 'reRework',
+                    'Process' => 'HFRW',
+                    'Operation' => 'VI',
                 ];
             }
 
@@ -171,7 +173,7 @@ class DoneReworkRepository
             if (!empty($inspectorSmallRows)) {
                 DB::table('Inspector_Small')->upsert(
                     $inspectorSmallRows,
-                    ['LargeDefect', 'SmallDefect', 'EncodeProcess', 'InspectorID'],
+                    ['LargeDefect', 'SmallDefect', 'Process', 'InspectorID'],
                     ['Qty', 'InspectorID']
                 );
             }

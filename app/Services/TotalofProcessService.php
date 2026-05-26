@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AddDefect;
 use App\Models\HF\Defect;
 use App\Models\HF\HF;
 use App\Models\HF\Rework;
@@ -141,5 +142,12 @@ class TotalofProcessService
                 ['total_qty' => $item['total_qty']]
             );
         }
+    }
+
+     public function fetchRemarks($ppf){
+        return AddDefect::select('Details')
+            ->where('PPFNo', $ppf)
+            ->whereNotNull('remarks')
+            ->first();
     }
 }

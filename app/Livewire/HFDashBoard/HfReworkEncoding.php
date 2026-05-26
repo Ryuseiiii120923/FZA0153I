@@ -76,6 +76,7 @@ class HfReworkEncoding extends Component
             'status' => 'Pending',
             'ppfno' => (int)$this->selectedPPF,
             'open' => false,
+            'Process' => 'HFRW'
         ];
         $this->modalOpen[$formId] = true;
     }

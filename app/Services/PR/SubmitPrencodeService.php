@@ -12,13 +12,14 @@ class SubmitPrencodeService
     public array $hfRows = [], $defectRows = [], $smallRows = [], $reworkRows = [];
     public array $mergedDefects = [], $mergedSmallDefects = [], $mergedReworks = [];
 
-    public string $methodProcess = '';
+    public string $operation = '';
     public int $totalGoodQty = 0, $totalNg = 0, $totalRework = 0;
     public string $ppfno = '', $updatedBy = '', $username = '';
 
 
     public function submit(array $data): void
     {
+        // dd($data);
         $this->prepareDataForSubmission($data);
         $this->saveHF();
         $this->saveInspectorRecord();
@@ -30,7 +31,7 @@ class SubmitPrencodeService
         DB::table('hf_forms')->upsert(
             $this->hfRows,
             ['hf_id', 'ppfno', 'updated_by', 'formId'],
-            ['total_inspect', 'GoodQty', 'TotalNg', 'remarks','updated_date']
+            ['total_inspect', 'GoodQty', 'TotalNg', 'remarks', 'updated_date', 'IsDoneRework', 'finishingProcedure', 'ForRework']
         );
 
         DB::table('hf_defect')->upsert(
@@ -71,7 +72,7 @@ class SubmitPrencodeService
             'PPFNo'         => $this->ppfno,
             'total_inspect' => $totalInspect,
             'DateEncode'    => now(),
-            'Process'       => $this->methodProcess,
+            'Operation'       => $this->operation,
             'TotalNg'       => $this->totalNg,
             'TotalRework'   => $this->totalRework,
             'TotalGood'     => $this->totalGoodQty,
@@ -80,7 +81,6 @@ class SubmitPrencodeService
         // 🔵 MERGED DEFECTS
         $defectInspRows = [];
         foreach ($this->mergedDefects as $def) {
-            $methodSave = ($def['ForRework'] == 0) ? 'iniInspect' : 'ReInspect';
 
             $defectInspRows[] = [
                 'insp_name'     => $this->username,
@@ -89,8 +89,8 @@ class SubmitPrencodeService
                 'Quantity'      => $def['qty'],
                 'DateEncode'    => now(),
                 'InspectorID'   => $this->updatedBy,
-                'Process'       => $this->methodProcess,
-                'EncodeProcess' => $methodSave ?? $this->methodProcess,
+                'Process'       => $def['process'],
+                'Operation'     => $this->operation,
             ];
         }
         DB::table('Inspector_Defect')->insert($defectInspRows);
@@ -98,7 +98,6 @@ class SubmitPrencodeService
         // 🔵 MERGED SMALL DEFECTS
         $smallInspRows = [];
         foreach ($this->mergedSmallDefects as $s) {
-            $encodeProcess = ($s['ForRework'] == 1) ? 'ReRework' : 'iniInspect';
 
             $smallInspRows[] = [
                 'InspectorID'   => $this->updatedBy,
@@ -106,8 +105,8 @@ class SubmitPrencodeService
                 'LargeDefect'   => $s['large'],
                 'SmallDefect'   => $s['type'],
                 'Qty'           => $s['qty'],
-                'Process'       => $this->methodProcess,
-                'EncodeProcess' => $encodeProcess ?? $this->methodProcess,
+                'Process'       => $s['process'],
+                'Operation'     => $this->operation,
             ];
         }
         DB::table('Inspector_Small')->insert($smallInspRows);
@@ -124,8 +123,8 @@ class SubmitPrencodeService
                 'Quantity'      => $r['qty'],
                 'DateEncode'    => now(),
                 'TotalInspQty'  => $r['totalinsp'],
-                'Process'       => $this->methodProcess,
-                'EncodeProcess' => $this->methodProcess ?? null,
+                'Process'       => $r['process'],
+                'Operation'     => $this->operation,
             ];
         }
         DB::table('Inspector_Rework')->insert($reworkInspRows);
@@ -143,6 +142,8 @@ class SubmitPrencodeService
             $goodQty  = $goodQty = (int) ($formData['GoodQty'] ?? 0);
             $method   = $formData['method'] ?? null;
             $inspectREC = $formData['inspect_REC'] ?? null;
+            $operation = $formData['Operation'] ?? null;
+            $process   = $formData['Process'] ?? null;
             $totalng = 0;
             foreach ($formData['defects'] as $defects) {
                 $totalng += $defects['qty'];
@@ -155,8 +156,7 @@ class SubmitPrencodeService
                     ->first();
             }
             $this->totalGoodQty += $goodQty;
-            $this->methodProcess = $method ?? $this->methodProcess;
-
+            $this->operation = $operation;
             $this->hfRows[] = [
                 'hf_id'              => $hf_id,
                 'total_inspect'      => $formData['total_inspect'] ?? null,
@@ -173,9 +173,12 @@ class SubmitPrencodeService
                     : null,
                 'GoodQty'            => $goodQty,
                 'TotalNg'            => $totalng,
-                'methodProcess'      => $method ?? null,
+                'Process' => $process ?? null,
+                'Operation' => $operation ?? null,
                 'remarks' => $formData['Remarks'] ?? null
             ];
+            // Inject process per-form (falls back to top-level $process if not set on formData)
+            $formData['process'] = $formData['process'] ?? $process;
             $this->prepareDefect($formData, $hf_id, $inspectREC);
             $this->prepareSmallDefect($formData, $formId, $hf_id, $inspectREC, $data['needToDeleteDefect'] ?? [], $data['needToDeleteDefectSmall'] ?? []);
             $this->prepareRework($formData, $formId, $hf_id, $inspectREC);
@@ -185,6 +188,8 @@ class SubmitPrencodeService
 
     public function prepareDefect(array $formData, ?string $hf_id, ?string $inspectREC): void
     {
+        $process = $formData['process'] ?? null;
+
         foreach ($formData['defects'] ?? [] as $defect) {
             $type = $defect['type'] ?? null;
             $qty  = (float) ($defect['qty'] ?? 0);
@@ -217,6 +222,7 @@ class SubmitPrencodeService
                 'type'      => $type,
                 'qty'       => 0,
                 'ForRework' => $forRework,
+                'process'   => $process,
             ];
 
             $this->mergedDefects[$key]['qty'] += $qty;
@@ -232,6 +238,8 @@ class SubmitPrencodeService
         array $needDeleteDefect = [],
         array $needDeleteDefectSmall = []
     ): void {
+        $process = $formData['process'] ?? null;
+
         foreach ($formData['smallDefects'] ?? [] as $large => $smalls) {
             if (isset($needDeleteDefect[$formId]) && in_array($large, $needDeleteDefect[$formId])) {
                 continue;
@@ -277,6 +285,7 @@ class SubmitPrencodeService
                     'type'      => $type,
                     'qty'       => 0,
                     'ForRework' => $forRework,
+                    'process'   => $process,
                 ];
 
                 $this->mergedSmallDefects[$key]['qty'] += $qty;
@@ -287,6 +296,8 @@ class SubmitPrencodeService
 
     public function prepareRework(array $formData, string $formId, ?string $hf_id, ?string $inspectREC): void
     {
+        $process = $formData['process'] ?? null;
+
         foreach ($formData['rework'] ?? [] as $rework) {
             $type     = $rework['type'] ?? null;
             $qty      = (float) ($rework['quan'] ?? 0);
@@ -317,6 +328,7 @@ class SubmitPrencodeService
                 'type'      => $type,
                 'totalinsp' => $rework['totalinsp'] ?? null,
                 'qty'       => 0,
+                'process'   => $process,
                 'ForRework' => is_null($formData['ForRework'] ?? null)
                     ? null
                     : ($formData['ForRework'] ? 1 : 0),

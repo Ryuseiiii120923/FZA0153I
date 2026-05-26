@@ -83,7 +83,9 @@ class DropDown extends Component
             'TotalNg' => [],
             'GoodQty' => [],
             'TotalRework' => [],
-            'Remarks' => [],
+            'Remarks' => '',
+            'Operation' => 'VI',
+            'Process' => '100% VI'
         ];
         $this->modalOpen[$formId] = true;
     }
@@ -96,7 +98,6 @@ class DropDown extends Component
 
         // refresh dropdown data if needed
         $this->receiveDropdownData($this->forms);
-    
     }
 
     public function addNewPL()
@@ -170,7 +171,9 @@ class DropDown extends Component
                 'smallDefects' => [],
                 'rework' => [],
                 'ForRework' => true,
-                'Remarks' => [],
+                'Remarks' => '',
+                'Operation' => 'VI',
+                'Process' => 'SRW'
             ];
             $this->modalOpen[$formId] = true;
         } else {
@@ -178,6 +181,8 @@ class DropDown extends Component
             return;
         }
     }
+
+
 
     #[On('fetchppf')]
     public function fetchppf($data)
@@ -278,7 +283,6 @@ class DropDown extends Component
             $this->CalcGoodQty($id);
             $this->modalOpen[$id] = false;
         }
-
 
         $this->dispatch('dropdown-updated', [
             'forms' => $this->forms

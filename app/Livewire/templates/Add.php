@@ -740,17 +740,10 @@ class Add extends Component
             $this->ppf
         ]);
 
-        $this->TotalForPR();
-
         if ($this->submitMethod == 'addToDb') {
             $this->loadingAdd = false;
         } elseif ($this->submitMethod == 'editToDb') {
             $this->loadingSave = false;
         }
-    }
-
-    public function TotalForPR()
-    {
-       app()->make(TotalofProcessService::class)->AddToDb($this->ppf, '100% VI');
     }
 }

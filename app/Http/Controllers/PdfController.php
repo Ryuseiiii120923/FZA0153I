@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+
 use App\Models\CheckPPF;
 use App\Models\HF\Defect;
 use App\Models\HF\HF;
@@ -12,7 +13,7 @@ use App\Models\NCPHistory;
 use App\Services\TotalofProcessService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
-use Illuminate\Http\Request;
+
 
 class PdfController extends Controller
 {
@@ -45,7 +46,7 @@ class PdfController extends Controller
 
     public function generate(string $ppf = "")
     {
-        $hf = HF::select('hf_id', 'updated_by', 'GoodQty', 'total_inspect', 'created_at', 'TotalNg', 'remarks')
+        $hf = HF::select('hf_id', 'updated_by', 'GoodQty', 'total_inspect', 'created_at', 'TotalNg', 'remarks','Process')
             ->where('ppfno', $ppf)
             ->orderBy('created_at', 'asc')
             ->get();
@@ -163,7 +164,7 @@ class PdfController extends Controller
                 'dd'                  => $date->format('d'),
                 'shift'               => '1',
                 'total_quantity'      => $perHf->total_inspect,
-                'process'             => 'HF',
+                'process'             => $perHf->Process ?? '',
                 'defects'             => $defects->toArray(),
                 'reworks'             => $reworks->toArray(),
                 'total_good_qty'      => $perHf->GoodQty,
@@ -191,11 +192,11 @@ class PdfController extends Controller
             'dd'                  => now()->format('d'),
             'shift'               => '1',
             'total_quantity'      => 50,
-            'process'             => 'VI',
+            'process'             => 'HF',
             'defects'             => [
                 // Sentinel large-category entry (small_category = null)
                 [
-                    'hf_id'          => 'TEST-VI-01',
+                    'hf_id'          => 'TEST-HF-01',
                     'updated_by'     => 'TestInspector',
                     'large_category' => $groupedDefects->keys()->first(), // use first existing large category
                     'small_category' => null,
@@ -204,7 +205,7 @@ class PdfController extends Controller
                 ],
                 // Small-category entry under the same large category
                 [
-                    'hf_id'          => 'TEST-VI-01',
+                    'hf_id'          => 'TEST-HF-01',
                     'updated_by'     => 'TestInspector',
                     'large_category' => $groupedDefects->keys()->first(),
                     'small_category' => $groupedDefects->first()->first()['small_category'] ?? null,
@@ -230,13 +231,15 @@ class PdfController extends Controller
         // ---------------------------------------------------------------
 
         // Compute totals from HF rows only then persist to DB
-        $hfRows = array_values(array_filter($rows, fn($r) => $r['process'] === 'HF'));
+        $hfRows = array_values(array_filter($rows, fn($r) => $r['process'] === 'VI'));
 
         $totals = [
             'summary'       => $this->totalofProcessService->calculateTotalGoodNg($hfRows),
             'large_defects' => $this->totalofProcessService->calculateTotalLargeDefects($hfRows),
             'small_defects' => $this->totalofProcessService->calculateTotalSmallDefects($hfRows),
             'reworks'       => $this->totalofProcessService->calculateTotalRework($hfRows),
+            'remarks'       => $this->totalofProcessService->fetchRemarks($ppf)->Details ?? '',
+
         ];
 
         $this->totalofProcessService->AddToDb($ppf, $hfRows);
@@ -251,8 +254,11 @@ class PdfController extends Controller
             'totalSmallDefects' => $totalSmallDefects,
             'totalReworks'      => $totalReworks,
             'totals'            => $totals,
+            'TotalRemarks'       => $totals['remarks'] ?? '',
         ])->setPaper('a4', 'landscape');
 
         return $pdf->stream('general-process-record.pdf');
     }
+
+   
 }

@@ -278,8 +278,9 @@ class DropdownService
                 'ForRework' => (bool) $h->ForRework ?? null,
                 'rework' => $operatorRework,
                 'formId' => $h->formId ?? null,
-                'method' => $h->methodProcess ?? null,
-                'Remarks' => $h->remarks ?? null
+                'Remarks' => $h->remarks ?? null,
+                'Operation' => $h->Operation ?? null,
+                'Process' => $h->Process ?? null,
             ];
         }
         return compact('forms', 'defectNg', 'reworkNg');

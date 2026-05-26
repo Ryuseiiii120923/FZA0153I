@@ -191,15 +191,14 @@ class Prencode extends Component
         $this->username = $UserName->名前 ?? '';
         $this->inspectorID = Worker::where('社員CD', $this->encoder)
             ->value('作業員CD');
-        $this->process = session('process');
-
-        if ($this->process === 'VI') {
-            $this->dispatch('ProcessVI');
-        } elseif ($this->process === 'MD') {
-            $this->dispatch('ProcessMD');
-        } else {
-            $this->dispatch('ProcessHF');
-        }
+        // $this->process = session('process');
+        // if ($this->process === 'VI') {
+        //     $this->dispatch('ProcessVI');
+        // } elseif ($this->process === 'MD') {
+        //     $this->dispatch('ProcessMD');
+        // } else {
+        //     $this->dispatch('ProcessHF');
+        // }
     }
 
     #[On('DeletePPFPren')]
@@ -267,14 +266,13 @@ class Prencode extends Component
 
     public function editPrencode()
     {
-
         Db::beginTransaction();
         try {
             $this->loading = true;
             $ppfno = $this->ppf;
             if (!empty($this->needToDeleteForm)) {
                 foreach ($this->needToDeleteForm as $form) {
-                    $hf_id = $form['hf_id'] ?? null;
+                    $hf_id = $this->needToDeleteForm['hf_id'] ?? null;
                     if ($hf_id) {
                         DB::table('hf_forms')
                             ->where('hf_id', $hf_id)
@@ -441,9 +439,10 @@ class Prencode extends Component
                     'updated_by' => $this->inspectorID,
                     'total_inspect' => $this->totalInspection,
                     'form' => $this->dropdownForms,
+                    'needToDeleteForm' => $this->needToDeleteForm,
                     'needToDeleteDefect' => $this->needToDeleteDefect,
                     'needToDeleteDefectSmall' => $this->needToDeleteDefectSmall,
-                    'isDropdownUpdate' => $this->isDropdownUpdate
+                    'isDropdownUpdate' => $this->isDropdownUpdate,
                 ]
             );
             session()->flash('successAdd', 'Data inserted successfully!');

@@ -84,7 +84,7 @@ class HfDashboardRepository
             foreach ($tables as $table) {
                 DB::table($table)
                     ->where('PPFNo', $ppf)
-                    ->where('EncodeProcess', 'reRework')
+                    ->where('Process', 'HFRW')
                     ->delete();
             }
         });

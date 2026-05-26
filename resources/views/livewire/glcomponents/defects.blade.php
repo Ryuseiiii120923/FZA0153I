@@ -14,7 +14,7 @@
                         <th class="px-6 py-2">Defect Type</th>
                         <th class="px-4 py-2">Quantity</th>
                         <th class="px-4 py-2">Endcode Date</th>
-                        <th class="px-4 py-2">Encode Process</th>
+                        <th class="px-4 py-2">Process</th>
                     </tr>
                 </thead>
                 <tbody class="bg-gray-700">
@@ -25,17 +25,14 @@
                         <td class="px-4 py-2">{{ $defect['type'] }}</td>
                         <td class="px-4 py-2">{{ $defect['qty'] > 0 ? $defect['qty'] : '' }}</td>
                         <td class="px-4 py-2">{{ $defect['dateEncode'] }}</td>
-                        <td class="px-4 py-2">{{ $defect['encodeProcess'] === 'iniInspect' ? 'Initial Inspection' :
-                        ($defect['encodeProcess'] === 'ReInspect' ? 'Re-Inspect' :
-                        ($defect['encodeProcess'] === 'reRework' ? 'Re-rework' :
-                        $defect['encodeProcess'])) }}</td>
+                        <td class="px-4 py-2">{{ $defect['Process'] }}</td>
                     </tr>
 
 
                     <!-- SMALL DEFECT ROWS -->
                     @if(isset($smallDefects[$defect['type']]))
                     @php
-                    $processKey = strtolower(trim($defect['encodeProcess'] ?? ''));
+                    $processKey = strtolower(trim($defect['Process'] ?? ''));
                     @endphp
                     @if(isset($smallDefects[$defect['type']][$processKey]))
                     @foreach($smallDefects[$defect['type']][$processKey][$defect['operatorid']] ?? [] as $sDefect)

@@ -76,9 +76,7 @@ class Defects extends Component
     // Build smallDefects array
     // --------------------------
     foreach ($data['smallDefects'] ?? [] as $largeDefect => $encodeGroups) {
-
         foreach ($encodeGroups as $encodeProcess => $inspectors) {
-
             // Normalize encodeProcess: map iniInspect -> ReInspect
             $processKey = strtolower(trim($encodeProcess));
             foreach ($inspectors as $inspectorId => $smallList) {
@@ -102,7 +100,7 @@ class Defects extends Component
 
     if ($lastDefect) {
         $operatorId    = (string)($lastDefect['operatorid'] ?? null);
-        $encodeProcess = strtolower(trim($lastDefect['encodeProcess'] ?? null));
+        $encodeProcess = strtolower(trim($lastDefect['Process'] ?? null));
         $largeDefect   = $lastDefect['type'] ?? null;
         // Safe lookup with fallback
         $group = $this->smallDefects[$largeDefect][$encodeProcess][$operatorId]
