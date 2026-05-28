@@ -1,6 +1,11 @@
 {{--
     Partial: pdf/partials/_table-head.blade.php
     Props: $data (GeneralProcessRecordData)
+
+    Double-border separators wrap the entire TYPES OF DEFECTS block:
+      group-start  → border-left:  3px double #000  (first large-category column)
+      group-separator → border-right: 3px double #000  (last large / last small)
+      group-end    → border-right: 3px double #000  (last rework column)
 --}}
 <thead>
     {{-- ROW 1: top-level labels --}}
@@ -20,9 +25,9 @@
         <th rowspan="3">PROCESS</th>
         <th rowspan="3">TOTAL QTY</th>
 
-        <th colspan="{{ $data->totalLargeDefects() }}">LARGE CATEGORY</th>
-        <th colspan="{{ $data->totalSmallDefects() }}">SMALL CATEGORY</th>
-        <th colspan="{{ $data->totalReworks() }}">FOR REWORK</th>
+        <th colspan="{{ $data->totalLargeDefects() }}" class="group-start group-separator">LARGE CATEGORY</th>
+        <th colspan="{{ $data->totalSmallDefects() }}" class="group-separator">SMALL CATEGORY</th>
+        <th colspan="{{ $data->totalReworks() }}" class="group-end">FOR REWORK</th>
 
         <th rowspan="3">GOOD QTY</th>
         <th rowspan="3">NG QTY</th>
@@ -40,23 +45,29 @@
     {{-- ROW 3: large-category names (vertical) + rework types --}}
     <tr style="height:5px;">
         @foreach ($data->groupedDefects as $largeCategory => $items)
-        <th rowspan="2" class="vertical-header"><div>{{ $largeCategory }}</div></th>
+        <th rowspan="2" class="vertical-header {{ $loop->first ? 'group-start' : '' }} {{ $loop->last ? 'group-separator' : '' }}">
+            <div>{{ $largeCategory }}</div>
+        </th>
         @endforeach
 
         @foreach ($data->groupedDefects as $largeCategory => $items)
-        <th colspan="{{ $items->count() }}">{{ $largeCategory }}</th>
+        <th colspan="{{ $items->count() }}" class="{{ $loop->last ? 'group-separator' : '' }}">
+            {{ $largeCategory }}
+        </th>
         @endforeach
 
         @foreach ($data->groupedReworks as $rework)
-        <th rowspan="2" class="vertical-header"><div>{{ $rework['type'] }}</div></th>
+        <th rowspan="2" class="vertical-header {{ $loop->last ? 'group-end' : '' }}">
+            <div>{{ $rework['type'] }}</div>
+        </th>
         @endforeach
     </tr>
 
     {{-- ROW 4: small-category names (vertical) --}}
     <tr>
-        @foreach ($data->groupedDefects as $items)
+        @foreach ($data->groupedDefects as $largeCategory => $items)
         @foreach ($items as $defect)
-        <th class="vertical-header small-defect-header">
+        <th class="vertical-header small-defect-header {{ $loop->parent->last && $loop->last ? 'group-separator' : '' }}">
             <div>{{ $defect['small_category'] ?? '' }}</div>
         </th>
         @endforeach

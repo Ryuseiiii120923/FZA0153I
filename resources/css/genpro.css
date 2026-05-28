@@ -151,3 +151,13 @@ td {
 .clearfix {
     clear: both;
 }
+.group-separator {
+    border-right: 3px double #000 !important;
+}
+.group-start {
+    border-left: 3px double #000 !important;
+}
+
+.group-end {
+    border-right: 3px double #000 !important;
+}

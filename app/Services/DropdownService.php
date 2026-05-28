@@ -274,7 +274,6 @@ class DropdownService
                 'updated_date' => $h->updated_date ?? null,
                 'smallDefects' => $operatorSmallDefects,
                 'selectedLargeDefect' => $selectedLarge,
-                'isRework' => (bool) $h->IsDoneRework,
                 'ForRework' => (bool) $h->ForRework ?? null,
                 'rework' => $operatorRework,
                 'formId' => $h->formId ?? null,

@@ -1,24 +1,29 @@
 <!DOCTYPE html>
 <html>
 @php
-    /** Rotates text vertically by inserting a <br> between each character. */
-    function vText(string $text): string {
-        return implode('<br>', mb_str_split($text));
-    }
+/** Rotates text vertically by inserting a <br> between each character. */
+function vText(string $text): string {
+return implode('<br>', mb_str_split($text));
+}
 
-    $css = file_get_contents(resource_path('css/genpro.css'));
+$css = file_get_contents(resource_path('css/genpro.css'));
 
-    // Partition rows: VI rows first, then every other operation group after the totals row.
-    $rowsByOperation = collect($data->rows)->groupBy('operation');
-    $viRows          = $rowsByOperation->get('VI', collect());
-    $otherRows       = $rowsByOperation->except('VI');
-    $lastViRow       = $viRows->last();
+// Partition rows: VI rows first, then every other operation group after the totals row.
+$rowsByOperation = collect($data->rows)->groupBy('operation');
+$viRows = $rowsByOperation->get('VI', collect());
+$hfRows = $rowsByOperation->get('HF', collect());
+$otherRows = $rowsByOperation->except('VI');
+$lastViRow = $viRows->last();
+$lasthfRow = $hfRows->last();
 @endphp
 
 <head>
     <meta charset="utf-8">
     <title>General Process Record</title>
-    <style>@php echo $css; @endphp</style>
+    <style>
+        @php echo $css;
+        @endphp
+    </style>
 </head>
 
 <body>
@@ -32,40 +37,49 @@
 
         <tbody>
 
+            {{-- Other process rows (HF, QC, etc.) — rendered after totals, grouped by operation --}}
+            @foreach ($otherRows as $process => $processRows)
+            @foreach ($processRows as $row)
+            @include('pdf.partials._table-row', [
+            'row' => $row,
+            'groupedDefects' => $data->groupedDefects,
+            'groupedReworks' => $data->groupedReworks,
+            ])
+            @endforeach
+            @endforeach
+            @if ($hfRows->isNotEmpty())
+            @include('pdf.partials._totals-row', [
+            'data' => $data,
+            'lasthfRow' => $lasthfRow,
+            ])
+            @endif
+
+
             {{-- VI rows --}}
             @forelse ($viRows as $row)
-                @include('pdf.partials._table-row', [
-                    'row'            => $row,
-                    'groupedDefects' => $data->groupedDefects,
-                    'groupedReworks' => $data->groupedReworks,
-                ])
+            @include('pdf.partials._table-row', [
+            'row' => $row,
+            'groupedDefects' => $data->groupedDefects,
+            'groupedReworks' => $data->groupedReworks,
+            ])
             @empty
-                <tr>
-                    <td colspan="{{ 16 + $data->totalLargeDefects() + $data->totalSmallDefects() + $data->totalReworks() }}"
-                        class="text-center">
-                        No Records Found
-                    </td>
-                </tr>
+            <tr>
+                <td colspan="{{ 16 + $data->totalLargeDefects() + $data->totalSmallDefects() + $data->totalReworks() }}"
+                    class="text-center">
+                    No Records Found
+                </td>
+            </tr>
             @endforelse
 
             {{-- Totals row (VI only) --}}
             @if ($viRows->isNotEmpty())
-                @include('pdf.partials._totals-row', [
-                    'data'       => $data,
-                    'lastViRow'  => $lastViRow,
-                ])
+            @include('pdf.partials._totals-row', [
+            'data' => $data,
+            'lastViRow' => $lastViRow,
+            ])
             @endif
 
-            {{-- Other process rows (HF, QC, etc.) — rendered after totals, grouped by operation --}}
-            @foreach ($otherRows as $process => $processRows)
-                @foreach ($processRows as $row)
-                    @include('pdf.partials._table-row', [
-                        'row'            => $row,
-                        'groupedDefects' => $data->groupedDefects,
-                        'groupedReworks' => $data->groupedReworks,
-                    ])
-                @endforeach
-            @endforeach
+
 
         </tbody>
 
@@ -98,4 +112,5 @@
     </div>
 
 </body>
+
 </html>

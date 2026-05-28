@@ -31,7 +31,7 @@ class SubmitPrencodeService
         DB::table('hf_forms')->upsert(
             $this->hfRows,
             ['hf_id', 'ppfno', 'updated_by', 'formId'],
-            ['total_inspect', 'GoodQty', 'TotalNg', 'remarks', 'updated_date', 'IsDoneRework', 'finishingProcedure', 'ForRework']
+            ['total_inspect', 'GoodQty', 'TotalNg', 'remarks', 'updated_date', 'finishingProcedure', 'ForRework']
         );
 
         DB::table('hf_defect')->upsert(
@@ -166,7 +166,6 @@ class SubmitPrencodeService
                 'formId'             => $formData['formId'] ?? null, // ← from formData, like original
                 'created_at'         => $now,
                 'updated_date'       => $dateupdated->updated_date ?? $now,
-                'IsDoneRework'       => 0,
                 'finishingProcedure' => $formData['finishingProcedure'] ?? null,
                 'ForRework'          => array_key_exists('ForRework', $formData)
                     ? ($formData['ForRework'] ? 1 : 0)

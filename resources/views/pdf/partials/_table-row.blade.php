@@ -1,9 +1,13 @@
 {{--
     Partial: pdf/partials/_table-row.blade.php
     Props:
-      $row            (array)                      — normalised row data
+      $row            (array)                          — normalised row data
       $groupedDefects (Collection<string, Collection>) — column definitions
       $groupedReworks (Collection<array{type:string}>) — rework column definitions
+
+    group-start      → border-left:  3px double #000  (first large-category cell)
+    group-separator  → border-right: 3px double #000  (last large / last small cell)
+    group-end        → border-right: 3px double #000  (last rework cell)
 --}}
 <tr>
     <td class="text-center">{{ $row['mm']             ?? '' }}</td>
@@ -16,13 +20,15 @@
     @foreach ($groupedDefects as $largeCategory => $items)
     @php
         $largeEntry = collect($row['defects'])->first(
-            fn($d) => $d['hf_id']          === $row['hf_id']
-                   && $d['updated_by']      === $row['updated_by']
-                   && $d['large_category']  === $largeCategory
-                   && $d['small_category']  === null
+            fn($d) => $d['hf_id']         === $row['hf_id']
+                   && $d['updated_by']     === $row['updated_by']
+                   && $d['large_category'] === $largeCategory
+                   && $d['small_category'] === null
         );
     @endphp
-    <td class="text-center">{{ $largeEntry['large_qty'] ?? '' }}</td>
+    <td class="text-center {{ $loop->first ? 'group-start' : '' }} {{ $loop->last ? 'group-separator' : '' }}">
+        {{ $largeEntry['large_qty'] ?? '' }}
+    </td>
     @endforeach
 
     {{-- Small-category defect quantities --}}
@@ -30,14 +36,16 @@
     @foreach ($items as $defect)
     @php
         $smallEntry = collect($row['defects'])->first(
-            fn($d) => $d['hf_id']          === $row['hf_id']
-                   && $d['updated_by']      === $row['updated_by']
-                   && $d['large_category']  === $largeCategory
-                   && $d['small_category']  === $defect['small_category']
-                   && $d['small_category']  !== null
+            fn($d) => $d['hf_id']         === $row['hf_id']
+                   && $d['updated_by']     === $row['updated_by']
+                   && $d['large_category'] === $largeCategory
+                   && $d['small_category'] === $defect['small_category']
+                   && $d['small_category'] !== null
         );
     @endphp
-    <td class="text-center">{{ $smallEntry['small_qty'] ?? '' }}</td>
+    <td class="text-center {{ $loop->parent->last && $loop->last ? 'group-separator' : '' }}">
+        {{ $smallEntry['small_qty'] ?? '' }}
+    </td>
     @endforeach
     @endforeach
 
@@ -48,7 +56,9 @@
             fn($r) => $r['type'] === $groupedRework['type']
         );
     @endphp
-    <td class="text-center">{{ $reworkEntry['qty'] ?? '' }}</td>
+    <td class="text-center {{ $loop->last ? 'group-end' : '' }}">
+        {{ $reworkEntry['qty'] ?? '' }}
+    </td>
     @endforeach
 
     <td class="text-center">{{ $row['total_good_qty']      ?? 0  }}</td>

@@ -31,12 +31,12 @@ class ProcessRowBuilder
         string $nqrCriteria,
     ): array {
         $allForms = $this->mergeSortedForms($hfForms, $hfrwForms);
-
         $rows = [];
         foreach ($allForms as $form) {
             $isHfrw = $form->_source === 'HFRW';
             $rows[] = $this->buildRow($form, $ppf, $nqrCriteria, $isHfrw);
         }
+
 
         return $rows;
     }
@@ -77,8 +77,8 @@ class ProcessRowBuilder
             'defects'             => $defects->toArray(),
             'reworks'             => $reworks->values()->toArray(),
             'total_good_qty'      => $form->GoodQty,
-            'total_ng_qty'        => $form->TotalNg,
-            'ng_percent'          => $this->calcNgPercent($form->TotalNg, $form->GoodQty),
+            'total_ng_qty'        => $form->TotalNg ?? 0,
+            'ng_percent'          => $this->calcNgPercent($form->TotalNg ?? 0, $form->GoodQty),
             'nqr_criteria'        => $nqrCriteria,
             'nqr_judgement'       => $isHfrw ? '' : 'O',
             'handfinisher_no'     => $form->hf_id,

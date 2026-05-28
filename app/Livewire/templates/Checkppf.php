@@ -29,7 +29,7 @@ class Checkppf extends Component
 
     public string $lastdef;
     public string $lastqty;
-    public string|null $actiondash;
+    public string|null $actiondash = "";
     public string $method;
     public string $totalInspection;
     public int|null $encoder, $inspectorID = 0;

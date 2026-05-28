@@ -142,8 +142,10 @@ class PrencodeService
             }
         }
 
-        if($systemName === 'ProcessRecord' && $isExistMain && $actiondash == 'add'){
-            return(['error' => 'This PPF already confirm. Please coordinate to your GL']);
+        if($systemName === 'ProcessRecord' && $actiondash == 'add' || $actiondash == 'edit'){
+            if($isExistMain){
+                return(['error' => 'This PPF is already confirm. Please coordinate to your GL']);
+            }
         }elseif($systemName === 'GLDashboard' && $isExistMain && $actiondash == 'add'){
             return(['error' => 'This PPF is already confirm']);
         }
