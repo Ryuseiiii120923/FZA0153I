@@ -91,9 +91,9 @@ class TotalofProcessService
     public function calculateTotalGoodNg(array $rows): array
     {
         $rows = collect($rows);
- 
+
         return [
-            'total_good' => $rows->sum('total_good_qty'),
+            'total_good' => $rows->where('process','!=', 'HFRW')->sum('total_good_qty'),
             'total_ng'   => $rows->sum('total_ng_qty'),
         ];
     }
@@ -147,7 +147,6 @@ class TotalofProcessService
      public function fetchRemarks($ppf){
         return AddDefect::select('Details')
             ->where('PPFNo', $ppf)
-            ->whereNotNull('remarks')
             ->first();
     }
 }
