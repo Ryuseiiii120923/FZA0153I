@@ -1,46 +1,101 @@
 <!DOCTYPE html>
 <html>
 @php
-function vText(string $text): string {
-    return implode('<br>', mb_str_split($text));
-}
-$css = file_get_contents(resource_path('css/genpro.css'));
+    /** Rotates text vertically by inserting a <br> between each character. */
+    function vText(string $text): string {
+        return implode('<br>', mb_str_split($text));
+    }
+
+    $css = file_get_contents(resource_path('css/genpro.css'));
+
+    // Partition rows: VI rows first, then every other operation group after the totals row.
+    $rowsByOperation = collect($data->rows)->groupBy('operation');
+    $viRows          = $rowsByOperation->get('VI', collect());
+    $otherRows       = $rowsByOperation->except('VI');
+    $lastViRow       = $viRows->last();
 @endphp
 
 <head>
     <meta charset="utf-8">
     <title>General Process Record</title>
-    <style>
-        @php echo $css; @endphp
-        .page-break { page-break-after: always; }
-    </style>
+    <style>@php echo $css; @endphp</style>
 </head>
 
 <body>
 
-@foreach($rowsByOperation as $operation => $operationRows)
-@php $isLast = $loop->last; @endphp
+    @include('pdf.partials._header', ['data' => $data])
 
-    @include('pdf.partials.gpr-header', [
-        'record'    => $record,
-        'operation' => $operation,
-    ])
+    {{-- MAIN TABLE --}}
+    <table class="defect-table">
 
-    @include('pdf.partials.gpr-table', [
-        'operation'     => $operation,
-        'operationRows' => $operationRows,
-        'opTotals'      => $totalsByOperation[$operation] ?? [],
-    ])
+        @include('pdf.partials._table-head', ['data' => $data])
 
-    @include('pdf.partials.gpr-footer', [
-        'record' => $record,
-    ])
+        <tbody>
 
-    @if(!$isLast)
-        <div class="page-break"></div>
-    @endif
+            {{-- VI rows --}}
+            @forelse ($viRows as $row)
+                @include('pdf.partials._table-row', [
+                    'row'            => $row,
+                    'groupedDefects' => $data->groupedDefects,
+                    'groupedReworks' => $data->groupedReworks,
+                ])
+            @empty
+                <tr>
+                    <td colspan="{{ 16 + $data->totalLargeDefects() + $data->totalSmallDefects() + $data->totalReworks() }}"
+                        class="text-center">
+                        No Records Found
+                    </td>
+                </tr>
+            @endforelse
 
-@endforeach
+            {{-- Totals row (VI only) --}}
+            @if ($viRows->isNotEmpty())
+                @include('pdf.partials._totals-row', [
+                    'data'       => $data,
+                    'lastViRow'  => $lastViRow,
+                ])
+            @endif
+
+            {{-- Other process rows (HF, QC, etc.) — rendered after totals, grouped by operation --}}
+            @foreach ($otherRows as $process => $processRows)
+                @foreach ($processRows as $row)
+                    @include('pdf.partials._table-row', [
+                        'row'            => $row,
+                        'groupedDefects' => $data->groupedDefects,
+                        'groupedReworks' => $data->groupedReworks,
+                    ])
+                @endforeach
+            @endforeach
+
+        </tbody>
+
+    </table>
+
+    <br>
+
+    {{-- FOOTER --}}
+    <table>
+        <tr>
+            <td width="70%">
+                <strong>Legend:</strong>
+                E - Excess Quantity &nbsp;&nbsp;
+                M - Missing Quantity
+            </td>
+            <td width="30%">
+                <strong>Checked (Head/Staff):</strong>
+                {{ $data->checkedBy }}
+            </td>
+        </tr>
+    </table>
+
+    <div class="footer-note">
+        Note: Process record shall be confirmed by group leader every end of the shift
+        either it is finished or partial lot.
+    </div>
+
+    <div class="footer-note text-right" style="font-size:7px;">
+        FQCX34-D12-8
+    </div>
 
 </body>
 </html>
