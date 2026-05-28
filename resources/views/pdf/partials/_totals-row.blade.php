@@ -7,7 +7,6 @@
 @php
     $totalGood  = $data->totals['summary']['total_good'] ?? 0;
     $totalNg    = $data->totals['summary']['total_ng']   ?? 0;
-    $totalQty   = $totalGood + $totalNg;
     $denominator = $totalGood + $totalNg;
     $totalNgPct = $denominator > 0
         ? number_format(($totalNg / $denominator) * 100, 2)
@@ -21,7 +20,7 @@
 
 <tr style="font-weight:bold; background-color:#f0f0f0;">
     <td class="text-center" colspan="4"><strong>TOTAL</strong></td>
-    <td class="text-center">{{ $totalQty }}</td>
+    <td class="text-center">{{ $data->totals['total_qty'] ?? 0 }}</td>
 
     {{-- Large-category totals --}}
     @foreach ($data->groupedDefects as $largeCategory => $items)
@@ -54,5 +53,5 @@
     <td class="text-center">{{ $row['nqr_criteria']        ?? '' }}</td>
     <td class="text-center">{{ $lastViRow['nqr_judgement'] ?? '' }}</td>
     <td colspan="5"></td>
-    <td class="text-center">{{ $data->totalRemarks }}</td>
+    <td class="text-center">{{ $data->totals['remarks'] ?? '' }}</td>
 </tr>

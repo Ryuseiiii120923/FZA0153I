@@ -134,6 +134,7 @@ class BuildGeneralProcessRecordAction
             'small_defects' => $this->totalofProcessService->calculateTotalSmallDefects($viRows),
             'reworks'       => $this->totalofProcessService->calculateTotalRework($viRows),
             'remarks'       => $this->totalofProcessService->fetchRemarks($ppf)->Details ?? '',
+            'total_qty'     => $this->totalofProcessService->calculateTotalQty($viRows),
         ];
     }
 }

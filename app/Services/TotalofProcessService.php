@@ -29,7 +29,7 @@ class TotalofProcessService
                 ])
             )
             ->groupBy('defect')
-            ->map(fn($group, $defect) => [
+            ->map(fn($group, $defect)  => [
                 'defect'    => $defect,
                 'total_qty' => $group->sum('qty'),
             ])
@@ -96,6 +96,11 @@ class TotalofProcessService
             'total_good' => $rows->where('process','!=', 'HFRW')->sum('total_good_qty'),
             'total_ng'   => $rows->sum('total_ng_qty'),
         ];
+    }
+
+    public function calculateTotalQty(array $rows): int
+    {
+        return collect($rows)->where('process', '100% VI')->sum('total_quantity');
     }
  
     /**
