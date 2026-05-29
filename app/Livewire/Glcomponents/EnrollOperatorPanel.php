@@ -5,6 +5,7 @@ namespace App\Livewire\Glcomponents;
 use App\Models\GL\EnrollOperator;
 use App\Models\Worker;
 use App\Traits\InitializesInspector;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class EnrollOperatorPanel extends Component
@@ -14,8 +15,13 @@ class EnrollOperatorPanel extends Component
     public string $search = '';
 
     // Modal visibility — entangled with Alpine so they survive every re-render
-    public bool $showAdd     = false;
-    public bool $showConfirm = false;
+    public bool $showAdd      = false;
+    public bool $showConfirm  = false;
+    public bool $showPrencode = false;
+
+    // Currently operated operator
+    public ?string $activeOperatorID   = null;
+    public ?string $activeOperatorName = null;
 
     // Form fields
     public string $operatorName = '';
@@ -164,6 +170,28 @@ class EnrollOperatorPanel extends Component
         $this->dispatch('operator-deleted');
     }
 
+    // ── Operate (open prencode modal for this operator) ─────────
+
+    public function operateOperator(string $operatorID): void
+    {
+        $operator = EnrollOperator::where('OperatorID', $operatorID)->first();
+        if (!$operator) return;
+
+        $this->activeOperatorID   = $operator->OperatorID;
+        $this->activeOperatorName = $operator->OperatorName;
+        $this->showPrencode       = true;
+
+        // Dispatch to Prencode component so it knows who the inspector is
+        $this->dispatch('IdentifyOperator', operatorID: $operator->OperatorID);
+    }
+
+    public function closePrencode(): void
+    {
+        $this->showPrencode       = false;
+        $this->activeOperatorID   = null;
+        $this->activeOperatorName = null;
+    }
+
     // ── Render ────────────────────────────────────────────────
 
     public function render()
@@ -185,5 +213,24 @@ class EnrollOperatorPanel extends Component
             'records'    => $records,
             'totalCount' => $totalCount,
         ]);
+    }
+
+    public function setOperator($operatorID): void
+    {
+        $operator = EnrollOperator::where('OperatorID', $operatorID)->first();
+
+        if ($operator) {
+            $this->operatorName = $operator->OperatorName;
+            $this->operatorID   = $operator->OperatorID;
+        }
+    }
+
+    #[On('PrencodeClosed')]
+    public function closePrencodePanel(): void
+    {
+        $this->showPrencode = false;
+        $this->activeOperatorID = null;
+        $this->activeOperatorName = null;
+         session()->flash('successNoRefresh', 'Data inserted successfully!');
     }
 }

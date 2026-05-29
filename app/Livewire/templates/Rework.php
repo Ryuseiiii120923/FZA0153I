@@ -30,6 +30,10 @@ class Rework extends Component
     public array $totalInsp = [];
     public $dispatchPrefix;
 
+    // Multi-rework staging: entries pending before a single Confirm
+    // [ ['hfno'=>'...','totalinsp'=>'...','type'=>'...','quan'=>0], ... ]
+    public array $stagedReworks = [];
+
 
     public $listeners = [
         'FetchRework' => 'Fetch',
@@ -130,13 +134,17 @@ class Rework extends Component
         ]);
     }
 
-    public function addRework()
+    /**
+     * Stage one rework entry (validate + push to stagedReworks).
+     * Does NOT close the modal — user can keep adding more.
+     */
+    public function stageRework()
     {
         $this->validate();
 
-        $normalizedNewDefect = strtolower(trim($this->newRework));
+        $normalizedType = strtolower(trim($this->newRework));
 
-        // Get master defects
+        // Verify exists in master list
         $this->reworkcheck = ModelsRework::query()
             ->select('DefectType')
             ->distinct()
@@ -147,52 +155,130 @@ class Rework extends Component
         $existsInMaster = $this->reworkcheck
             ->pluck('DefectType')
             ->map(fn($d) => strtolower(trim($d)))
-            ->contains($normalizedNewDefect);
+            ->contains($normalizedType);
 
         if (!$existsInMaster) {
             $this->addError('newRework', 'This rework defect does not exist in the master list');
             return;
         }
 
-        // Check if rework already exists
-        $existing = collect($this->reworkss)->contains(function ($reworkss) use ($normalizedNewDefect) {
-            return $reworkss['hfno'] === $this->hfno
-                && strtolower(trim($reworkss['type'])) === $normalizedNewDefect;
-        });
+        $currentHfNo = $this->hfno[$this->formId] ?? '';
 
-        $uniquehf = collect($this->reworkss)
-            ->pluck('hfno')
-            ->unique()
-            ->count();
+        // Duplicate check: already committed
+        $existsCommitted = collect($this->reworkss)->contains(
+            fn($r) => ($r['hfno'] ?? '') === $currentHfNo
+                && strtolower(trim($r['type'] ?? '')) === $normalizedType
+        );
 
-        $isNewHf = !collect($this->reworkss)->pluck('hfno')->contains($this->hfno);
-        if ($isNewHf && $uniquehf >= 5) {
-            $this->addError('hfno', 'You can only add up to 5 HF Number');
+        // Duplicate check: already staged in this session
+        $existsStaged = collect($this->stagedReworks)->contains(
+            fn($r) => ($r['hfno'] ?? '') === $currentHfNo
+                && strtolower(trim($r['type'] ?? '')) === $normalizedType
+        );
+
+        if ($existsCommitted || $existsStaged) {
+            $this->addError('newRework', 'This rework type is already added');
             return;
         }
 
-        if ($existing) {
-            $this->addError('newRework', 'This rework is already existing');
+        // HF limit: max 5 unique HF numbers across committed + staged
+        $committedHfs = collect($this->reworkss)->pluck('hfno')->unique();
+        $stagedHfs    = collect($this->stagedReworks)->pluck('hfno')->unique();
+        $allHfs       = $committedHfs->merge($stagedHfs)->unique();
+
+        $isNewHf = !$allHfs->contains($currentHfNo);
+        if ($isNewHf && $allHfs->count() >= 5) {
+            $this->addError('hfno', 'You can only add up to 5 HF Numbers');
             return;
         }
 
-        $newRework = [
-            'hfno'      => $this->hfno[$this->formId] ?? '',
+        $this->stagedReworks[] = [
+            'hfno'      => $currentHfNo,
             'totalinsp' => $this->totalInsp[$this->formId] ?? '',
             'type'      => trim($this->newRework),
-            'quan'      => $this->newQuan,
+            'quan'      => (int) $this->newQuan,
         ];
 
-        $this->reworkss[] = $newRework;
+        // Reset only the per-entry fields; keep HF No & Total Insp for the next entry
+        $this->newRework = '';
+        $this->newQuan   = '';
+        $this->resetErrorBag();
+    }
+
+    /**
+     * Remove one entry from the staged list.
+     */
+    public function removeStagedRework(int $index): void
+    {
+        array_splice($this->stagedReworks, $index, 1);
+    }
+
+    /**
+     * Reset the staging area (cancel / close modal).
+     */
+    public function resetReworkModal(): void
+    {
+        $this->stagedReworks = [];
+        $this->newRework     = '';
+        $this->newQuan       = '';
+        $this->resetErrorBag();
+    }
+
+    /**
+     * Commit ALL staged reworks at once.
+     */
+    public function addRework()
+    {
+        // If nothing is staged but fields are filled, stage it first
+        if (empty($this->stagedReworks) && !empty($this->newRework) && !empty($this->newQuan)) {
+            $this->stageRework();
+            if ($this->getErrorBag()->isNotEmpty()) {
+                return;
+            }
+        }
+
+        if (empty($this->stagedReworks)) {
+            $this->addError('newRework', 'Please stage at least one rework entry before confirming.');
+            return;
+        }
+
+        foreach ($this->stagedReworks as $entry) {
+            $entryHfno = $entry['hfno'] ?? '';
+            $entryType = strtolower(trim($entry['type'] ?? ''));
+
+            // Find if this entry already exists in the committed list
+            $existingIndex = null;
+            foreach ($this->reworkss as $i => $r) {
+                if (
+                    trim($r['hfno'] ?? '') === $entryHfno &&
+                    strtolower(trim($r['type'] ?? '')) === $entryType
+                ) {
+                    $existingIndex = $i;
+                    break;
+                }
+            }
+
+            if ($existingIndex !== null) {
+                // Update existing row instead of duplicating
+                $this->reworkss[$existingIndex] = $entry;
+            } else {
+                // Truly new entry — append
+                $this->reworkss[] = $entry;
+            }
+        }
 
         $this->dispatch($this->dispatchPrefix . '.defects-updated', [
             'reworksData' => $this->reworkss,
             'formId'      => $this->formId,
-            'action'      => 'add'
+            'action'      => 'add',
         ]);
-        $this->newRework = '';
-        $this->newQuan   = '';
+
         $this->UpdatedNgRework($this->formId);
+
+        // Clear staging
+        $this->stagedReworks = [];
+        $this->newRework     = '';
+        $this->newQuan       = '';
     }
 
     public function CheckHf()
@@ -319,6 +405,20 @@ class Rework extends Component
             $this->hfno[$formId] = $rework['hfno'];
             $this->newQuan = $rework['quan'];
             $this->totalInsp[$formId] = $rework['totalinsp'];
+        }
+    }
+
+    public function loadExistingStagedRework()
+    {
+        $this->stagedReworks = [];
+
+        foreach ($this->reworkss as $rework) {
+            $this->stagedReworks[] = [
+                'hfno'      => $rework['hfno'] ?? '',
+                'totalinsp' => $rework['totalinsp'] ?? '',
+                'type'      => $rework['type'] ?? '',
+                'quan'      => (int) ($rework['quan'] ?? 0),
+            ];
         }
     }
 }

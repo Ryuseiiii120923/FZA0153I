@@ -294,6 +294,7 @@ class Checkppf extends Component
 
         $this->ppf = $data['ppf'];
         $this->actiondash = $data['actiondash'];
+        $this->inspectorID = $data['encoder'] ?? $this->inspectorID;
         $this->checkPPF();
     }
 
@@ -335,7 +336,6 @@ class Checkppf extends Component
 
     private function handleProcessRecord()
     {
-
         if (!$this->loadProcessRecord()) {
             $this->dispatch('IsLoading', false);
             return;

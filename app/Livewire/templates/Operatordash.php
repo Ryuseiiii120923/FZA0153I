@@ -24,12 +24,19 @@ class Operatordash extends Component
     public $ppfrecord = [];
     public $loading = false;
 
-    public function mount()
+    public function mount($inspectorID = null)
     {
         $userencoder = UserAuth::user()->社員CD;
         $this->encoder = (int)$userencoder;
-        $this->inspectorID = Worker::where('社員CD', $this->encoder)
-            ->value('作業員CD');
+
+        if ($inspectorID !== null) {
+            // Operated mode: use the passed operator's ID directly
+            $this->inspectorID = $inspectorID;
+        } else {
+            // Normal mode: resolve from logged-in user
+            $this->inspectorID = Worker::where('社員CD', $this->encoder)
+                ->value('作業員CD');
+        }
     }
 
     public function render()
@@ -37,6 +44,12 @@ class Operatordash extends Component
         return view('livewire.templates.operatordash');
     }
 
+    #[On('IdentifyOperator')]
+    public function identifyOperator($operatorID): void
+    {
+        $this->inspectorID = $operatorID;
+        $this->LoadPPF();
+    }
 
     #[On('LoadDash')]
     public function LoadPPF()
@@ -44,13 +57,12 @@ class Operatordash extends Component
         $ppfrecord = PRInsp::where('InspectorID', $this->inspectorID)
             ->orderBy('DateEncode', 'desc')
             ->get();
-
         $this->ppfrecord = $ppfrecord->isNotEmpty() ? $ppfrecord : [];
     }
 
     public function editPPF($ppf)
     {
-          $optExist = EnrollOperator::where('OperatorID', $this->inspectorID)->exists();
+        $optExist = EnrollOperator::where('OperatorID', $this->inspectorID)->exists();
 
         if (!$optExist) {
             session()->flash('failed', 'Operator Not Enrolled. Please Coordinate to GL');

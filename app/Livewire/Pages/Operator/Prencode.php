@@ -55,6 +55,7 @@ class Prencode extends Component
     public $loading = false;
     public bool $locked = false;
     public array $isDropdownUpdate = [];
+    public bool $operateByGl = false;
 
 
     protected function prencodeService()
@@ -77,6 +78,12 @@ class Prencode extends Component
     public function action($data)
     {
         $this->actiondash = $data['actiondash'];
+    }
+
+    #[On('IdentifyOperator')]
+    public function identifyOperator($operatorID)
+    {
+        $this->inspectorID = $operatorID;
     }
 
     #[On('dash-ppf1')]
@@ -183,14 +190,32 @@ class Prencode extends Component
         return view('livewire.pages.operator.prencode');
     }
 
-    public function mount()
+    public function mount($operatorID = null, $operateByGl = false)
     {
         $userencoder = UserAuth::user()->社員CD;
         $this->encoder = (int)$userencoder;
-        $UserName = WorkerName::select('名前')->Where('社員CD', $this->encoder)->first();
-        $this->username = $UserName->名前 ?? '';
-        $this->inspectorID = Worker::where('社員CD', $this->encoder)
-            ->value('作業員CD');
+        $this->operateByGl = $operateByGl;
+
+        if ($operatorID !== null) {
+            // Operated on behalf of a specific operator:
+            // resolve the operator's 社員CD → name & inspectorID
+            $worker = Worker::where('作業員CD', (string) $operatorID)->first();
+            if ($worker) {
+                $workerName = WorkerName::select('名前')->where('社員CD', $worker->社員CD)->first();
+                $this->username    = $workerName->名前 ?? '';
+                $this->inspectorID = $operatorID;
+            } else {
+                // Fallback to logged-in user if operator not found
+                $UserName = WorkerName::select('名前')->where('社員CD', $this->encoder)->first();
+                $this->username    = $UserName->名前 ?? '';
+                $this->inspectorID = Worker::where('社員CD', $this->encoder)->value('作業員CD');
+            }
+        } else {
+            // Normal self-encode: use logged-in user
+            $UserName = WorkerName::select('名前')->where('社員CD', $this->encoder)->first();
+            $this->username    = $UserName->名前 ?? '';
+            $this->inspectorID = Worker::where('社員CD', $this->encoder)->value('作業員CD');
+        }
         // $this->process = session('process');
         // if ($this->process === 'VI') {
         //     $this->dispatch('ProcessVI');
@@ -445,7 +470,12 @@ class Prencode extends Component
                     'isDropdownUpdate' => $this->isDropdownUpdate,
                 ]
             );
-            session()->flash('successAdd', 'Data inserted successfully!');
+            if($this->operateByGl) {
+                 $this->dispatch('PrencodeClosed');
+            } else {
+                 session()->flash('successAdd', 'Data inserted successfully!');
+            }
+           
         } catch (\Exception $e) {
             Log::error('PR Encode Error', [
                 'message' => $e->getMessage(),

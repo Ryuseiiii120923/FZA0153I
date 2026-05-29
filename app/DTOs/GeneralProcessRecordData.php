@@ -26,7 +26,6 @@ final class GeneralProcessRecordData
         public readonly bool       $isSilicon,
 
         // ── Checkbox flags ───────────────────────────────────────────
-        public readonly bool       $noViCheck,
         public readonly bool       $viGood,
         public readonly bool       $viNg,
         public readonly bool       $rework,

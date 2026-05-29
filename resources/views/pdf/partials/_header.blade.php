@@ -42,9 +42,9 @@
             </table>
 
             <div class="right-options">
+                NO check if 100% VI
                 @php
                     $checkboxes = [
-                        [$data->noViCheck, 'NO check if 100% VI'],
                         [$data->viGood,    'Check if 200% VI of GOOD parts'],
                         [$data->viNg,      'Check if 200% VI of NG parts'],
                         [$data->rework,    'Check if REWORK'],

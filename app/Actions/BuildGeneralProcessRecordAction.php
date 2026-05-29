@@ -85,7 +85,6 @@ class BuildGeneralProcessRecordAction
             machineNumber:   'P-' . $masterRecord->PRESSNO,
             checkedBy:       'Supervisor',
             isSilicon:       in_array($partTypeCode, ['91', '98'], strict: true),
-            noViCheck:       true,
             viGood:          false,
             viNg:            false,
             rework:          false,

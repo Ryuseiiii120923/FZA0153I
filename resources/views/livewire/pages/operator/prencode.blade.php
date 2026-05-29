@@ -27,6 +27,7 @@
         </div>
     </div>
     @endif
+
     @if (session()->has('successAdd'))
     <div
         x-data="{ open: true }"
@@ -110,7 +111,8 @@
 
 
 
-    <livewire:templates.checkppf :systemname="request()->input('systemname')" />
+    <livewire:templates.checkppf
+        systemname="ProcessRecord" />
     <div
         id="OuterPanel"
         x-data="{ locked: true, lockview: false }"
@@ -157,7 +159,7 @@
         </div>
     </div>
     <div class="mt-3">
-        <livewire:templates.operatordash />
+        <livewire:templates.operatordash :inspectorID="$inspectorID ?? null" />
     </div>
     <div
         wire:loading.flex
