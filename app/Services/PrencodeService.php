@@ -89,7 +89,7 @@ class PrencodeService
         ];
     }
 
-    public function loadData(string $ppf, int $inspectorID, string $systemName, string $actiondash)
+    public function loadData(string $ppf, string $inspectorID, string $systemName, string $actiondash)
     {
         $isExistMain = AddDefect::where('PPFNo', $ppf)->exists();
         $ppfrecord = DefectInsp::where('InspectorID', $inspectorID)
@@ -113,15 +113,15 @@ class PrencodeService
                 }
             }
         }
-   
-        if(!$check){
-            return(['error' => 'PPF No does not encoded on Molding Result!']);
+
+        if (!$check) {
+            return (['error' => 'PPF No does not encoded on Molding Result!']);
         }
-        if(!$hf){
-            return(['error' => 'PPF No does not encoded on Hand Finishing Result!']);
+        if (!$hf) {
+            return (['error' => 'PPF No does not encoded on Hand Finishing Result!']);
         }
 
-          $pcValue = DB::table('Seihin')->where('', $check['品番']);
+        $pcValue = DB::table('Seihin')->where('', $check['品番']);
         $pcValue = $pcValue ?? 0;
         if ($pcValue != "0" && trim($check['金型NO']) != "") {
             $postcure = DB::table('Postcure')->where('PPFNo', $ppf)->first();
@@ -134,7 +134,7 @@ class PrencodeService
             }
         }
 
-        if($actiondash != 'edit' && $actiondash != 'view'){
+        if ($actiondash != 'edit' && $actiondash != 'view') {
             if ($systemName === 'ProcessRecord') {
                 if ($ppfrecord) {
                     return (['error' => 'This PPF is already encoded. Kindly review the table below for details.']);
@@ -142,15 +142,20 @@ class PrencodeService
             }
         }
 
-        if($systemName === 'ProcessRecord' && $actiondash == 'add' || $actiondash == 'edit'){
-            if($isExistMain){
-                return(['error' => 'This PPF is already confirm. Please coordinate to your GL']);
+        if ($systemName === 'ProcessRecord') {
+            if ($actiondash == 'add' || $actiondash == 'edit') {
+                if ($isExistMain) {
+                    return (['error' => 'This PPF is already confirm. Please coordinate to your GL']);
+                }
+            } 
+        }else{
+            if ($isExistMain && $actiondash == 'add') {
+                return (['error' => 'This PPF is already confirm']);
             }
-        }elseif($systemName === 'GLDashboard' && $isExistMain && $actiondash == 'add'){
-            return(['error' => 'This PPF is already confirm']);
         }
 
-        return([
+
+        return ([
             'lotno'   => $check ? preg_replace('/\s+/', '', $check->成形ﾛｯﾄ) : '',
             'partno'  => $check ? preg_replace('/\s+/', '', $check->品番) : '',
             'matno'   => $check ? preg_replace('/\s+/', '', $check->材料名) : '',
@@ -161,6 +166,5 @@ class PrencodeService
             'expct'   => $hf ? round($hf->合格数) : 0,
             'totalInspection' => $totalinsp ? $totalinsp->total_inspect : 0
         ]);
-
     }
 }

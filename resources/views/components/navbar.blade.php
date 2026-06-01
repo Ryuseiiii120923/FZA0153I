@@ -1,7 +1,8 @@
 <nav class="flex-1 py-4 space-y-1 px-2 overflow-y-auto overflow-x-hidden">
     <x-nav-button
         page="dashboard"
-        title="Dashboard">
+        title="Dashboard"
+        @click.stop="desktopExpanded = false; mobileOpen = false">
         <x-slot:icon>
             <svg xmlns="http://www.w3.org/2000/svg"
                 class="w-5 h-5"
@@ -19,7 +20,8 @@
 
     <x-nav-button
         page="enroll-operator"
-        title="Enroll Operator">
+        title="Enroll Operator"
+        @click.stop="desktopExpanded = false; mobileOpen = false">
         <x-slot:icon>
             <svg xmlns="http://www.w3.org/2000/svg"
                 class="w-5 h-5"
@@ -37,7 +39,8 @@
 
     <x-nav-button
         page="PR"
-        title="Generate Process Record">
+        title="Generate Process Record"
+        @click.stop="desktopExpanded = false; mobileOpen = false">
         <x-slot:icon>
             <svg xmlns="http://www.w3.org/2000/svg"
                 width="24"
@@ -58,7 +61,8 @@
 
     <x-nav-button
         page="HF"
-        title="Hand Finsihing Dashboard">
+        title="Hand Finsihing Dashboard"
+        @click.stop="desktopExpanded = false; mobileOpen = false">
         <x-slot:icon>
             <svg xmlns="http://www.w3.org/2000/svg"  width="24"
                 height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">

@@ -195,13 +195,6 @@ class Defects extends Component
         $this->sendDefect();
     }
 
-    public function sendDispatch()
-    {
-        $this->dispatch('FromDefects');
-        $this->dispatch('FromSmallDefects');
-        $this->dispatch('sendNg', $this->TotalNg);
-    }
-
     public function deleteDefectArray($operator, $type)
     {
         $this->defects = collect($this->defects)

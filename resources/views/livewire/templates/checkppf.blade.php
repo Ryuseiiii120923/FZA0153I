@@ -88,7 +88,7 @@
             </div>
         </div>
         <div class="flex flex-col mt-3 w-11/12 sm:w-1/3 mx-5 sm:mx-2 @if($systemname == 'ProcessRecord') hidden @endif"
-            @if($isPPF) wire:poll.20s="totalInspectedProgress" @endif>
+            @if($isPPF) wire:poll.60s="totalInspectedProgress" @endif>
 
             <!-- Label -->
             <label for="ProgressInsp" class="block text-sm font-medium text-black">Inspection Progress</label>

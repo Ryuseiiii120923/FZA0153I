@@ -46,6 +46,7 @@ class DropDown extends Component
     public array $defectNg = [];
     public $modalMode;
     public $needToDeleteForm = [];
+    public string $activeTab = 'worker';
 
 
     public function ppfService(): PPFService
@@ -182,6 +183,167 @@ class DropDown extends Component
         }
     }
 
+    public function addNewAutoDimension()
+    {
+        $this->toggles = true;
+        $formId = (string) Str::uuid();
+        $this->forms[$formId] = [
+            'hf_id' => '',
+            'inspect_REC' => uniqid(),
+            'formId' => $formId,
+            'hf_name' => '',
+            'finishingProcedure' => '',
+            'total_inspect' => '',
+            'open' => false,
+            'defects' => [],
+            'smallDefects' => [],
+            'rework' => [],
+            'ForRework' => false,
+            'TotalNg' => [],
+            'GoodQty' => [],
+            'TotalRework' => [],
+            'Remarks' => '',
+            'Operation' => 'AUTO',
+            'Process' => 'Auto Dimension Checking',
+            'method' => 'AUTO_DIM',
+        ];
+        $this->modalOpen[$formId] = true;
+    }
+
+    public function addNewAutoSF()
+    {
+        $this->toggles = true;
+        $formId = (string) Str::uuid();
+        $this->forms[$formId] = [
+            'hf_id' => '',
+            'inspect_REC' => uniqid(),
+            'formId' => $formId,
+            'hf_name' => '',
+            'finishingProcedure' => '',
+            'total_inspect' => '',
+            'open' => false,
+            'defects' => [],
+            'smallDefects' => [],
+            'rework' => [],
+            'ForRework' => false,
+            'TotalNg' => [],
+            'GoodQty' => [],
+            'TotalRework' => [],
+            'Remarks' => '',
+            'Operation' => 'AUTO',
+            'Process' => 'Auto SF Inspection',
+            'method' => 'AUTO_SF',
+        ];
+        $this->modalOpen[$formId] = true;
+    }
+
+    public function addNewAutoPLSF()
+    {
+        $this->toggles = true;
+        $formId = (string) Str::uuid();
+        $this->forms[$formId] = [
+            'hf_id' => '',
+            'inspect_REC' => uniqid(),
+            'formId' => $formId,
+            'hf_name' => '',
+            'finishingProcedure' => '',
+            'total_inspect' => '',
+            'open' => false,
+            'defects' => [],
+            'smallDefects' => [],
+            'rework' => [],
+            'ForRework' => false,
+            'TotalNg' => [],
+            'GoodQty' => [],
+            'TotalRework' => [],
+            'Remarks' => '',
+            'Operation' => 'AUTO',
+            'Process' => 'Auto PL/SF Inspection',
+            'method' => 'AUTO_PLSF',
+        ];
+        $this->modalOpen[$formId] = true;
+    }
+
+    public function addNewAutoNG()
+    {
+        $this->toggles = true;
+        $formId = (string) Str::uuid();
+        $this->forms[$formId] = [
+            'hf_id' => '',
+            'inspect_REC' => uniqid(),
+            'formId' => $formId,
+            'hf_name' => '',
+            'finishingProcedure' => '',
+            'total_inspect' => '',
+            'open' => false,
+            'defects' => [],
+            'smallDefects' => [],
+            'rework' => [],
+            'ForRework' => false,
+            'TotalNg' => [],
+            'GoodQty' => [],
+            'TotalRework' => [],
+            'Remarks' => '',
+            'Operation' => 'AUTO',
+            'Process' => 'Auto NG Checking',
+            'method' => 'AUTO_NG',
+        ];
+        $this->modalOpen[$formId] = true;
+    }
+
+    public function addNewAutoDimNG()
+    {
+        $this->toggles = true;
+        $formId = (string) Str::uuid();
+        $this->forms[$formId] = [
+            'hf_id' => '',
+            'inspect_REC' => uniqid(),
+            'formId' => $formId,
+            'hf_name' => '',
+            'finishingProcedure' => '',
+            'total_inspect' => '',
+            'open' => false,
+            'defects' => [],
+            'smallDefects' => [],
+            'rework' => [],
+            'ForRework' => false,
+            'TotalNg' => [],
+            'GoodQty' => [],
+            'TotalRework' => [],
+            'Remarks' => '',
+            'Operation' => 'AUTO',
+            'Process' => 'Auto Dimension of VI Good from NG',
+            'method' => 'AUTO_DIM_NG',
+        ];
+        $this->modalOpen[$formId] = true;
+    }
+
+    public function addNewAutoSFNG()
+    {
+        $this->toggles = true;
+        $formId = (string) Str::uuid();
+        $this->forms[$formId] = [
+            'hf_id' => '',
+            'inspect_REC' => uniqid(),
+            'formId' => $formId,
+            'hf_name' => '',
+            'finishingProcedure' => '',
+            'total_inspect' => '',
+            'open' => false,
+            'defects' => [],
+            'smallDefects' => [],
+            'rework' => [],
+            'ForRework' => false,
+            'TotalNg' => [],
+            'GoodQty' => [],
+            'TotalRework' => [],
+            'Remarks' => '',
+            'Operation' => 'AUTO',
+            'Process' => 'Auto SF Dimension of VI Good from NG',
+            'method' => 'AUTO_SF_NG',
+        ];
+        $this->modalOpen[$formId] = true;
+    }
 
 
     #[On('fetchppf')]

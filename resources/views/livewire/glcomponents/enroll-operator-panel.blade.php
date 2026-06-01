@@ -139,7 +139,7 @@
                     type="button"
                     wire:click="operateOperator('{{ $record->OperatorID }}')"
                     title="Operate"
-                    class="w-7 h-7 flex items-center justify-center rounded-md
+                    class="w-10 h-10 flex items-center justify-center rounded-md
                                border border-gray-200 text-gray-500
                                hover:text-blue-700 hover:border-blue-300 hover:bg-blue-50
                                transition-colors duration-150">
@@ -154,7 +154,7 @@
                     type="button"
                     wire:click="setDeleting({{ $record->OperatorID }})"
                     title="Remove"
-                    class="w-7 h-7 flex items-center justify-center rounded-md
+                    class="w-10 h-10 flex items-center justify-center rounded-md
                                border border-gray-200 text-gray-500
                                hover:text-red-700 hover:border-red-300 hover:bg-red-50
                                transition-colors duration-150">

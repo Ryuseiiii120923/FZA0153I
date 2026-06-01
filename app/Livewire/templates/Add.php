@@ -222,6 +222,10 @@ class Add extends Component
         //->employeeName->名前 ?? '';
         $this->InspectDates = Carbon::now()->format('Y-m-d');
         $this->initializeInspector();
+         \Illuminate\Support\Facades\Log::info('Traits in use:', [
+        'defects_owner'      => property_exists($this, 'defects') ? 'yes' : 'no',
+        'smalldefects_owner' => property_exists($this, 'smalldefects') ? 'yes' : 'no',
+    ]);
     }
 
 
@@ -260,17 +264,15 @@ class Add extends Component
     public function loadDefects($ppf)
     {
         $result = $this->defectService()->loadDefectsGL($ppf);
-        $this->defects = $result['defects'];
-        if (!empty($this->defects)) {
-            $this->smalldefects = $result['smallDefects'];
-            $this->dispatch(
-                'DefectFromUpdate',
-                [
-                    'defects'       => $this->defects,
-                    'smallDefects' => $this->smalldefects,
-                ]
-            );
-        }
+        $this->defects      = $result['defects'] ?? [];
+        $this->smalldefects = $result['smallDefects'] ?? [];
+        $this->dispatch(
+            'DefectFromUpdate',
+            [
+                'defects'      => $this->defects,
+                'smallDefects' => $this->smalldefects,
+            ]
+        );
     }
 
     private function loadReworks($ppf)
@@ -278,7 +280,7 @@ class Add extends Component
         $result = $this->reworkService()->getReworks($ppf);
         $this->rework = $result['reworks'];
 
-        if (!empty($this->reworks)) {
+        if (!empty($this->rework)) {
             $this->dispatch('ReworkFromUpdate', [
                 'reworks' => $this->rework
             ]);
@@ -600,10 +602,6 @@ class Add extends Component
                     'Dateout' => Carbon::now()->format('Y-m-d h:i:s A'),
                 ]);
         }
-
-
-
-
         if (empty($this->defects) || count($this->defects) === 0) {
 
             Db::table('Defect')->insert([

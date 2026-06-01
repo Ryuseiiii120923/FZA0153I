@@ -32,7 +32,7 @@ class Checkppf extends Component
     public string|null $actiondash = "";
     public string $method;
     public string $totalInspection;
-    public int|null $encoder, $inspectorID = 0;
+    public string|null $encoder = "", $inspectorID = "" ;
     public string|null $progressInsp;
 
     public bool $isAccept = false;

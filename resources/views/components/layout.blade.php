@@ -118,61 +118,61 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
         </button>
-    </div>
 
-    @endif
-    <header class="fixed top-0 right-0 z-20 bg-blue-600 shadow-md
+
+        @endif
+        <header class="fixed top-0 right-0 z-20 bg-blue-600 shadow-md
                    left-0  @if(request()->input('systemname') !== 'ProcessRecord') lg:left-16 transition-[left] duration-300 @endif">
-        <div class="w-full px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between" style="height: 72px;">
+            <div class="w-full px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between" style="height: 72px;">
 
 
-            <div class="w-10 lg:hidden flex-shrink-0"></div>
+                <div class="w-10 lg:hidden flex-shrink-0"></div>
 
 
-            <div class="hidden lg:flex flex-shrink-0 items-center">
-                <img src="{{ asset('images/fuji_logo.png') }}"
-                    alt="Logo"
-                    class="h-10 w-auto drop-shadow-lg" />
+                <div class="hidden lg:flex flex-shrink-0 items-center">
+                    <img src="{{ asset('images/fuji_logo.png') }}"
+                        alt="Logo"
+                        class="h-10 w-auto drop-shadow-lg" />
+                </div>
+
+
+                <h1 class="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-white text-center flex-1" id="title">
+                    VI Defect
+                </h1>
+
+                <div class="flex-shrink-0">
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit"
+                            class="text-white hover:bg-blue-800 bg-[#0F3C89] font-medium rounded-lg text-sm px-4 py-2">
+                            Logout
+                        </button>
+                    </form>
+                </div>
+
             </div>
+        </header>
 
 
-            <h1 class="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-white text-center flex-1" id="title">
-                VI Defect
-            </h1>
+        <main @click="desktopExpanded = false; mobileOpen = false" class="pt-[72px] lg:pl-16 transition-[padding] duration-300 min-h-screen">
+            <div class="px-4 sm:px-6 lg:px-8 py-6">
 
-            <div class="flex-shrink-0">
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit"
-                        class="text-white hover:bg-blue-800 bg-[#0F3C89] font-medium rounded-lg text-sm px-4 py-2">
-                        Logout
-                    </button>
-                </form>
-            </div>
-
-        </div>
-    </header>
-
-
-    <main class="pt-[72px] lg:pl-16 transition-[padding] duration-300 min-h-screen">
-        <div class="px-4 sm:px-6 lg:px-8 py-6">
-
-            <h2 class="text-xl sm:text-2xl font-bold mb-6 text-gray-800 text-center sm:text-left">
-                Welcome, {{
+                <h2 class="text-xl sm:text-2xl font-bold mb-6 text-gray-800 text-center sm:text-left">
+                    Welcome, {{
                     Auth::user()?->employeeName?->名前
                     ?? Auth::guard('worker')->user()?->employee?->名前
                     ?? 'User'
                 }}!
-            </h2>
+                </h2>
 
-            @include('components.modals')
+                @include('components.modals')
 
-            <div class="w-full">
-                {{ $slot }}
+                <div class="w-full">
+                    {{ $slot }}
+                </div>
             </div>
-        </div>
-    </main>
-
+        </main>
+    </div>
     @livewireScripts
 </body>
 

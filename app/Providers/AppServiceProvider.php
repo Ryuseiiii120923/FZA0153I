@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,9 +22,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+         DB::connection('sqlsrv')->setReconnector(function ($connection) {
+            $connection->disconnect();
+            $connection->reconnect();
+        });
         View::composer('*', function ($view) {
             $view->with('backUrl', url()->previous());
         });
+       
     }
 
     //   public function boot(): void
