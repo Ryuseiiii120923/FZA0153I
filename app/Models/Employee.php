@@ -16,9 +16,13 @@ class Employee extends Authenticatable
         'PASSWORD',
         '名前'
     ];
-     protected $hidden = [
-        'PASSWORD',
+    protected $hidden = [
     ];
+
+    public function rehashPasswordIfRequired($user, array $credentials, bool $force = false)
+    {
+        return; // skip rehashing
+    }
     public function getAuthIdentifierName()
     {
         return '社員CD';

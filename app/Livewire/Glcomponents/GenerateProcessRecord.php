@@ -13,10 +13,12 @@ class GenerateProcessRecord extends Component
 
     public string $search  = '';
     public int    $perPage = 10;
+    public bool   $searched = false;
 
     public function updatingSearch(): void
     {
         $this->resetPage();
+        $this->searched = true;
     }
 
     public function updatingPerPage(): void
@@ -24,31 +26,46 @@ class GenerateProcessRecord extends Component
         $this->resetPage();
     }
 
+    public function clearSearch(): void
+    {
+        $this->search   = '';
+        $this->searched = false;
+        $this->resetPage();
+    }
+
     public function exportPdf(string $ppf): void
     {
-         $this->dispatch('open-pdf', url: route('generate-pdf', ['ppf' => $ppf]));
+        $this->dispatch('open-pdf', url: route('generate-pdf', ['ppf' => $ppf]));
     }
 
     public function render()
     {
-        $search = trim($this->search);
+        $records = null;
 
-        $records = AddDefect::query()
-            ->select([
+        if ($this->searched) {
+            $search = trim($this->search);
 
-                DB::raw('CAST(CAST(PPFNo AS BIGINT) AS VARCHAR(50)) AS PPFNo_str'),
-                'PartNo',
-                DB::raw('MAX(DateEncode) as DateEncode'),
-            ])
-            ->when($search !== '', fn($q) =>
-                $q->where('PPFNo_str', 'like', '%' . $search . '%')
-            )
-            ->groupBy(
-                DB::raw('CAST(CAST(PPFNo AS BIGINT) AS VARCHAR(50))'),
-                'PartNo'
-            )
-            ->orderBy(DB::raw('CAST(CAST(PPFNo AS BIGINT) AS VARCHAR(50))'))
-            ->paginate($this->perPage);
+            $records = AddDefect::query()
+                ->select([
+                    DB::raw('CAST(CAST(PPFNo AS BIGINT) AS VARCHAR(50)) AS PPFNo_str'),
+                    'PartNo',
+                    DB::raw('MAX(DateEncode) as DateEncode'),
+                ])
+                ->when(
+                    $search !== '',
+                    fn($q) => $q->where(
+                        DB::raw("CAST(CAST(PPFNo AS BIGINT) AS VARCHAR(50))"),
+                        'like',
+                        '%' . $search . '%'
+                    )
+                )
+                ->groupBy(
+                    DB::raw('CAST(CAST(PPFNo AS BIGINT) AS VARCHAR(50))'),
+                    'PartNo'
+                )
+                ->orderBy(DB::raw('CAST(CAST(PPFNo AS BIGINT) AS VARCHAR(50))'))
+                ->paginate($this->perPage);
+        }
 
         return view('livewire.glcomponents.generate-process-record', [
             'records' => $records,
