@@ -40,6 +40,30 @@
         <p class="text-4xl font-extrabold text-center text-white p-4 ">For Rework</p>
     </div>
 
+    <div class="flex items-center mt-4 gap-2 w-full sm:w-auto sm:flex-1">
+        <div class="relative flex-1">
+            <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M21 21l-4.35-4.35M17 11A6 6 0 1 0 5 11a6 6 0 0 0 12 0z" />
+                </svg>
+            </span>
+            <input
+                type="text"
+                wire:model.live.debounce.300ms="search"
+                placeholder="Search PPF number..."
+                class="w-full min-w-0 pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg shadow-sm
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+        </div>
+        @if($search)
+        <button
+            wire:click="clearSearch"
+            class="text-sm text-white border border-gray-300 rounded-lg hover:text-gray-700 px-2 py-1 hover:bg-gray-100 transition whitespace-nowrap">
+            Clear
+        </button>
+        @endif
+    </div>
     <!-- TABLE -->
     <div class="overflow-x-auto mt-3">
         <table class="table-auto w-full text-sm text-white bg-gray-800 rounded-lg overflow-hidden">
@@ -54,7 +78,7 @@
             </thead>
 
             <tbody class="bg-gray-700">
-                @foreach ($pendingRework as $data )
+                @foreach ($filteredReworks as $data )
                 <tr>
                     <td class="px-4 py-2  text-center">{{ (int) $data['ppfno'] ?? '' }}</td>
                     <td class="px-4 py-2  text-center">{{ (int) $data['rework_no'] ?? 0 }}</td>
@@ -105,6 +129,22 @@
                     <td class="px-4 py-2 text-center">{{ $data['status'] ?? '' }}</td>
                 </tr>
                 @endforeach
+                <div class="flex items-center gap-2 text-sm">
+                    <label for="perPage" class="text-white">Rows per page:</label>
+                    <select
+                        id="perPage"
+                        wire:model.live="perPage"
+                        class="border border-gray-300 rounded-lg px-2 py-1.5 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+                @if($pendingRework!== null)
+
+                @endif
             </tbody>
         </table>
     </div>

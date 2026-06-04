@@ -14,9 +14,12 @@ use Livewire\Attributes\On;
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth as UserAuth;
 use Illuminate\Support\Str;
+use Livewire\WithPagination;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class HfReworkEncoding extends Component
 {
+    use WithPagination;
     public $pendingRework = [], $defects = [], $rework = [];
     public $ppf, $totalngrework;
     public $open = false;
@@ -42,6 +45,8 @@ class HfReworkEncoding extends Component
     public $inspectRec = [];
     public $isSaved = false;
     public $reworkNo;
+    public $perPage = 10;
+    public string $search  = '';
     private function ppfService(): PPFService
     {
         return $this->ppfService ?? app(PPFService::class);
@@ -59,6 +64,22 @@ class HfReworkEncoding extends Component
     {
         return app(HfDashboardService::class);
     }
+
+    public function clearSearch()
+    {
+        $this->search = '';
+    }
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
+
+    }
+
+    public function updatingPerPage(): void
+    {
+        $this->resetPage();
+    }
+
     public function addNew()
     {
         $this->toggles = true;
@@ -249,19 +270,43 @@ class HfReworkEncoding extends Component
         $UserName = WorkerName::select('名前 ')->Where('社員CD', $this->encoder)->first();
         $this->username = $UserName->名前 ?? '';
         foreach ($this->forms as $formId => $form) {
-            $this->modalOpen[$formId] = false; // default all modals closed
+            $this->modalOpen[$formId] = false;
         }
     }
 
     public function render()
     {
-        return view('livewire.hfdashboard.hf-rework-encoding');
+        $search = trim($this->search);
+
+        $filtered = collect($this->pendingRework)
+        ->when(
+            $search !== '',
+            fn($collection) => $collection->filter(fn ($item) 
+                => str_contains((string) $item['ppfno'], $search)
+            )
+        )
+        ->values();
+
+        $currentPage = $this->getPage();
+        $perPage = $this->perPage;
+
+        $paginated = new LengthAwarePaginator(
+            $filtered->forPage($currentPage, $perPage),
+            $filtered->count(),
+            $perPage,
+            $currentPage,
+            ['pageName' => 'page']
+        );
+
+        return view('livewire.hfdashboard.hf-rework-encoding', [
+            'filteredReworks' => $paginated 
+        ]);
     }
 
-    public function confirm_ppf($ppf,$reworkNo)
+    public function confirm_ppf($ppf, $reworkNo)
     {
 
-    $this->reworkNo = $reworkNo;
+        $this->reworkNo = $reworkNo;
         $this->selectedPPF = $ppf;
         $this->open = true;
         $this->dispatch('transferHf', [
@@ -326,7 +371,7 @@ class HfReworkEncoding extends Component
     public function delete_ppf()
     {
         try {
-            $this->HfdashboardService()->deleteDoneRework($this->ppfToDelete,$this->reworkNo);
+            $this->HfdashboardService()->deleteDoneRework($this->ppfToDelete, $this->reworkNo);
             $this->resetModal();
             session()->flash('success', 'Deleted Successfully!');
         } catch (\Throwable $e) {
@@ -334,7 +379,7 @@ class HfReworkEncoding extends Component
         }
     }
 
-    public function confirmDelete($ppf,$reworkNo)
+    public function confirmDelete($ppf, $reworkNo)
     {
         $this->reworkNo = $reworkNo;
         $this->ppfToDelete = $ppf;
@@ -529,11 +574,9 @@ class HfReworkEncoding extends Component
             ];
             if ($this->isEdit == false) {
                 $this->doneReworkService()->saveDoneRework($data);
-                
             } else {
-                $this->doneReworkService()->editDonerework($data, $this->needdeleteSmall,$this->needdeleteDefect,$this->needdeleteForm);
+                $this->doneReworkService()->editDonerework($data, $this->needdeleteSmall, $this->needdeleteDefect, $this->needdeleteForm);
                 $this->isEdit == false;
-                
             }
             // reset AFTER everything
             $this->removeSelectedPPF();
@@ -544,14 +587,14 @@ class HfReworkEncoding extends Component
         }
     }
 
-    public function editPPFFromChild($ppf,$reworkNo)
+    public function editPPFFromChild($ppf, $reworkNo)
     {
         $this->reworkNo = $reworkNo;
         $this->selectedPPF = $ppf;
         $this->defectNg = [];
         $this->isEdit = true;
 
-        $data = app(DropdownService::class)->editFormsforFinishing($ppf, $this->encoder,$reworkNo);
+        $data = app(DropdownService::class)->editFormsforFinishing($ppf, $this->encoder, $reworkNo);
         if (empty($data['forms'])) return;
 
         $this->toggles = true;
