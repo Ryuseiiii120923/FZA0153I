@@ -154,6 +154,14 @@
         </div>
     </div>
 
+     <div class=" flex flex-row gap-4 mt-4 items-center mx-6 sm:mx-2">
+        <div class="w-full">
+            <label for="inspection_group" class="block text-sm font-medium text-gray-700">Inspection Group</label>
+            <input type="text" id="inspection_group" class=" text-center mt-1 block w-full border border-black rounded-md px-2 py-1 @if($locked)  cursor-not-allowed @endif" @if($locked) readonly @endif
+                placeholder=" " value="" required wire:model="inspection_group">
+        </div>
+    </div>
+
     <div class=" flex flex-col gap-4 mt-4 items-center mx-6 sm:mx-2">
         <div class="w-full">
             <label for="registrant" class="block text-sm font-medium text-gray-700">Registrant</label>

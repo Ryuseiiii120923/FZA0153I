@@ -413,7 +413,7 @@
         </div>
 
         {{-- Modal Body — renders the full Prencode component --}}
-        <div class="flex-1 overflow-y-auto bg-gray-50">
+        <div class="flex-1 overflow-y-auto bg-gray-50" id="prencode-scroll-container">
             <livewire:pages.operator.prencode
                 :key="'prencode-' . $activeOperatorID"
                 :operatorID="$activeOperatorID"

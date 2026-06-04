@@ -50,14 +50,14 @@ class EnrollOperatorPanel extends Component
                         return;
                     }
 
-                    // 2. Other GL check
-                    $other = EnrollOperator::where('OperatorID', $value)
-                        ->where('GLID', '!=', $this->encoder)
-                        ->first();
+                    // // 2. Other GL check
+                    // $other = EnrollOperator::where('OperatorID', $value)
+                    //     ->where('GLID', '!=', $this->encoder)
+                    //     ->first();
 
-                    if ($other) {
-                        $fail("Operator ID \"{$value}\" is already enrolled in another GL: {$other->GLID}");
-                    }
+                    // if ($other) {
+                    //     $fail("Operator ID \"{$value}\" is already enrolled in another GL: {$other->GLID}");
+                    // }
                 },
             ],
         ];

@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\DTOs\GeneralProcessRecordData;
 use App\Models\CheckPPF;
+use App\Models\GL\InspectionGroups;
 use App\Models\HF\HF;
 use App\Models\HFRW\HFRWForms;
 use App\Models\LotNo;
@@ -39,27 +40,52 @@ class BuildGeneralProcessRecordAction
         $masterRecord  = CheckPPF::where('流動NO', $ppf)->firstOrFail();
         $mixingLotNo   = LotNo::select('混練LOTNO')->where('流動NO', $ppf)->first();
         $nqrCriteria   = $this->resolveNqrCriteria($mixingLotNo->混練LOTNO ?? '', $ppf);
+        $groups = InspectionGroups::where('ppfno', $ppf)->get();
+
+        $operations = $groups->pluck('operation')->toArray();
+
+        if ($operations === ['VI']) {
+            $inspectionGroup = $groups->where('operation', 'VI')->first()->group_name;
+        } else {
+            $VIinspectionGroup = $groups->where('operation', 'VI')->first()->group_name ?? 'N/A';
+            $HFInspectionGroup = $groups->where('operation', 'HF')->first()->group_name ?? 'N/A';
+
+            $inspectionGroup = "$HFInspectionGroup / $VIinspectionGroup";
+        }
 
         // ── 3. Form records ───────────────────────────────────────────
         $hfForms = HF::select(
-                'hf_id', 'updated_by', 'GoodQty', 'total_inspect',
-                'created_at', 'TotalNg', 'remarks', 'Process', 'Operation',
-            )
+            'hf_id',
+            'updated_by',
+            'GoodQty',
+            'total_inspect',
+            'created_at',
+            'TotalNg',
+            'remarks',
+            'Process',
+            'Operation',
+        )
             ->where('ppfno', $ppf)
             ->orderBy('created_at')
             ->get();
 
         $hfrwForms = HFRWForms::select(
-                'hf_id', 'updated_by', 'GoodQty', 'total_inspect',
-                'created_at', 'TotalNg', 'Process', 'Operation',
-            )
+            'hf_id',
+            'updated_by',
+            'GoodQty',
+            'total_inspect',
+            'created_at',
+            'TotalNg',
+            'Process',
+            'Operation',
+        )
             ->where('ppfno', $ppf)
             ->orderBy('created_at')
             ->get();
 
         // ── 4. Build rows ─────────────────────────────────────────────
         $rows = $this->rowBuilder->build($hfForms, $hfrwForms, $ppf, $nqrCriteria);
-          // ── [TEST] Append hardcoded rows — remove this block when done ─
+        // ── [TEST] Append hardcoded rows — remove this block when done ─
         $rows = array_merge($rows, \App\Testing\GeneralProcessRecordTestDataFactory::rows(
             $groupedDefects,
             $groupedReworks,
@@ -75,24 +101,24 @@ class BuildGeneralProcessRecordAction
         $partTypeCode = substr($masterRecord->品番, 0, 2);
 
         return new GeneralProcessRecordData(
-            ppfNo:           $masterRecord->流動NO,
-            partNumber:      $masterRecord->品番,
-            lotNo:           $masterRecord->成形ﾛｯﾄ,
-            mixingLotNo:     $mixingLotNo->混練LOTNO ?? '',
-            monthYear:       Carbon::now()->format('M Y'),
-            inspectionGroup: 'A',
+            ppfNo: $masterRecord->流動NO,
+            partNumber: $masterRecord->品番,
+            lotNo: $masterRecord->成形ﾛｯﾄ,
+            mixingLotNo: $mixingLotNo->混練LOTNO ?? '',
+            monthYear: Carbon::now()->format('M Y'),
+            inspectionGroup: $inspectionGroup,
             moldingDieNumber: $masterRecord->金型NO,
-            machineNumber:   'P-' . $masterRecord->PRESSNO,
-            checkedBy:       'Supervisor',
-            isSilicon:       in_array($partTypeCode, ['91', '98'], strict: true),
-            viGood:          false,
-            viNg:            false,
-            rework:          false,
-            groupedDefects:  $groupedDefects,
-            groupedReworks:  $groupedReworks,
-            rows:            $rows,
-            totals:          $totals,
-            totalRemarks:    $totals['remarks'] ?? '',
+            machineNumber: 'P-' . $masterRecord->PRESSNO,
+            checkedBy: 'Supervisor',
+            isSilicon: in_array($partTypeCode, ['91', '98'], strict: true),
+            viGood: false,
+            viNg: false,
+            rework: false,
+            groupedDefects: $groupedDefects,
+            groupedReworks: $groupedReworks,
+            rows: $rows,
+            totals: $totals,
+            totalRemarks: $totals['remarks'] ?? '',
         );
     }
 

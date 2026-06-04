@@ -2,7 +2,13 @@
     showFixed: false,
     activeTab: @entangle('activeTab')
 }"
-x-init="window.addEventListener('scroll', () => { showFixed = window.scrollY > 470; })">
+    x-init="
+    const container = document.getElementById('prencode-scroll-container');
+    const target = container ?? window;
+    target.addEventListener('scroll', () => {
+        showFixed = (container ? container.scrollTop : window.scrollY) > 470;
+    });
+">
 
     {{-- TAB HEADERS --}}
     <div class="bg-white shadow-md px-5 pt-4 pb-0 flex gap-0 border-b border-gray-200">
@@ -83,15 +89,15 @@ x-init="window.addEventListener('scroll', () => { showFixed = window.scrollY > 4
 
     {{-- CONTENT --}}
     @php
-        $autoMethods = ['AUTO_DIM','AUTO_SF','AUTO_PLSF','AUTO_NG','AUTO_DIM_NG','AUTO_SF_NG'];
+    $autoMethods = ['AUTO_DIM','AUTO_SF','AUTO_PLSF','AUTO_NG','AUTO_DIM_NG','AUTO_SF_NG'];
     @endphp
 
     <div class="space-y-4 mt-10">
 
         @foreach($forms as $formId => $form)
         @php
-            $isAutoForm = in_array($form['method'] ?? '', $autoMethods);
-            $isAutoJs = $isAutoForm ? 'true' : 'false';
+        $isAutoForm = in_array($form['method'] ?? '', $autoMethods);
+        $isAutoJs = $isAutoForm ? 'true' : 'false';
         @endphp
         <div
             wire:key="worker-form-{{ $formId }}"
@@ -100,21 +106,21 @@ x-init="window.addEventListener('scroll', () => { showFixed = window.scrollY > 4
             x-data="{ open: {{ $form['open'] ? 'true' : 'false' }} }">
 
             @php
-                $method = $form['method'] ?? '';
-                $forRework = $form['ForRework'] ?? false;
-                $headerBg = match(true) {
-                    $forRework                => '#22d3ee',
-                    $method === 'PL'          => '#02367B',
-                    $method === 'SF'          => '#0284c7',
-                    $method === 'AUTO_DIM'    => '#4338ca',
-                    $method === 'AUTO_SF'     => '#0369a1',
-                    $method === 'AUTO_PLSF'   => '#0f766e',
-                    $method === 'AUTO_NG'     => '#b45309',
-                    $method === 'AUTO_DIM_NG' => '#7c3aed',
-                    $method === 'AUTO_SF_NG'  => '#be185d',
-                    default                   => '#f3f4f6',
-                };
-                $headerFg = $headerBg === '#f3f4f6' ? '#111827' : '#ffffff';
+            $method = $form['method'] ?? '';
+            $forRework = $form['ForRework'] ?? false;
+            $headerBg = match(true) {
+            $forRework => '#22d3ee',
+            $method === 'PL' => '#02367B',
+            $method === 'SF' => '#0284c7',
+            $method === 'AUTO_DIM' => '#4338ca',
+            $method === 'AUTO_SF' => '#0369a1',
+            $method === 'AUTO_PLSF' => '#0f766e',
+            $method === 'AUTO_NG' => '#b45309',
+            $method === 'AUTO_DIM_NG' => '#7c3aed',
+            $method === 'AUTO_SF_NG' => '#be185d',
+            default => '#f3f4f6',
+            };
+            $headerFg = $headerBg === '#f3f4f6' ? '#111827' : '#ffffff';
             @endphp
 
             {{-- Header: Click to Toggle --}}
@@ -124,9 +130,9 @@ x-init="window.addEventListener('scroll', () => { showFixed = window.scrollY > 4
 
                 <span class="font-medium">
                     @if($isAutoForm)
-                        {{ $form['Process'] }} &mdash; #{{ $form['hf_id'] ?? 'New' }}
+                    {{ $form['Process'] }} &mdash; #{{ $form['hf_id'] ?? 'New' }}
                     @else
-                        Worker Form #{{ $form['hf_id'] ?? 'Unknown' }}
+                    Worker Form #{{ $form['hf_id'] ?? 'Unknown' }}
                     @endif
                 </span>
                 <span class="font-medium">Date Created: {{ $form['created_at'] ?? now()->format('Y-m-d') }}</span>
@@ -169,7 +175,7 @@ x-init="window.addEventListener('scroll', () => { showFixed = window.scrollY > 4
                     <div class="flex flex-col sm:flex-row gap-4">
                         {{-- Finishing Procedure — hidden for PL, SF, and Auto methods --}}
                         <div class="w-full sm:w-1/2"
-                            @if(in_array(($form['method'] ?? ''), array_merge(['PL','SF'], $autoMethods))) hidden @endif>
+                            @if(in_array(($form['method'] ?? '' ), array_merge(['PL','SF'], $autoMethods))) hidden @endif>
                             <label class="block text-sm font-medium">Finishing Procedure</label>
                             <div class="flex items-center gap-3">
                                 <input type="text"
@@ -187,13 +193,13 @@ x-init="window.addEventListener('scroll', () => { showFixed = window.scrollY > 4
                                     class="w-full border bg-gray-500 p-2 rounded"
                                     readonly placeholder="Enter HF ID" maxlength="4" pattern="\d{4}">
                                 @if(!empty($form['hf_name']))
-                                    <p class="text-sm font-medium text-black">{{ $form['hf_name'] }}</p>
+                                <p class="text-sm font-medium text-black">{{ $form['hf_name'] }}</p>
                                 @endif
                             </div>
                         </div>
 
                         @error('forms.' . $formId . '.hf_id')
-                            <p class="text-red-500 text-sm">{{ $message }}</p>
+                        <p class="text-red-500 text-sm">{{ $message }}</p>
                         @enderror
 
                         <div class="w-full sm:w-1/2">
@@ -217,7 +223,7 @@ x-init="window.addEventListener('scroll', () => { showFixed = window.scrollY > 4
 
                                 {{-- Finishing Procedure — hidden for PL, SF, and Auto methods --}}
                                 <div class="w-full mx-auto"
-                                    @if(in_array(($form['method'] ?? ''), array_merge(['SF'], $autoMethods))) hidden @endif>
+                                    @if(in_array(($form['method'] ?? '' ), array_merge(['SF'], $autoMethods))) hidden @endif>
                                     <label for="finishingMachine" class="block text-sm font-medium text-gray-700">
                                         Finishing Procedure
                                     </label>
@@ -238,7 +244,7 @@ x-init="window.addEventListener('scroll', () => { showFixed = window.scrollY > 4
                                 <div>
                                     <label class="block text-sm font-medium">HF ID</label>
                                     @if(!empty($form['hf_name']))
-                                        <p class="text-sm font-medium text-black">{{ $form['hf_name'] }}</p>
+                                    <p class="text-sm font-medium text-black">{{ $form['hf_name'] }}</p>
                                     @endif
                                     <input type="text"
                                         wire:model.lazy="forms.{{ $formId }}.hf_id"
@@ -248,7 +254,7 @@ x-init="window.addEventListener('scroll', () => { showFixed = window.scrollY > 4
                                         maxlength="4" pattern="\d{4}"
                                         oninput="this.value = this.value.toUpperCase()">
                                     @error('forms.' . $formId . '.hf_id')
-                                        <p class="text-red-500 text-sm">{{ $message }}</p>
+                                    <p class="text-red-500 text-sm">{{ $message }}</p>
                                     @enderror
                                 </div>
 
@@ -259,7 +265,7 @@ x-init="window.addEventListener('scroll', () => { showFixed = window.scrollY > 4
                                         class="w-full border p-2 rounded"
                                         placeholder="Enter Total Inspect">
                                     @error('forms.' . $formId . '.total_inspect')
-                                        <p class="text-red-500 text-sm">{{ $message }}</p>
+                                    <p class="text-red-500 text-sm">{{ $message }}</p>
                                     @enderror
                                 </div>
 

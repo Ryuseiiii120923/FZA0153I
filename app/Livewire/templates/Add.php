@@ -69,6 +69,7 @@ class Add extends Component
     public $loadingSave = false, $loadingAdd = false, $loadingDelete = false;
     public $record = [];
     public $rows = [];
+    public string $inspection_group;
 
     public $listeners = [
         'FromCheckppf' => 'Checkppf',
@@ -685,6 +686,11 @@ class Add extends Component
             }
         }
 
+        DB::table('inspection_groups')->insert([
+            'ppfno' => $this->ppf,
+            'operation' => $this->operation ?? 'VI',
+            'group_name' => $this->inspection_group ?? '',
+        ]);
 
 
         if ($this->submitMethod === 'editToDb') {
