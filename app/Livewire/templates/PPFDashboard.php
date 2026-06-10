@@ -47,7 +47,7 @@ class PPFDashboard extends Component
 
     public function render()
     {
-        // $this->refreshData();
+        $this->refreshData();
 
         return view('livewire.templates.ppfdashboard', [
             'ppfdata' => $this->ppfdata

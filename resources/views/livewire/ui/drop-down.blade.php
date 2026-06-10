@@ -36,7 +36,7 @@
             + Add Worker
         </button>
         <button wire:click="addNewDoneRework" class="text-white px-4 py-2 rounded-md text-sm" style="background-color:#0b9af3;">
-            + Add Worker For Rework
+            + Add Worker For SRW
         </button>
         <button wire:click="addNewPL" class="text-white px-4 py-2 rounded-md text-sm" style="background-color:#02367B;">
             + Add Worker For PL
@@ -71,7 +71,7 @@
         <template x-if="activeTab === 'worker'">
             <div class="flex gap-3 flex-wrap">
                 <button wire:click="addNew" class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm">+ Add Worker</button>
-                <button wire:click="addNewDoneRework" class="text-white px-4 py-2 rounded-md text-sm" style="background-color:#0b9af3;">+ Add Worker For Rework</button>
+                <button wire:click="addNewDoneRework" class="text-white px-4 py-2 rounded-md text-sm" style="background-color:#0b9af3;">+ Add Worker For SRW</button>
                 <button wire:click="addNewPL" class="text-white px-4 py-2 rounded-md text-sm" style="background-color:#02367B;">+ Add Worker For PL</button>
             </div>
         </template>

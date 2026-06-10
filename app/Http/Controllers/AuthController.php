@@ -14,7 +14,7 @@ class AuthController extends Controller
 {
     public function login(Request $request)
     {
-       
+        // --- QR login ---
         if ($request->has('qr')) {
             $qrData = $request->input('qr');
             if (is_string($qrData)) {
@@ -74,6 +74,7 @@ class AuthController extends Controller
             $request->session()->regenerate();
             return redirect()->route('gl.dashboard', ['systemname' => 'GLDashboard']);
         }
+
         return back()->withErrors(['credentials' => 'Incorrect credentials']);
     }
 
