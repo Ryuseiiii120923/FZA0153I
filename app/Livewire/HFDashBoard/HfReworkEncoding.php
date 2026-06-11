@@ -572,7 +572,7 @@ class HfReworkEncoding extends Component
                 'forms' => $forms,
                 'reworkNo' => $this->reworkNo
             ];
-            if ($this->isEdit == false) {
+            if ($this->isEdit == false)  { //if add
                 $this->doneReworkService()->saveDoneRework($data);
             } else {
                 $this->doneReworkService()->editDonerework($data, $this->needdeleteSmall, $this->needdeleteDefect, $this->needdeleteForm);

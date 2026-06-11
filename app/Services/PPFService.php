@@ -33,6 +33,7 @@ class PPFService
         $totalinsp = $this->ppfRepo->getTotalInspectionPerInspector($ppf, $inspectorID);
 
         if ($systemname == 'ProcessRecord' && $ppfrecordExist && $actiondash != 'edit') {
+          
             return ['error' => 'This PPF is already encoded. Kindly review the table below for details.'];
         }
         if (!$check) {

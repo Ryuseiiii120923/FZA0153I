@@ -77,8 +77,8 @@ class DoneReworkRepository
 
                 $inspectorRows[] = [
                     'PPFNo' => $ppfno,
-                    'InspectorID' => $encoder,
-                    'insp_name' => $this->workerRepo->getWorkerName($encoder)->名前 ?? 'Unknown',
+                    'InspectorID' => $hfId,
+                    'insp_name' => $this->workerRepo->getWorkerName($hfId)->名前 ?? 'Unknown',
                     'Defect' => $defect['type'],
                     'Quantity' => $defect['qty'],
                     'DateEncode' => now(),
@@ -152,7 +152,7 @@ class DoneReworkRepository
 
                 $inspectorSmallRows[] = [
                     'PPFNo' => $ppfno,
-                    'InspectorID' => $encoder,
+                    'InspectorID' => $hfId,
                     'LargeDefect' => $small['large'],
                     'SmallDefect' => $small['type'],
                     'Qty' => $small['qty'],

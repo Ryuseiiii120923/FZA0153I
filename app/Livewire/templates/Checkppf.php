@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth as UserAuth;
+use Illuminate\Support\Facades\Log;
 
 class Checkppf extends Component
 {
@@ -41,6 +42,7 @@ class Checkppf extends Component
     public bool $ppfLoaded = false;
     public bool $showInspectionModal = false; // controls the modal
     public bool $isPPF = false;
+    public $OperatedinspectorID;
 
     public $rules = ['ppf' => 'required|numeric'];
     public  $messages = [
@@ -158,8 +160,10 @@ class Checkppf extends Component
 
     private function loadProcessRecord()
     {
+        
+        $newInspId = ($this->inspectorID != "" || null) ? $this->inspectorID : $this->OperatedinspectorID ?? "";
         $this->actiondash = strtolower($this->actiondash);
-        $data = app(PrencodeService::class)->loadData($this->ppf, $this->inspectorID, $this->systemname, $this->actiondash);
+        $data = app(PrencodeService::class)->loadData($this->ppf, $newInspId, $this->systemname, $this->actiondash);
         if (isset($data['error'])) {
             $this->errorexisting = $data['error'];
             $this->dispatch('lockbuttons');
@@ -257,7 +261,7 @@ class Checkppf extends Component
         $this->expct = $data['expct'] ?? 0;
     }
 
-    public function mount(string|null $systemname = null, string|null $ppf = null)
+    public function mount(string|null $systemname = null, string|null $ppf = null, string|null $operatedID = null)
     {
         $this->systemname = $systemname;
         $this->ppf = $ppf;
@@ -265,7 +269,15 @@ class Checkppf extends Component
         $this->encoder = (int)$userencoder;
         $this->inspectorID = Worker::where('社員CD', $this->encoder)
             ->value('作業員CD');
+        $this->OperatedinspectorID = $operatedID;
     }
+
+     #[On('IdentifyOperator')]
+public function identifyOperator(string $operatorID): void
+{
+    $this->OperatedinspectorID = $operatorID;
+    dd($this->OperatedinspectorID);
+}
     public function EditActions(string|null $data)
     {
         $this->actiondash = null;

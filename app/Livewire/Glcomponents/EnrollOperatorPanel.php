@@ -176,13 +176,12 @@ class EnrollOperatorPanel extends Component
     {
         $operator = EnrollOperator::where('OperatorID', $operatorID)->first();
         if (!$operator) return;
-
         $this->activeOperatorID   = $operator->OperatorID;
         $this->activeOperatorName = $operator->OperatorName;
         $this->showPrencode       = true;
 
         // Dispatch to Prencode component so it knows who the inspector is
-        $this->dispatch('IdentifyOperator', operatorID: $operator->OperatorID);
+       $this->dispatch('IdentifyOperator', operatorID: $operator->OperatorID);
     }
 
     public function closePrencode(): void

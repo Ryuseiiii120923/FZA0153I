@@ -112,7 +112,8 @@
 
 
     <livewire:templates.checkppf
-        systemname="ProcessRecord" />
+        systemname="ProcessRecord"
+        :operatedID="$inspectorID"  />
     <div
         id="OuterPanel"
         x-data="{ locked: true, lockview: false }"

@@ -80,11 +80,11 @@ class Prencode extends Component
         $this->actiondash = $data['actiondash'];
     }
 
-    #[On('IdentifyOperator')]
-    public function identifyOperator($operatorID)
-    {
-        $this->inspectorID = $operatorID;
-    }
+    // #[On('IdentifyOperator')]
+    // public function identifyOperator($operatorID)
+    // {
+    //     $this->inspectorID = $operatorID;
+    // }
 
     #[On('dash-ppf1')]
     public function actions($data)
@@ -195,7 +195,7 @@ class Prencode extends Component
         $userencoder = UserAuth::user()->社員CD;
         $this->encoder = (int)$userencoder;
         $this->operateByGl = $operateByGl;
-
+       
         if ($operatorID !== null) {
             // Operated on behalf of a specific operator:
             // resolve the operator's 社員CD → name & inspectorID
