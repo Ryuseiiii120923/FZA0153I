@@ -223,10 +223,6 @@ class Add extends Component
         //->employeeName->名前 ?? '';
         $this->InspectDates = Carbon::now()->format('Y-m-d');
         $this->initializeInspector();
-         \Illuminate\Support\Facades\Log::info('Traits in use:', [
-        'defects_owner'      => property_exists($this, 'defects') ? 'yes' : 'no',
-        'smalldefects_owner' => property_exists($this, 'smalldefects') ? 'yes' : 'no',
-    ]);
     }
 
 
@@ -524,12 +520,12 @@ class Add extends Component
             $this->loadingSave = false;
             return;
         }
-        // if ($this->isAdd) {
-        //     $this->dispatch('haserror', ['message' => 'Please accept first the quantity']);
-        //     $this->loadingAdd = false;
-        //     $this->loadingSave = false;
-        //     return;
-        // }
+        if ($this->isAdd) {
+            $this->dispatch('haserror', ['message' => 'Please accept first the quantity']);
+            $this->loadingAdd = false;
+            $this->loadingSave = false;
+            return;
+        }
         if ($hasRework) {
             $this->dispatch('haserror', ['message' => 'There are pending reworks for this PPF. Please resolve them before Saving.']);
             $this->loadingAdd = false;

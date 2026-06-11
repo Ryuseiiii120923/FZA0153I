@@ -16,8 +16,6 @@
                 autocapitalize="off" class="mt-1 block w-full border border-black rounded-md px-2 py-1  @if ($locklack) bg-gray-500 @endif  @if($locked)  cursor-not-allowed @endif" @if($locked) readonly @endif
                 placeholder=" " value="" required wire:model="lackqty" min="0">
         </div>
-
-
         <div class="flex-col w-11/12 sm:w-1/3 mx-5 sm:mx-2 ">
             <label for="rework" class="block text-sm font-medium text-gray-700">Rework Qty</label>
             <input type="number" id="rework" inputmode="numeric"
