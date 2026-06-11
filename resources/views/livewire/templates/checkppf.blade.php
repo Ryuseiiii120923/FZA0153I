@@ -87,8 +87,8 @@
                     placeholder=" " value="" required wire:model="expct" required readonly>
             </div>
         </div>
-        <div class="flex flex-col mt-3 w-11/12 sm:w-1/3 mx-5 sm:mx-2 @if($systemname == 'ProcessRecord') hidden @endif"
-            @if($isPPF) wire:poll.60s="totalInspectedProgress" @endif>
+        <div class="flex flex-col mt-3 w-11/12 sm:w-1/3 mx-5 sm:mx-2 @if($systemname == 'ProcessRecord') hidden @endif" >
+                {{--  @if($isPPF) wire:poll.60s="totalInspectedProgress" @endif --}}
 
             <!-- Label -->
             <label for="ProgressInsp" class="block text-sm font-medium text-black">Inspection Progress</label>
@@ -102,12 +102,12 @@
                     required
                     wire:model="progressInsp"
                     readonly>
-                <button type="button"
+               {{-- <button type="button"
                     wire:click="confirmAccept"
                     class="@if($isAccept || $actiondash != 'add') hidden @endif px-4 py-1 ms-3 bg-blue-600 text-white rounded-md
                hover:bg-blue-700 hover:shadow-md transition duration-200">
                     Accept
-                </button>
+                </button> --}} 
             </div>
         </div>
     </div>

@@ -218,7 +218,7 @@ class Goodng extends Component
         }
 
         if ($this->excssqty == 0 && $this->lackqty == 0 && $this->reworkqty == 0 && $this->sampleqty == 0) {
-            if($this->initialGoodQty != 0){
+            if ($this->initialGoodQty != 0) {
                 $this->goodqty = $this->initialGoodQty;
             }
             $denominator = $this->goodqty + $this->TotalNg;
@@ -229,7 +229,7 @@ class Goodng extends Component
 
         // Skip recalculation if nothing changed
         if (
-            $this->lastexcssqty == $this ->excssqty &&
+            $this->lastexcssqty == $this->excssqty &&
             $this->lastlackqty == $this->lackqty &&
             $this->lastreworkqty == $this->reworkqty &&
             $this->lastsampleqty == $this->sampleqty
@@ -266,6 +266,23 @@ class Goodng extends Component
         $this->ngratioqty = $denominator == 0
             ? 0
             : number_format(($this->TotalNg / $denominator) * 100, 2);
+
+        $this->dispatch('FromGoodNg', [
+            'goodqty'    => $this->goodqty,
+            'ngratioqty' => $this->ngratioqty,
+            'excssqty'   => $this->excssqty,
+            'lackqty'    => $this->lackqty,
+            'reworkqty'  => $this->reworkqty,
+            'sampleqty'  => $this->sampleqty
+        ]);
+    }
+
+    public function updateNumbers()
+    {
+        $this->excssqty  = $this->excssqty ?: 0;
+        $this->lackqty   = $this->lackqty ?: 0;
+        $this->reworkqty = $this->reworkqty ?: 0;
+        $this->sampleqty = $this->sampleqty ?: 0;
 
         $this->dispatch('FromGoodNg', [
             'goodqty'    => $this->goodqty,

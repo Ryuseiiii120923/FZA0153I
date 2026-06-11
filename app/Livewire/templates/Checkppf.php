@@ -90,29 +90,29 @@ class Checkppf extends Component
         $this->showInspectionModal = false;
         $this->dispatch('fetchTotalInspection', $this->totalInspection);
     }
-    public function confirmAccept()
-    {
-        $this->dispatch('confirm-accept');
-    }
+    // public function confirmAccept()
+    // {
+    //     $this->dispatch('confirm-accept');
+    // }
 
-    #[On('AcceptTotal')]
-    public function AcceptTotal()
-    {
-        $excss = 0;
-        $lack  = 0;
-        if ($this->totalInspection > $this->expct) {
-            $excss = $this->totalInspection - $this->expct;
-        } elseif ($this->totalInspection < $this->expct) {
-            $lack = $this->expct - $this->totalInspection;
-        }
-        $this->dispatch('UpdateQty', [
-            'excssqty' => $excss,
-            'lackqty'  => $lack,
-        ]);
+    // #[On('AcceptTotal')]
+    // public function AcceptTotal()
+    // {
+    //     $excss = 0;
+    //     $lack  = 0;
+    //     if ($this->totalInspection > $this->expct) {
+    //         $excss = $this->totalInspection - $this->expct;
+    //     } elseif ($this->totalInspection < $this->expct) {
+    //         $lack = $this->expct - $this->totalInspection;
+    //     }
+    //     $this->dispatch('UpdateQty', [
+    //         'excssqty' => $excss,
+    //         'lackqty'  => $lack,
+    //     ]);
 
-        $this->isPPF = false; //disable the progress
-        $this->dispatch('IsAdd');
-    }
+    //     $this->isPPF = false; //disable the progress
+    //     $this->dispatch('IsAdd');
+    // }
 
     #[On('errorExisting')]
     public function hasError(string|null $data)

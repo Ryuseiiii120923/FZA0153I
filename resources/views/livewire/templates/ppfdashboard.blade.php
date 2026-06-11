@@ -1,4 +1,4 @@
-<div class="w-full flex justify-center mt-3 overflow-x-auto" wire:poll.5s="refreshData">
+<div class="w-full flex justify-center mt-3 overflow-x-auto" wire:poll.10s="refreshData">
     <table class="table-auto w-full text-sm text-white bg-gray-800 rounded-lg overflow-hidden">
         <thead class="bg-gray-900 text-white text-center">
             <tr>

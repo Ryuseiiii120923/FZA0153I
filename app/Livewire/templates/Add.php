@@ -524,12 +524,12 @@ class Add extends Component
             $this->loadingSave = false;
             return;
         }
-        if ($this->isAdd) {
-            $this->dispatch('haserror', ['message' => 'Please accept first the quantity']);
-            $this->loadingAdd = false;
-            $this->loadingSave = false;
-            return;
-        }
+        // if ($this->isAdd) {
+        //     $this->dispatch('haserror', ['message' => 'Please accept first the quantity']);
+        //     $this->loadingAdd = false;
+        //     $this->loadingSave = false;
+        //     return;
+        // }
         if ($hasRework) {
             $this->dispatch('haserror', ['message' => 'There are pending reworks for this PPF. Please resolve them before Saving.']);
             $this->loadingAdd = false;

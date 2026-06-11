@@ -16,7 +16,7 @@ class PPFDashboard extends Component
     public function refreshData()
     {
         $this->ppfdata = PRInsp::query()
-            ->join('OperatorEnroll as oe', 'oe.OperatorID','=', 'Inspector_PR.InspectorID')
+            ->join('OperatorEnroll as oe', 'oe.OperatorID', '=', 'Inspector_PR.InspectorID')
             ->select('Inspector_PR.PPFNo')
             ->selectRaw('SUM(Inspector_PR.total_inspect) as total_inspect')
             ->selectRaw('MAX(Inspector_PR.DateEncode) as DateEncode')
@@ -36,8 +36,8 @@ class PPFDashboard extends Component
 
     public function mount()
     {
-         $this->initializeInspector();
-        $this->refreshData(); // initial load
+        $this->initializeInspector();
+        $this->refreshData();
     }
 
     public function confirm_ppf($ppf)
@@ -47,7 +47,7 @@ class PPFDashboard extends Component
 
     public function render()
     {
-        $this->refreshData();
+
 
         return view('livewire.templates.ppfdashboard', [
             'ppfdata' => $this->ppfdata
