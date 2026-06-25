@@ -1,4 +1,32 @@
 <div class="p-4">
+    @if (session()->has('failed'))
+    <div
+        x-data="{ open: true }"
+        x-show="open"
+        class="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 z-50"
+        x-cloak>
+        <div class="bg-white rounded-lg shadow-lg w-96 p-6 text-center relative">
+            <!-- Close Button -->
+            <button
+                @click="open = false"
+                class="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
+                ✕
+            </button>
+
+            <!-- Modal Content -->
+            <h2 class="text-lg font-semibold text-red-600 mb-2">Failed</h2>
+            <p class="text-gray-700 mb-4">{{ session('failed') }}</p>
+
+            <button
+                @click="open = false;
+            location.reload();
+            "
+                class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
+                OK
+            </button>
+        </div>
+    </div>
+    @endif
     <div id="buttons-action" class="flex flex-col sm:flex-row sm:flex-wrap justify-center gap-4 mb-6">
         <button type="button" id="Init-add"
             class="w-full sm:w-32 md:w-36 lg:w-40 px-4 py-2 text-white bg-green-700 hover:bg-green-800 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-black"
@@ -29,11 +57,11 @@
     <div id="OuterPanel">
         <div class="w-full px-2 sm:px-6">
             <div @if($currentAction !='Add' ) class="hidden" @endif>
-                <livewire:templates.ppfdashboard lazy />
+                <livewire:templates.ppfdashboard/>
             </div>
             <livewire:templates.checkppf :systemname="request()->input('systemname')"/>
             <div class="mt-6 mb-6">
-                <livewire:glcomponents.total-inspection lazy />
+                <livewire:glcomponents.total-inspection/>
             </div>
 
             <div class="flex flex-col sm:flex-row gap-6 mt-4 items-start justify-center w-full">
@@ -49,15 +77,15 @@
 
             <div class="flex flex-col sm:flex-row gap-6 mt-4 items-start justify-center w-full">
                 <div class="w-11/12 sm:w-1/2 flex justify-center">
-                    <livewire:glcomponents.for-rework lazy/>
+                    <livewire:glcomponents.for-rework/>
                 </div>
 
                 <div class="w-11/12 sm:w-1/2 flex justify-center">
-                    <livewire:glcomponents.done-rework lazy/>
+                    <livewire:glcomponents.done-rework/>
                 </div>
             </div>
-            <livewire:templates.goodng lazy/>
-            <livewire:templates.add lazy/>
+            <livewire:templates.goodng/>
+            <livewire:templates.add/>
         </div>
     </div>
 </div>

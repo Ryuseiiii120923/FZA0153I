@@ -68,7 +68,7 @@ class PPFRepository
     }
 
     public function getPPF($ppf){
-        return DB::table('Defect')->where('PPFNo', $ppf)->first();
+        return DB::table('Defect')->where('PPFNo', $ppf)->exists();
     }
 
 }

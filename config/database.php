@@ -116,6 +116,16 @@ return [
             'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'true'),
         ],
 
+        'empTrace' => [
+            'driver' => 'sqlsrv',
+            'host' => env('EMP_TRACE_DB_HOST'),
+            'database' => env('EMP_TRACE_DB_DATABASE'),
+            'username' => env('EMP_TRACE_DB_USERNAME'),
+            'password' => env('EMP_TRACE_DB_PASSWORD'),
+            'encrypt' => env('DB_ENCRYPT', 'no'),
+            'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'true'),
+        ],
+
     ],
 
     /*

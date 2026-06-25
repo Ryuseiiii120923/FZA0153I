@@ -29,6 +29,7 @@ class TotalInspection extends Component
             ->select('updated_by', 'updated_date')
             ->selectRaw('SUM(total_inspect) as total_inspect')
             ->where('PPFNo', $ppf)
+            ->where('Operation', 'VI')
             ->groupBy('updated_by','updated_date')
             ->get();
     }

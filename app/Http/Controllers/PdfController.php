@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\BuildGeneralProcessRecordAction;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Routing\Controller;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**

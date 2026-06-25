@@ -134,7 +134,7 @@ class SubmitPrencodeService
     public function prepareDataForSubmission(array $data): void
     {
         $now = now();
-        $this->updatedBy = $data['updated_by'] ?? null;
+        $this->updatedBy = $data['updated_by'] ?? "";
         $this->ppfno     = $data['ppfno'] ?? null;
         $this->username  = $data['username'] ?? '';
         foreach ($data['form'] as $formId => $formData) {

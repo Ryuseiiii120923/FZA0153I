@@ -7,13 +7,13 @@ use App\Services\PPFService;
 use App\Services\ReworkService;
 use Livewire\Attributes\On;
 use Livewire\Component;
-use App\Traits\NormalizeSmallDefects; 
-use App\Traits\NormalizeDefects; 
+use App\Traits\NormalizeSmallDefects;
+use App\Traits\NormalizeDefects;
 
 class Gldashboard extends Component
 {
-     use NormalizeSmallDefects; 
-     use NormalizeDefects;
+    use NormalizeSmallDefects;
+    use NormalizeDefects;
     public $wireAction;
     public $submitMethod = null;
     public $currentAction = null;
@@ -56,7 +56,7 @@ class Gldashboard extends Component
     public $totalngrework;
     public $hfno1, $hfno2, $hfno3, $hfno4, $hfno5;
     public $autoAdd  = false;
-
+    public $alrdySelct = false;
     protected $defectService, $reworkService;
 
     public function defectService(): DefectService
@@ -184,11 +184,13 @@ class Gldashboard extends Component
 
         switch ($action) {
             case 'Add':
+                  $this->dispatch('addbutton');
                 $this->dispatch('ProgDis'); //deactivate the auto progress in check ppf
-                $this->dispatch('addbutton');
+              
                 $this->dispatch('EditAction', 'Add');
                 $this->dispatch('locked', false);
                 $this->ClearForm();
+                $this->alrdySelct = true;
                 break;
 
             case 'Edit':
@@ -197,6 +199,7 @@ class Gldashboard extends Component
                 $this->dispatch('EditAction', 'Edit');
                 $this->dispatch('locked', false);
                 $this->ClearForm();
+                $this->alrdySelct = true;
                 break;
 
             case 'Delete':
@@ -204,6 +207,7 @@ class Gldashboard extends Component
                 $this->dispatch('deletebutton');
                 $this->dispatch('EditAction', 'Delete');
                 $this->ClearForm();
+                $this->alrdySelct = true;
                 break;
 
             case 'View':
@@ -211,6 +215,7 @@ class Gldashboard extends Component
                 $this->dispatch('viewbutton');
                 $this->dispatch('EditAction', 'View');
                 $this->ClearForm();
+                $this->alrdySelct = true;
                 break;
         }
 
@@ -221,9 +226,12 @@ class Gldashboard extends Component
     public function FetchDatas($data)
     {
         $ppf = $this->resolvePpf($data);
-
+        if (!$this->alrdySelct) {
+            session()->flash('failed', 'Please Select Action First');
+            return;
+        }
         $checkppf = $this->ppfService()->checkIfPPFExist($ppf);
-        if (!($checkppf)) {
+        if (!$checkppf) {
             session()->flash('failed', 'Record not found');
             return;
         }

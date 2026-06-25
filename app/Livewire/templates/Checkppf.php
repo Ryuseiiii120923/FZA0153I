@@ -32,7 +32,7 @@ class Checkppf extends Component
     public string|null $actiondash = "";
     public string $method;
     public string $totalInspection;
-    public string|null $encoder = "", $inspectorID = "" ;
+    public string|null $encoder = "", $inspectorID = "";
     public string|null $progressInsp;
 
     public bool $isAccept = false;
@@ -41,6 +41,7 @@ class Checkppf extends Component
     public bool $ppfLoaded = false;
     public bool $showInspectionModal = false; // controls the modal
     public bool $isPPF = false;
+    public $OperatedinspectorID;
 
     public $rules = ['ppf' => 'required|numeric'];
     public  $messages = [
@@ -122,12 +123,11 @@ class Checkppf extends Component
 
     public function totalInspectedProgress()
     {
-        $totalInspected = PRInsp::where('PPFNo', $this->ppf)
+        $totalInspected = PRInsp::where('PPFNo', $this->ppf)->where('Operation', 'VI')
             ->sum('total_inspect');
         if ($totalInspected === $this->totalInspection) {
             return;
         }
-
         $this->totalInspection = $totalInspected;
         $this->progressInsp = $this->totalInspection . "/" . $this->expct;
 
@@ -159,7 +159,9 @@ class Checkppf extends Component
     private function loadProcessRecord()
     {
         $this->actiondash = strtolower($this->actiondash);
-        $data = app(PrencodeService::class)->loadData($this->ppf, $this->inspectorID, $this->systemname, $this->actiondash);
+
+        $newInspId = ($this->inspectorID != "" || null) ? $this->inspectorID : $this->OperatedinspectorID ?? "";
+        $data = app(PrencodeService::class)->loadData($this->ppf, $newInspId, $this->systemname, $this->actiondash);
         if (isset($data['error'])) {
             $this->errorexisting = $data['error'];
             $this->dispatch('lockbuttons');
@@ -167,7 +169,7 @@ class Checkppf extends Component
         }
 
         $this->dispatch('removelock');
-        if($this->actiondash == 'view'){
+        if ($this->actiondash == 'view') {
             $this->dispatch('lockview');
         }
 
@@ -257,7 +259,7 @@ class Checkppf extends Component
         $this->expct = $data['expct'] ?? 0;
     }
 
-    public function mount(string|null $systemname = null, string|null $ppf = null)
+    public function mount(string|null $systemname = null, string|null $ppf = null, string|null $operatedID = null)
     {
         $this->systemname = $systemname;
         $this->ppf = $ppf;
@@ -265,6 +267,7 @@ class Checkppf extends Component
         $this->encoder = (int)$userencoder;
         $this->inspectorID = Worker::where('社員CD', $this->encoder)
             ->value('作業員CD');
+        $this->OperatedinspectorID = $operatedID;
     }
     public function EditActions(string|null $data)
     {

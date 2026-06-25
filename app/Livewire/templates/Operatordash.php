@@ -68,6 +68,7 @@ class Operatordash extends Component
             session()->flash('failed', 'Operator Not Enrolled. Please Coordinate to GL');
             return;
         }
+
         $this->dispatch('ClearFormDropdown');
         $this->loading = true;
         $this->dispatch("dash-ppf", [

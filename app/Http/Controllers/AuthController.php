@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\DefectInsp;
 use App\Models\Employee;
 use App\Models\Worker;
+use App\Models\EmpTrace;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -14,7 +16,7 @@ class AuthController extends Controller
 {
     public function login(Request $request)
     {
-       
+
         if ($request->has('qr')) {
             $qrData = $request->input('qr');
             if (is_string($qrData)) {
@@ -45,7 +47,7 @@ class AuthController extends Controller
 
                                 $request->session()->regenerate();
                                 Log::info('Session regenerated');
-                                session(['process' =>$qrData['process']]);
+                                session(['process' => $qrData['process']]);
 
                                 return redirect()->route('prencode', ['systemname' => 'ProcessRecord']);
                             } catch (\Throwable $e) {
@@ -68,11 +70,22 @@ class AuthController extends Controller
         ]);
 
         $user = Employee::where('社員CD', $request->input('userid'))->first();
+        $employeeTrace = EmpTrace::whereRaw("RIGHT(CAST(emp_Id AS VARCHAR(20)), 4) = ?", [$request->input('userid')])->first();
+        $plant = null;
+        if ($employeeTrace) {
+            if ($employeeTrace->teamId === '4') {
+                $plant = 1;
+            } elseif ($employeeTrace->teamId === '7') {
+                $plant = 2;
+            } else {
+                return back()->withErrors(['credentials' => 'Must belong to VI']);
+            }
+        }
 
         if ($user && $user->PASSWORD === $request->input('password')) {
             Auth::login($user);
             $request->session()->regenerate();
-            return redirect()->route('gl.dashboard', ['systemname' => 'GLDashboard']);
+            return redirect()->route('gl.dashboard', ['systemname' => 'GLDashboard', 'process' => 'VI', 'plant' => $plant]);
         }
         return back()->withErrors(['credentials' => 'Incorrect credentials']);
     }

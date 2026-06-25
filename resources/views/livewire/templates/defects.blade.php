@@ -175,7 +175,7 @@
         class="fixed inset-0 flex items-center justify-center z-50 p-4 ">
 
         <!-- Overlay -->
-        <div @click="openAddDefect = false; $wire.resetModalState()" x-show="openAddDefect" x-transition.opacity class="fixed inset-0 bg-black bg-opacity-50 z-40"></div>
+        <div x-show="openAddDefect" x-transition.opacity class="fixed inset-0 bg-black bg-opacity-50 z-40"></div>
 
         <!-- Modal Panel -->
         <div class="relative bg-white rounded-xl shadow-xl w-full max-w-5xl z-50 flex flex-col max-h-[90vh] overflow-y-auto">

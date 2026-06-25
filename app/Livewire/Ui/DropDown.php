@@ -1,31 +1,18 @@
 <?php
 
 namespace App\Livewire\Ui;
-
-use App\Models\HF\Defect;
-use App\Models\HF\HF;
-use App\Models\HF\Rework;
-use App\Models\HF\SmallDefect;
-use App\Models\Worker;
-use App\Models\WorkerName;
 use App\Services\DropdownService;
 use App\Services\ForReworkService;
 use App\Services\PPFService;
-use Illuminate\Testing\Fluent\Concerns\Has;
 use Livewire\Component;
 use Livewire\Attributes\On;
 use App\Traits\HandlesFormItems;
-use Carbon\Carbon;
 use Illuminate\Support\Str;
-
-use function Laravel\Prompts\search;
 
 class DropDown extends Component
 {
     use HandlesFormItems;
     public $forms = [];
-    public $defects = [];
-    public $currentFormId = null;
     public $toggles = false;
     public $hasError = false;
     public $hasErrorForm = [];
@@ -35,24 +22,14 @@ class DropDown extends Component
     public $total_inspect = '';
     public $finishingProcedure = '';
     public $modalOpen = [];
-    public string $processName;
 
-    public $default = 'new';
     public $expectedQty = 0;
-    public  $GoodQty;
     public $isCheckPPF;
     public $dropdownForms = [];
     public array $reworkNg = [];
     public array $defectNg = [];
     public $modalMode;
-    public $needToDeleteForm = [];
-    public string $activeTab = 'worker';
 
-
-    public function ppfService(): PPFService
-    {
-        return $this->ppfService ?? app(PPFService::class);
-    }
     public function forReworkService(): ForReworkService
     {
         return app(ForReworkService::class);
@@ -87,6 +64,32 @@ class DropDown extends Component
             'Remarks' => '',
             'Operation' => 'VI',
             'Process' => '100% VI'
+        ];
+        $this->modalOpen[$formId] = true;
+    }
+
+    public function addNewHF()
+    {
+        $this->toggles = true;
+        $formId = (string) Str::uuid();
+        $this->forms[$formId] = [
+            'hf_id' => $this->hf_id,
+            'inspect_REC' => uniqid(),
+            'formId' => $formId,
+            'hf_name' => '',
+            'finishingProcedure' => '',
+            'total_inspect' => '',
+            'open' => false, // start expanded by default
+            'defects' => [],
+            'smallDefects' => [],
+            'rework' => [],
+            'ForRework' => false,
+            'TotalNg' => [],
+            'GoodQty' => [],
+            'TotalRework' => [],
+            'Remarks' => '',
+            'Operation' => 'HF',
+            'Process' => 'HF'
         ];
         $this->modalOpen[$formId] = true;
     }
@@ -158,6 +161,7 @@ class DropDown extends Component
         $flgDone = $result['FlgDone'] ?? false;
         $ProceedToRework = $result['ProceedToRework'] ?? false;
 
+
         if ($flgDone && $ProceedToRework) {
             $this->toggles = true;
             $formId = (string) Str::uuid();
@@ -177,8 +181,11 @@ class DropDown extends Component
                 'Process' => 'SRW'
             ];
             $this->modalOpen[$formId] = true;
-        } else {
-            $this->dispatch('errorExisting', 'The rework of this PPF is not done yet.');
+        } elseif (!$ProceedToRework) {
+            $this->dispatch('errorExisting', 'Please confirm first in For Rework Table in Dashboard.');
+            return;
+        } elseif (!$flgDone) {
+            $this->dispatch('errorExisting', 'Please Encode first in HFRW.');
             return;
         }
     }
@@ -477,8 +484,8 @@ class DropDown extends Component
         }
 
         $this->hasError = $this->hasErrorForm;
-
         $this->dispatch('hasErrorPren', [
+            'message' => $result['error'],
             'hasError' => $this->hasError,
             'hasErrorForm' => $this->hasErrorForm
         ]);

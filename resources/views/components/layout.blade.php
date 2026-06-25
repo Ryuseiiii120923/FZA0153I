@@ -79,7 +79,12 @@
                 <span
                     :class="isExpanded ? 'opacity-100 ml-3 max-w-full' : 'opacity-0 max-w-0 ml-0'"
                     class="text-sm font-semibold text-white whitespace-nowrap overflow-hidden transition-all duration-200">
+                    @if(request()->input('process') === 'HF')
+                    HF Defect
+                    @else
                     VI Defect
+                    @endif
+
                 </span>
 
                 <button
@@ -94,7 +99,13 @@
 
 
             <div class="lg:hidden flex items-center justify-between px-4 py-3 border-b border-white/10">
-                <span class="text-sm font-semibold text-white">VI Defect</span>
+                <span class="text-sm font-semibold text-white">
+                    @if(request()->input('process') === 'HF')
+                    HF Defect
+                    @else
+                    VI Defect
+                    @endif
+                </span>
                 <button @click="mobileOpen = false" class="text-white/60 hover:text-white" aria-label="Close">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -102,8 +113,11 @@
                 </button>
             </div>
 
-
+            @if (request()->input('process') === 'HF')
+            <x-navbar-hf></x-navbar-hf>
+            @else
             <x-navbar></x-navbar>
+            @endif
         </aside>
 
 
@@ -137,7 +151,7 @@
 
 
                 <h1 class="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-white text-center flex-1" id="title">
-                    VI Defect
+                    {{ request()->input('process') === 'HF' ? 'HF Defect' : 'VI Defect' }}
                 </h1>
 
                 <div class="flex-shrink-0">

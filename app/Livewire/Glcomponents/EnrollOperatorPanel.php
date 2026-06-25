@@ -17,7 +17,7 @@ class EnrollOperatorPanel extends Component
     // Modal visibility — entangled with Alpine so they survive every re-render
     public bool $showAdd      = false;
     public bool $showConfirm  = false;
-    public bool $showPrencode = false;
+    public bool $showPrencodeVI = false;
 
     // Currently operated operator
     public ?string $activeOperatorID   = null;
@@ -176,18 +176,16 @@ class EnrollOperatorPanel extends Component
     {
         $operator = EnrollOperator::where('OperatorID', $operatorID)->first();
         if (!$operator) return;
-
         $this->activeOperatorID   = $operator->OperatorID;
         $this->activeOperatorName = $operator->OperatorName;
-        $this->showPrencode       = true;
-
+        $this->showPrencodeVI = true;
         // Dispatch to Prencode component so it knows who the inspector is
         $this->dispatch('IdentifyOperator', operatorID: $operator->OperatorID);
     }
 
     public function closePrencode(): void
     {
-        $this->showPrencode       = false;
+        $this->showPrencodeVI       = false;
         $this->activeOperatorID   = null;
         $this->activeOperatorName = null;
     }
@@ -228,9 +226,9 @@ class EnrollOperatorPanel extends Component
     #[On('PrencodeClosed')]
     public function closePrencodePanel(): void
     {
-        $this->showPrencode = false;
+        $this->showPrencodeVI = false;
         $this->activeOperatorID = null;
         $this->activeOperatorName = null;
-         session()->flash('successNoRefresh', 'Data inserted successfully!');
+        session()->flash('successNoRefresh', 'Data inserted successfully!');
     }
 }

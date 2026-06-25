@@ -43,7 +43,6 @@ class Prencode extends Component
     public $dropdownForms = [];
     public $totalngrework;
     public $hfno1, $hfno2, $hfno3, $hfno4, $hfno5;
-    public $process;
     public $hasError = [];
     public $hasAnyError = false;
     public $isReceive = false;
@@ -56,6 +55,7 @@ class Prencode extends Component
     public bool $locked = false;
     public array $isDropdownUpdate = [];
     public bool $operateByGl = false;
+    public $errorMsg;
 
 
     protected function prencodeService()
@@ -94,6 +94,7 @@ class Prencode extends Component
     #[On('hasErrorPren')]
     public function hasError($data)
     {
+        $this->errorMsg = $data['message'];
         $this->hasErrorForm = $data['hasErrorForm'] ?? [];
         $this->hasError = $data['hasError'] ?? [];
         $this->hasAnyError = in_array(true, $this->hasError, true);
@@ -216,14 +217,6 @@ class Prencode extends Component
             $this->username    = $UserName->名前 ?? '';
             $this->inspectorID = Worker::where('社員CD', $this->encoder)->value('作業員CD');
         }
-        // $this->process = session('process');
-        // if ($this->process === 'VI') {
-        //     $this->dispatch('ProcessVI');
-        // } elseif ($this->process === 'MD') {
-        //     $this->dispatch('ProcessMD');
-        // } else {
-        //     $this->dispatch('ProcessHF');
-        // }
     }
 
     #[On('DeletePPFPren')]
@@ -291,8 +284,20 @@ class Prencode extends Component
 
     public function editPrencode()
     {
+        $hasErrorForm = collect($this->hasErrorForm)->contains(true);
+
+        if (
+            $hasErrorForm ||
+            collect($this->hasError)->contains(true) ||
+            collect($this->hasAnyError)->contains(true)
+        ) {
+
+            session()->flash('error', $this->errorMsg);
+            return;
+        }
         Db::beginTransaction();
         try {
+
             $this->loading = true;
             $ppfno = $this->ppf;
             if (!empty($this->needToDeleteForm)) {
@@ -470,12 +475,11 @@ class Prencode extends Component
                     'isDropdownUpdate' => $this->isDropdownUpdate,
                 ]
             );
-            if($this->operateByGl) {
-                 $this->dispatch('PrencodeClosed');
+            if ($this->operateByGl) {
+                $this->dispatch('PrencodeClosed');
             } else {
-                 session()->flash('successAdd', 'Data inserted successfully!');
+                session()->flash('successAdd', 'Data inserted successfully!');
             }
-           
         } catch (\Exception $e) {
             Log::error('PR Encode Error', [
                 'message' => $e->getMessage(),

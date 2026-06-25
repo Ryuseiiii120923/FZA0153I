@@ -57,23 +57,4 @@
             </svg>
         </x-slot:icon>
     </x-nav-button>
-
-
-    <x-nav-button
-        page="HF"
-        title="Hand Finsihing Dashboard"
-        @click.stop="desktopExpanded = false; mobileOpen = false">
-        <x-slot:icon>
-            <svg xmlns="http://www.w3.org/2000/svg"  width="24"
-                height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M7 11V5a1 1 0 0 1 2 0v6" />
-                <path d="M11 11V4a1 1 0 0 1 2 0v7" />
-                <path d="M15 11V6a1 1 0 0 1 2 0v5" />
-                <path d="M7 11c0-1.5 2-2 2 0v3" />
-                <path d="M7 14c0 3 2 5 5 5s5-2 5-5" />
-                <path d="M16 2l2 2 4-4" />
-            </svg>
-        </x-slot:icon>
-    </x-nav-button>
-
 </nav>

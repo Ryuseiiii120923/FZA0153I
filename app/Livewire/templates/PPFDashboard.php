@@ -6,38 +6,54 @@ use App\Models\AddDefect;
 use App\Models\CheckHF;
 use App\Models\Operator\PRInsp;
 use App\Traits\InitializesInspector;
+use Livewire\Attributes\Computed;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class PPFDashboard extends Component
 {
-    public $ppfdata;
+    use WithPagination;
     use InitializesInspector;
 
-    public function refreshData()
+    protected $perPage = 5;
+    public string $search = '';
+
+    public function mount()
     {
-        $this->ppfdata = PRInsp::query()
-            ->join('OperatorEnroll as oe', 'oe.OperatorID','=', 'Inspector_PR.InspectorID')
+        $this->initializeInspector();
+    }
+
+    #[Computed(cache: false)]
+    public function ppfdata()
+    {
+        $results = PRInsp::query()
+            ->join('OperatorEnroll as oe', 'oe.OperatorID', '=', 'Inspector_PR.InspectorID')
             ->select('Inspector_PR.PPFNo')
             ->selectRaw('SUM(Inspector_PR.total_inspect) as total_inspect')
             ->selectRaw('MAX(Inspector_PR.DateEncode) as DateEncode')
             ->where('oe.GLID', $this->encoder)
             ->whereNotIn('Inspector_PR.PPFNo', function ($query) {
-                $query->select('PPFNo')
-                    ->from('Defect'); // table name of AddDefect
+                $query->select('PPFNo')->from('Defect');
             })
+            ->when($this->search, fn($q) => $q->whereRaw("CAST(Inspector_PR.PPFNo AS NVARCHAR) LIKE ?", ["%{$this->search}%"]))
             ->groupBy('Inspector_PR.PPFNo')
-            ->get()
-            ->map(function ($item) {
-                $hf = CheckHF::where('流動NO', (int)$item->PPFNo)->first();
-                $item->expct = $hf ? round($hf->合格数) : 0;
-                return $item;
-            });
-    }
+            ->paginate($this->perPage);
 
-    public function mount()
-    {
-         $this->initializeInspector();
-        $this->refreshData(); // initial load
+
+        $ppfNos = $results->getCollection()->pluck('PPFNo')->map(fn($v) => (int)$v);
+
+        $hfMap = CheckHF::whereIn('流動NO', $ppfNos)
+            ->get()
+            ->keyBy('流動NO');
+
+        $results->getCollection()->transform(function ($item) use ($hfMap) {
+            $hf = $hfMap->get((int)$item->PPFNo);
+            $item->expct = $hf ? round($hf->合格数) : 0;
+            return $item;
+        });
+
+
+        return $results;
     }
 
     public function confirm_ppf($ppf)
@@ -45,12 +61,16 @@ class PPFDashboard extends Component
         $this->dispatch('actionTable', ['actiondash' => 'Add', 'ppf' => $ppf]);
     }
 
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
+        logger('search updated to: ' . $this->search);
+    }
     public function render()
     {
-        // $this->refreshData();
-
+        logger('render called, search: ' . $this->search);
         return view('livewire.templates.ppfdashboard', [
-            'ppfdata' => $this->ppfdata
+            'ppfdata' => $this->ppfdata,
         ]);
     }
 }

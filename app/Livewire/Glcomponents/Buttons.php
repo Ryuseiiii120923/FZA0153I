@@ -20,8 +20,8 @@ class Buttons extends Component
 
         switch ($action) {
             case 'Add':
-                $this->dispatch('ProgDis');
                 $this->dispatch('addbutton');
+                $this->dispatch('ProgDis');
                 $this->dispatch('EditAction', 'Add');
                 $this->dispatch('locked', false);
                 $this->ClearForm();

@@ -3,13 +3,15 @@
     activeTab: @entangle('activeTab')
 }"
     x-init="
+     if (!activeTab) {
+        activeTab = 'worker';
+    }
     const container = document.getElementById('prencode-scroll-container');
     const target = container ?? window;
     target.addEventListener('scroll', () => {
-        showFixed = (container ? container.scrollTop : window.scrollY) > 470;
+        showFixed = (container ? container.scrollTop : window.scrollY) > 260;
     });
 ">
-
     {{-- TAB HEADERS --}}
     <div class="bg-white shadow-md px-5 pt-4 pb-0 flex gap-0 border-b border-gray-200">
         <button
@@ -36,7 +38,7 @@
             + Add Worker
         </button>
         <button wire:click="addNewDoneRework" class="text-white px-4 py-2 rounded-md text-sm" style="background-color:#0b9af3;">
-            + Add Worker For Rework
+            + Add Worker For SRW
         </button>
         <button wire:click="addNewPL" class="text-white px-4 py-2 rounded-md text-sm" style="background-color:#02367B;">
             + Add Worker For PL
@@ -86,8 +88,6 @@
             </div>
         </template>
     </div>
-
-    {{-- CONTENT --}}
     @php
     $autoMethods = ['AUTO_DIM','AUTO_SF','AUTO_PLSF','AUTO_NG','AUTO_DIM_NG','AUTO_SF_NG'];
     @endphp

@@ -18,31 +18,27 @@ class DefectService
         $defects = [];
         $smallDefects = [];
 
-        // ✅ ONE QUERY ONLY
         $rows = $this->repo->getDefectsGrouped($ppf);
 
-        foreach ($rows as $row) {
+        // ✅ ONE query replaces N getSmallDefects() calls
+        $allSmalls = $this->repo->getSmallDefectsForPpf($ppf);
 
+        foreach ($rows as $row) {
             if ((int)$row->total_qty <= 0) continue;
 
             $defects[] = [
-                'operatorid'    => $row->InspectorID,
-                'operatorname'  => $row->insp_name,
-                'type'          => $row->Defect,
-                'qty'           => (int)$row->total_qty,
-                'dateEncode'    => $row->latest_date,
-                'Process' => $row->Process, // ✅ NEW
+                'operatorid'   => $row->InspectorID,
+                'operatorname' => $row->insp_name,
+                'type'         => $row->Defect,
+                'qty'          => (int)$row->total_qty,
+                'dateEncode'   => $row->latest_date,
+                'Process'      => $row->Process,
             ];
 
-            // ✅ Small defects (still per encoder + defect)
-            $smalls = $this->repo->getSmallDefects(
-                $ppf,
-                $row->InspectorID,
-                $row->Defect,
-                $row->Process // ✅ NEW
-            );
+            // ✅ Lookup from in-memory map — no query fired
+            $key = $row->Defect . '||' . $row->Process . '||' . $row->InspectorID;
 
-            foreach ($smalls as $s) {
+            foreach ($allSmalls->get($key, []) as $s) {
                 $smallDefects[$row->Defect][$row->Process][$row->InspectorID][] = [
                     'type' => $s->SmallDefect,
                     'qty'  => (int)$s->total_qty,

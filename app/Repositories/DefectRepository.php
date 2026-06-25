@@ -70,6 +70,16 @@ class DefectRepository
             ->get();
     }
 
+    public function getSmallDefectsForPpf($ppf)
+{
+    return DB::table('Inspector_Small')
+        ->selectRaw('LargeDefect, Process, InspectorID, SmallDefect, SUM(Qty) as total_qty')
+        ->where('PPFNo', $ppf)
+        ->groupBy('LargeDefect', 'Process', 'InspectorID', 'SmallDefect')
+        ->get()
+        ->groupBy(fn($r) => $r->LargeDefect . '||' . $r->Process . '||' . $r->InspectorID);
+}
+
     public function getDefectsGrouped($ppf)
     {
         return DB::table('Inspector_Defect')
@@ -82,6 +92,7 @@ class DefectRepository
                 DB::raw('MAX(DateEncode) as latest_date')
             )
             ->where('PPFNo', $ppf)
+            ->where('process','!=','HF')
             ->whereNotNull('InspectorID')
             ->groupBy('InspectorID', 'insp_name', 'Defect', 'Process') // ✅ NEW
             ->orderBy('InspectorID')

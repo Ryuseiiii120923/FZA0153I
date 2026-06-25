@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Auth;
 
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 
 class HomeController extends Controller
 {
@@ -40,6 +41,7 @@ class HomeController extends Controller
         $systemname = request()->input('systemname');
         return view('pages.gldashboard', compact('systemname'));
     }
+
 
     public function ppfdash(){
         return view ('pages.ppfdashboard');

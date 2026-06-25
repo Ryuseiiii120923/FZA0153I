@@ -373,7 +373,7 @@
     {{-- ═══════════════════════════════════════════════════════════
          PRENCODE MODAL — opens when an operator is being operated
     ═══════════════════════════════════════════════════════════ --}}
-    @if($showPrencode)
+    @if($showPrencodeVI)
     <div
         class="fixed inset-0 z-50 flex flex-col bg-white overflow-hidden"
         x-data
@@ -423,5 +423,4 @@
 
     </div>
     @endif
-
 </div>
