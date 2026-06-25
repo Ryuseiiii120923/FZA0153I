@@ -12,3 +12,15 @@ input[type=number]::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
 }
+
+/* Chrome, Edge */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-thumb {
+    background: #9CA3AF;
+    border-radius: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #E5E7EB;
+}

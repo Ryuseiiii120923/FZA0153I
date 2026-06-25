@@ -61,6 +61,8 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
+            'connect_timeout' => 5,
+            'login_timeout'   => 10,
         ],
 
         'mariadb' => [
@@ -102,6 +104,7 @@ return [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),
             'host' => env('DB_HOST', 'fmdbms02'),
+            // 'host' => env('DB_HOST', '172.32.0.7'),
             'port' => env('DB_PORT', '1433'),
             'database' => env('DB_DATABASE', 'forge'),
             'username' => env('DB_USERNAME', 'forge'),
@@ -109,6 +112,16 @@ return [
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
+            'encrypt' => env('DB_ENCRYPT', 'no'),
+            'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'true'),
+        ],
+
+        'empTrace' => [
+            'driver' => 'sqlsrv',
+            'host' => env('EMP_TRACE_DB_HOST'),
+            'database' => env('EMP_TRACE_DB_DATABASE'),
+            'username' => env('EMP_TRACE_DB_USERNAME'),
+            'password' => env('EMP_TRACE_DB_PASSWORD'),
             'encrypt' => env('DB_ENCRYPT', 'no'),
             'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'true'),
         ],
@@ -148,7 +161,7 @@ return [
 
         'options' => [
             'cluster' => env('REDIS_CLUSTER', 'redis'),
-            'prefix' => env('REDIS_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')).'-database-'),
+            'prefix' => env('REDIS_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')) . '-database-'),
             'persistent' => env('REDIS_PERSISTENT', false),
         ],
 

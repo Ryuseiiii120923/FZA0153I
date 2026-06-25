@@ -1,0 +1,25 @@
+<?php
+
+namespace App\Models\HF;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Rework extends Model
+{
+    
+     protected $table = "hf_rework";
+     public $incrementing = false;
+    public $timestamps = false;
+    protected $primaryKey = 'RECNO';
+    protected $keyType = 'string';
+    protected $fillable = [
+        'hf_id',
+        'hfno',
+        'rework_type',
+        'totalinsp',
+        'qty',
+        'ppfno',
+        'updated_by',
+        'inspect_REC'
+    ];
+}

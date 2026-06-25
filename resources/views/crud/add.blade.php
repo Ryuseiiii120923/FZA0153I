@@ -1,7 +1,5 @@
 <x-layout>
     <div>
-  @include('components.modals')
-    <livewire:pcomponent/>
+    <livewire:components.pcomponent/>
     </div>
-  
 </x-layout>

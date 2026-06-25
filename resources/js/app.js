@@ -1,43 +1,21 @@
 import "./bootstrap.js";
+import flatpickr from "flatpickr";
+import "flatpickr/dist/flatpickr.min.css";
+import "flatpickr/dist/themes/material_blue.css";
 
 document.addEventListener("DOMContentLoaded", () => {
     const codeReader = new ZXing.BrowserMultiFormatReader();
     const scanppf = document.getElementById("scan-ppf");
     let scanning = false;
-    let closedef = document.getElementById("defect-id-close");
-    let adddef = document.getElementById("addDefect");
-    let addrew = document.getElementById("addRework");
-    let closere = document.getElementById("rework-id-close");
     const ppf = document.getElementById("PPF");
     const inspectorInputs = document.querySelectorAll("#inspectors input");
 
+    flatpickr("#inspectDate", {
+        dateFormat: "Y-m-d", // matches wire:model format
+        allowInput: true, // allows typing manually
+    });
+
     lockFormFields();
-    lockbuttons();
-    // const alreadyReloaded = localStorage.getItem("alreadyReloaded");
-
-    // if (savedBtn && !alreadyReloaded) {
-    //     // Prevent second reload loop
-    //     localStorage.setItem("alreadyReloaded", "true");
-
-    //     setTimeout(() => {
-    //         const target = document.getElementById(savedBtn);
-    //         if (target) target.click();
-    //     }, 150);
-    // } else {
-    //     // Clear flags after auto-click is done
-    //     localStorage.removeItem("autoClickBtn");
-    //     localStorage.removeItem("alreadyReloaded");
-    // }
-
-    // ["Init-add", "Init-update", "Init-delete", "Init-inquire"].forEach((id) => {
-    //     const btn = document.getElementById(id);
-    //     if (!btn) return;
-
-    //     btn.addEventListener("click", () => {
-    //         localStorage.setItem("autoClickBtn", id);
-    //     });
-    // });
-
     scanppf.addEventListener("click", function () {
         if (scanning == true) {
             return;
@@ -46,7 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
             .enumerateDevices()
             .then((devices) => {
                 const videoInputDevices = devices.filter(
-                    (device) => device.kind === "videoinput"
+                    (device) => device.kind === "videoinput",
                 );
 
                 if (videoInputDevices.length === 0) {
@@ -66,7 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         console.error("Permission or device error:", err);
                     });
 
-                const selectedDeviceId = videoInputDevices[1].deviceId;
+                const selectedDeviceId = videoInputDevices[0].deviceId;
                 scanning = true;
                 codeReader.decodeFromVideoDevice(
                     selectedDeviceId,
@@ -78,7 +56,6 @@ document.addEventListener("DOMContentLoaded", () => {
                             qrcode.value = scannedPPF;
                             qrcode.dispatchEvent(new Event("input"));
                             Livewire.dispatch("post-ppf", { ppf: scannedPPF });
-
                             qrcode.focus();
                             codeReader.reset();
                             scanning = false;
@@ -89,7 +66,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         if (err && !(err instanceof ZXing.NotFoundException)) {
                             console.error(err);
                         }
-                    }
+                    },
                 );
             })
             .catch((err) => {
@@ -122,16 +99,37 @@ document.addEventListener("DOMContentLoaded", () => {
         unlockFormFields();
     });
 
-    ppf.addEventListener("keydown", function (event) {
-        if (event.key === "Enter") {
-            event.preventDefault();
-            if (window.hasError) {
-                lockFormFields();
-                return;
-            }
-            Livewire.dispatch("post-ppf", { ppf: ppf.value.trim() });
-            Livewire.dispatch("update-ppf", { ppf: ppf.value.trim() });
+    window.addEventListener("confirm-deletePren", () => {
+        if (confirm("Are you sure you want to delete this?")) {
+            Livewire.dispatch("deletePrencode");
         }
+    });
+
+    window.addEventListener("confirm-deleteHF", () => {
+        console.log("here");
+        if (confirm("Are you sure you want to delete this?")) {
+            Livewire.dispatch("deleteForRework");
+        }
+    });
+
+    window.addEventListener("ppfcheck", () => {
+        document.getElementById("Init-add").click;
+    });
+
+    window.addEventListener("confirm-accept", () => {
+        if (confirm("Are you sure you want to accept this?")) {
+            Livewire.dispatch("AcceptTotal");
+        }
+    });
+
+    window.addEventListener("redirect-to-login", (event) => {
+        // Optional: you can also show a toast or alert here
+        alert("Data inserted successfully!");
+
+        // Redirect after a short delay (2 seconds)
+        setTimeout(() => {
+            window.location.href = event.detail.url;
+        }, 2000); // 2000ms = 2 seconds
     });
 
     window.addEventListener("confirm-delete", () => {
@@ -139,32 +137,51 @@ document.addEventListener("DOMContentLoaded", () => {
             Livewire.dispatch("DeleteToDb");
         }
     });
-    document.addEventListener("livewire:navigated", () => {
-        initGoodNgInputs();
-    });
-    document.addEventListener("livewire:load", () => {
-        initGoodNgInputs();
-        lockbuttons();
-    });
-    document.addEventListener("livewire:updated", () => {
-        initGoodNgInputs();
-        lockbuttons();
-    });
-
     Livewire.on("set-readonly", (mode) => makeReadOnlyAll(mode));
-    // window.addEventListener("enable-buttons", enableButtons);
+    window.addEventListener("removelock", () => {
+        removelockbuttonsPren();
+    });
+    if (!window.lockbuttonsListenerAdded) {
+        window.lockbuttonsListenerAdded = true;
 
-    function lockbuttons() {
-        document.getElementById("add-rework").disabled = true;
-        document.getElementById("add-defect").disabled = true;
-        document.getElementById("scan-ppf").disabled = true;
-        document.getElementById("PPF").readOnly = true;
-        document.getElementById("PPF").classList.add("bg-gray-500");
-        document.getElementById("OuterPanel").classList.add("blur-sm");
+        window.addEventListener("lockbuttons", () => {
+            lockbuttons();
+            console.log("Buttons locked");
+        });
+    }
+    window.addEventListener("ProcessVI", () => {
+        ProcessVI();
+    });
+    window.addEventListener("ProcessMD", () => {
+        ProcessMD();
+    });
+    window.addEventListener("ProcessHF", () => {
+        ProcessHF();
+    });
+
+    function ProcessVI() {
+        document.getElementById("title").textContent = "Process Record (VI)";
+    }
+    function ProcessMD() {
+        document.getElementById("title").textContent = "Process Record (MD)";
+    }
+    function ProcessHF() {
+        document.getElementById("title").textContent = "Process Record (HF)";
+    }
+
+    function removelockbuttonsPren() {
+        document.getElementById("scan-ppf").disabled = false;
+
+        document.getElementById("PPF").readOnly = false;
+        document.getElementById("PPF").classList.remove("bg-gray-500");
+
+        document.getElementById("OuterPanel").classList.remove("blur-sm");
         document
             .getElementById("OuterPanel")
-            .classList.add("pointer-events-none");
+            .classList.remove("pointer-events-none");
+        ppf.focus();
     }
+
     function resetActionButtons() {
         const buttons = [
             "Init-add",
@@ -196,7 +213,7 @@ document.addEventListener("DOMContentLoaded", () => {
             "transition-all",
             "border-2",
             "border-double",
-            "border-yellow-400"
+            "border-yellow-400",
         );
 
         buttons.forEach((id) => {
@@ -213,7 +230,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 "border-red-400",
                 "bg-green-900",
                 "bg-blue-900",
-                "bg-red-900"
+                "bg-red-900",
             );
         });
     }
@@ -224,8 +241,10 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("addbutton", () => {
         lockFormFields();
         resetActionButtons();
-        document.getElementById("SubmitBtn").textContent = "Add";
+        document.getElementById("SubmitBtn").textContent = "Confirm";
         document.getElementById("SubmitBtn").hidden = false;
+        document.getElementById("SubmitBtn").disabled = false;
+        document.getElementById("title").textContent = "VI Defect (Add)";
         document
             .getElementById("SubmitBtn")
             .classList.add(
@@ -233,7 +252,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 "hover:bg-green-800",
                 "focus:outline-none",
                 "focus:ring-4",
-                "focus:ring-green-300"
+                "focus:ring-green-300",
             );
         document
             .getElementById("Init-add")
@@ -244,13 +263,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 "transition-all",
                 "border-2",
                 "border-double",
-                "border-green-400"
+                "border-green-400",
             );
     });
+
     window.addEventListener("editbutton", () => {
         resetActionButtons();
         document.getElementById("SubmitBtn").textContent = "Edit";
         document.getElementById("SubmitBtn").hidden = false;
+        document.getElementById("title").textContent = "VI Defect (Edit)";
         document
             .getElementById("SubmitBtn")
             .classList.add(
@@ -258,7 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 "hover:bg-blue-800",
                 "focus:outline-none",
                 "focus:ring-4",
-                "focus:ring-blue-300"
+                "focus:ring-blue-300",
             );
         document
             .getElementById("Init-update")
@@ -269,7 +290,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 "transition-all",
                 "border-2",
                 "border-double",
-                "border-blue-400"
+                "border-blue-400",
             );
     });
 
@@ -277,6 +298,7 @@ document.addEventListener("DOMContentLoaded", () => {
         resetActionButtons();
         document.getElementById("SubmitBtn").textContent = "Delete";
         document.getElementById("SubmitBtn").hidden = false;
+        document.getElementById("title").textContent = "VI Defect (Delete)";
         document
             .getElementById("SubmitBtn")
             .classList.add(
@@ -284,7 +306,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 "hover:bg-red-800",
                 "focus:outline-none",
                 "focus:ring-4",
-                "focus:ring-red-300"
+                "focus:ring-red-300",
             );
         document
             .getElementById("Init-delete")
@@ -295,11 +317,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 "transition-all",
                 "border-2",
                 "border-double",
-                "border-red-400"
+                "border-red-400",
             );
     });
     window.addEventListener("viewbutton", () => {
         resetActionButtons();
+        document.getElementById("title").textContent = "VI Defect (Inquire)";
         document
             .getElementById("Init-inquire")
             .classList.add(
@@ -309,70 +332,58 @@ document.addEventListener("DOMContentLoaded", () => {
                 "transition-all",
                 "border-2",
                 "border-double",
-                "border-yellow-400"
+                "border-yellow-400",
             );
     });
-    function enableButtons() {
-        const fieldss = ["add-rework", "add-defect", "scan-ppf"];
-        fieldss.forEach((ids) => {
-            const els = document.getElementById(ids);
-            if (els) {
-                els.disabled = false;
-            }
-        });
-        document.getElementById("PPF").readOnly = false;
-        document.getElementById("PPF").classList.remove("bg-gray-500");
-        document.getElementById("OuterPanel").classList.remove("blur-sm");
+
+     Livewire.on("process", () => {
+        lockFormFields();
+        resetActionButtons();
+        const submitBtn = document.getElementById("SubmitBtn");
+        submitBtn.textContent = "Add";
+        submitBtn.hidden = false;
+        submitBtn.classList.add(
+            "bg-green-700",
+            "hover:bg-green-800",
+            "focus:outline-none",
+            "focus:ring-4",
+            "focus:ring-green-300",
+        );
 
         document
-            .getElementById("OuterPanel")
-            .classList.remove("pointer-events-none");
-    }
+            .getElementById("Init-add")
+            .classList.add(
+                "bg-green-900",
+                "scale-95",
+                "shadow-inner",
+                "transition-all",
+                "border-2",
+                "border-double",
+                "border-green-400",
+            );
+    });
+    document.addEventListener("haserror", (event) => {
+        let message = null;
 
-    // function persistAction(action, buttonId) {
-    //     sessionStorage.setItem("lastAction", action);
-    //     sessionStorage.setItem("lastButtonId", buttonId);
-    // }
+        // Livewire 3 can wrap the data in __livewire or send directly
+        if (event.detail[0]?.__livewire?.params?.[0]?.message) {
+            // wrapped version
+            message = event.detail[0].__livewire.params[0].message;
+        } else if (event.detail[0]?.message) {
+            // direct version
+            message = event.detail[0].message;
+        } else if (event.detail?.message) {
+            // sometimes detail itself is the object
+            message = event.detail.message;
+        }
 
-    // function restoreAction() {
-    //     const action = sessionStorage.getItem("lastAction");
-    //     const buttonId = sessionStorage.getItem("lastButtonId");
-    //     if (!action || !buttonId) return;
-
-    //     const el = document.querySelector("[wire\\:id]");
-    //     if (el) {
-    //         const component = Livewire.find(el.getAttribute("wire:id"));
-    //         if (component) {
-    //             component.call("setActionAuto", action);
-    //         }
-    //     }
-
-    //     const btn = document.getElementById(buttonId);
-    //     if (btn) btn.classList.add("active"); // optional styling
-    // }
-
-    // ["Init-add", "Init-update", "Init-delete", "Init-inquire"].forEach((id) => {
-    //     const btn = document.getElementById(id);
-    //     if (!btn) return;
-    //     btn.addEventListener("click", () => {
-    //         const map = {
-    //             "Init-add": "Add",
-    //             "Init-update": "Edit",
-    //             "Init-delete": "Delete",
-    //             "Init-inquire": "View",
-    //         };
-    //         persistAction(map[id], id);
-    //     });
-    // });
-
-    // restoreAction();
-
-    // function lockAction() {
-    //     document.getElementById("buttons-action").classList.add("blur-sm");
-    //     document
-    //         .getElementById("buttons-action")
-    //         .classList.add("pointer-events-none");
-    // }
+        if (message) {
+            alert(message);
+        } else {
+            console.error("Livewire event did not contain a message:", event);
+        }
+    });
+  
     function unlockFormFields() {
         if (window.hasError) {
             alert("Please fix the error before continuing.");
@@ -415,8 +426,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         ppf.readOnly = true;
         ppf.classList.add("bg-gray-300");
-        document.getElementById("add-defect").focus();
+        // document.getElementById("add-defect").focus();
     }
+
+    window.addEventListener("enableoperatorform", () => {
+        lockFormFields();
+    });
+
     function lockFormFields() {
         const fields = [
             "HfNo",
@@ -459,18 +475,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     document.getElementById("excss").addEventListener("focus", function () {
-    this.select();
+        this.select();
     });
     document.getElementById("lack").addEventListener("focus", function () {
-    this.select();
+        this.select();
     });
     document.getElementById("rework").addEventListener("focus", function () {
-    this.select();
+        this.select();
     });
     document.getElementById("sample").addEventListener("focus", function () {
-    this.select();
+        this.select();
     });
-
 
     function initGoodNgInputs() {
         document
@@ -539,18 +554,20 @@ document.addEventListener("DOMContentLoaded", () => {
             });
     }
 
-    document.querySelectorAll("input[type='number']").forEach(input => {
-    input.addEventListener("focus", () => {
-        setTimeout(() => {
-            input.scrollIntoView({ behavior: "smooth", block: "center" });
-            input.select();
-        }, 300);
-    });
-});
-    adddef.addEventListener("click", function () {
-        closedef.click();
-    });
-    addrew.addEventListener("click", function () {
-        closere.click();
+    const submitbtn = document.getElementById("SubmitBtn");
+
+    function validatePPF() {
+        const value = ppf.value.trim();
+
+        // Disable button if empty or not integer
+        submitbtn.disabled = value === "" || !/^\d+$/.test(value);
+    }
+
+    // Validate on input (as user types)
+    ppf.addEventListener("input", validatePPF);
+    validatePPF();
+
+    document.addEventListener("livewire:load", () => {
+        initGoodNgInputs();
     });
 });

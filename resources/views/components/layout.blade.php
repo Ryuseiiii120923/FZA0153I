@@ -4,102 +4,189 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="icon" href="{{ asset('fuji_logo.ico') }}" type="image/x-icon">
-    <script src="https://unpkg.com/@zxing/library@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
+    <title>VI Defect</title>
+    <link rel="icon" href="{{ asset('images/fuji_logo.ico') }}" type="image/x-icon">
+    <script src="{{ asset('js/zxing.min.js') }}" defer></script>
+    <script src="{{ asset('js/flowbite.min.js') }}" defer></script>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
-    <script src="{{ asset('js/app.js') }}"></script>
+    <script src="{{ asset('js/app.js') }}" defer></script>
     @livewireStyles
 
+    <style>
+        :root {
+            --sidebar-width: 64px;
+        }
+    </style>
 </head>
 
-<body class="overflow-x-hidden font-sans">
-    <nav class="bg-white">
-        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div class="flex h-16 justify-between items-center">
-                <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 flex items-center justify-between">
-                    <div class="flex items-center">
-                        <img src="{{ asset('images/fuji_logo.png') }}" alt="Logo"
-                            class="block h-8 sm:h-10 lg:h-12 w-auto" />
-                    </div>
-                </div>
-            </div>
+<body class="overflow-x-hidden font-sans bg-gray-50">
 
-            <!-- Right: Logout button -->
+    @if(request()->input('systemname') !== 'ProcessRecord')
+    <div
+        x-data="{
+    mobileOpen: false,
+    desktopExpanded: false,
+    currentPage: 'dashboard',
 
-            {{-- <div class="hidden md:block">
-              <div class="ml-10 flex items-baseline space-x-4">
-                <!-- Current: "bg-gray-950/50 text-white", Default: "text-gray-300 hover:bg-white/5 hover:text-white" -->
-                <a href="#" aria-current="page" class="rounded-md bg-gray-950/50 px-3 py-2 text-sm font-medium text-white">Dashboard</a>
-                <a href="#" class="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-white/5 hover:text-white">Team</a>
-                <a href="#" class="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-white/5 hover:text-white">Projects</a>
-                <a href="#" class="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-white/5 hover:text-white">Calendar</a>
-                <a href="#" class="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-white/5 hover:text-white">Reports</a>
-              </div>
-            </div> --}}
-            <div class="-mr-2 flex md:hidden">
-                <!-- Mobile menu button -->
-                <button type="button" command="--toggle" commandfor="mobile-menu"
-                    class="relative inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-white/5 hover:text-white focus:outline-2 focus:outline-offset-2 focus:outline-indigo-500">
-                    <span class="absolute -inset-0.5"></span>
-                    <span class="sr-only">Open main menu</span>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                        data-slot="icon" aria-hidden="true" class="size-6 in-aria-expanded:hidden">
-                        <path d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" stroke-linecap="round"
-                            stroke-linejoin="round" />
+    get isExpanded() {
+        return this.desktopExpanded || this.mobileOpen;
+    }
+}"
+        @keydown.escape.window="mobileOpen = false; desktopExpanded = false">
+        <div
+            x-show="mobileOpen"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            @click="mobileOpen = false"
+            class="fixed inset-0 z-30 bg-black/50 lg:hidden"
+            style="display: none;"></div>
+
+        <aside
+            :class="{
+                'w-56': isExpanded,
+                'w-16': !isExpanded
+            }"
+            class="fixed left-0 z-40 flex flex-col
+                   bg-[#0F3C89] text-white shadow-xl
+                   transition-all duration-300 ease-in-out
+                   -translate-x-full lg:translate-x-0
+                   top-[72px] bottom-0 lg:top-0"
+            :style="mobileOpen ? 'transform: translateX(0)' : null">
+            <div
+                class="hidden lg:flex items-center border-b border-white/10 overflow-hidden
+                       hover:bg-white/10 transition-colors duration-150"
+                style="height: 72px; min-height: 72px; padding: 0 12px;">
+                <button
+                    type="button"
+                    @click="desktopExpanded = !desktopExpanded"
+                    class="hidden lg:flex flex-shrink-0 w-8 h-8 rounded-lg bg-white/20
+                           items-center justify-center hover:bg-white/30 transition-colors duration-150"
+                    :title="desktopExpanded ? 'Collapse sidebar' : 'Expand sidebar'"
+                    aria-label="Toggle sidebar">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                        data-slot="icon" aria-hidden="true" class="size-6 not-in-aria-expanded:hidden">
-                        <path d="M6 18 18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" />
+                </button>
+                <div class="lg:hidden flex-shrink-0 w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </div>
+                <span
+                    :class="isExpanded ? 'opacity-100 ml-3 max-w-full' : 'opacity-0 max-w-0 ml-0'"
+                    class="text-sm font-semibold text-white whitespace-nowrap overflow-hidden transition-all duration-200">
+                    @if(request()->input('process') === 'HF')
+                    HF Defect
+                    @else
+                    VI Defect
+                    @endif
+
+                </span>
+
+                <button
+                    @click.stop="mobileOpen = false"
+                    class="ml-auto text-white/60 hover:text-white lg:hidden flex-shrink-0"
+                    aria-label="Close sidebar">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
             </div>
-        </div>
-        </div>
 
-        {{-- <el-disclosure id="mobile-menu" hidden class="block md:hidden">
-        <div class="space-y-1 px-2 pt-2 pb-3 sm:px-3">
-          <!-- Current: "bg-gray-950/50 text-white", Default: "text-gray-300 hover:bg-white/5 hover:text-white" -->
-          <a href="#" aria-current="page" class="block rounded-md bg-gray-950/50 px-3 py-2 text-base font-medium text-white">Dashboard</a>
-          <a href="#" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-white/5 hover:text-white">Team</a>
-          <a href="#" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-white/5 hover:text-white">Projects</a>
-          <a href="#" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-white/5 hover:text-white">Calendar</a>
-          <a href="#" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-white/5 hover:text-white">Reports</a>
-        </div>
-      </el-disclosure> --}}
-    </nav>
 
-    <header class="relative bg-blue-500 after:pointer-events-none after:absolute after:inset-x-0 after:inset-y-0 after:border-y after:border-white/10">
-        <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 flex items-center justify-between">
-
-            <div class="w-16"></div>
-
-            <h1 class="text-3xl font-bold tracking-tight text-white text-center flex-1">
-                VI Defect
-            </h1>
-
-            <div class="w-16 me-4">
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit" class="text-white hover:bg-blue-700 bg-[#0F3C89] font-medium rounded-lg text-sm px-5 py-2.5">
-                        Logout
-                    </button>
-                </form>
+            <div class="lg:hidden flex items-center justify-between px-4 py-3 border-b border-white/10">
+                <span class="text-sm font-semibold text-white">
+                    @if(request()->input('process') === 'HF')
+                    HF Defect
+                    @else
+                    VI Defect
+                    @endif
+                </span>
+                <button @click="mobileOpen = false" class="text-white/60 hover:text-white" aria-label="Close">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
-        </div>
-    </header>
 
-    <main>
-        <div class="mx-auto py-6 sm:px-6">
-            <h1 class="text-3xl font-bold mb-6 text-gray-800">
-                Welcome, {{ Auth::user()->employeeName->名前}}!
-            </h1>
-            @include('components.modals')
-            {{ $slot }}
+            @if (request()->input('process') === 'HF')
+            <x-navbar-hf></x-navbar-hf>
+            @else
+            <x-navbar></x-navbar>
+            @endif
+        </aside>
 
-        </div>
-    </main>
+
+        <button
+            type="button"
+            @click="mobileOpen = true"
+            class="lg:hidden fixed top-4 left-4 z-50
+                   p-2 rounded-lg bg-[#0F3C89] text-white shadow-md
+                   hover:bg-[#185FA5] focus:outline-none focus:ring-2 focus:ring-white"
+            aria-label="Open sidebar">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        </button>
+
+
+        @endif
+        <header class="fixed top-0 right-0 z-20 bg-blue-600 shadow-md
+                   left-0  @if(request()->input('systemname') !== 'ProcessRecord') lg:left-16 transition-[left] duration-300 @endif">
+            <div class="w-full px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between" style="height: 72px;">
+
+
+                <div class="w-10 lg:hidden flex-shrink-0"></div>
+
+
+                <div class="hidden lg:flex flex-shrink-0 items-center">
+                    <img src="{{ asset('images/fuji_logo.png') }}"
+                        alt="Logo"
+                        class="h-10 w-auto drop-shadow-lg" />
+                </div>
+
+
+                <h1 class="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-white text-center flex-1" id="title">
+                    {{ request()->input('process') === 'HF' ? 'HF Defect' : 'VI Defect' }}
+                </h1>
+
+                <div class="flex-shrink-0">
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit"
+                            class="text-white hover:bg-blue-800 bg-[#0F3C89] font-medium rounded-lg text-sm px-4 py-2">
+                            Logout
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </header>
+
+
+        <main @click="desktopExpanded = false; mobileOpen = false" class="pt-[72px] lg:pl-16 transition-[padding] duration-300 min-h-screen">
+            <div class="px-4 sm:px-6 lg:px-8 py-6">
+
+                <h2 class="text-xl sm:text-2xl font-bold mb-6 text-gray-800 text-center sm:text-left">
+                    Welcome, {{
+                    Auth::user()?->employeeName?->名前
+                    ?? Auth::guard('worker')->user()?->employee?->名前
+                    ?? 'User'
+                }}!
+                </h2>
+
+                @include('components.modals')
+
+                <div class="w-full">
+                    {{ $slot }}
+                </div>
+            </div>
+        </main>
+    </div>
     @livewireScripts
 </body>
 

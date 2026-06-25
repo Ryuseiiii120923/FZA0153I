@@ -1,5 +1,5 @@
-const defaultTheme = require('tailwindcss/defaultTheme');
-const forms = require('@tailwindcss/forms');
+const defaultTheme = require("tailwindcss/defaultTheme");
+const forms = require("@tailwindcss/forms");
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -12,12 +12,10 @@ module.exports = {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                sans: ["Figtree", ...defaultTheme.fontFamily.sans],
             },
         },
     },
 
-    plugins: [
-        forms,
-    ],
+    plugins: [forms, require("tailwind-scrollbar")],
 };

@@ -12,7 +12,7 @@ class AddDefect extends Model
     protected $fillable = [
         'PPFNo',
         'PartNo',
-        'LotNo',
+        'Lotno',
         'MatNo',
         'MDNo',
         'PressNo',
@@ -36,6 +36,12 @@ class AddDefect extends Model
         'ReworkQty',
         'SampleQty',
         'Encoder',
+        'HFNo1',
+        'HFNo2',
+        'HFNo3',
+        'HFNo4',
+        'HFNo5',
+        'MDate'
         
     ];
 
