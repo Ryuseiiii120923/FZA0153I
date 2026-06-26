@@ -16,7 +16,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => env('DB_CONNECTION', 'sqlsrv'),
 
     /*
     |--------------------------------------------------------------------------
@@ -124,6 +124,21 @@ return [
             'password' => env('EMP_TRACE_DB_PASSWORD'),
             'encrypt' => env('DB_ENCRYPT', 'no'),
             'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'true'),
+        ],
+
+         'PRecord' => [
+            'driver' => 'sqlsrv',
+            'url' => env('DB_PR_URL'),
+            'host' => env('DB_PR_HOST', 'localhost'),
+            'port' => env('DB_PR_PORT', '1433'),
+            'database' => env('DB_PR_DATABASE', 'forge'),
+            'username' => env('DB_PR_USERNAME', 'forge'),
+            'password' => env('DB_PR_PASSWORD', ''),
+            'charset' => env('DB_PR_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'encrypt' => env('DB_PR_ENCRYPT', 'no'),
+            'trust_server_certificate' => env('DB_PR_TRUST_SERVER_CERTIFICATE', 'true'),
         ],
 
     ],

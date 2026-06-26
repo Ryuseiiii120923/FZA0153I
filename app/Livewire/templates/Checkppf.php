@@ -115,6 +115,24 @@ class Checkppf extends Component
         $this->dispatch('IsAdd');
     }
 
+    #[On('RejectTotal')]
+    public function RejectTotal()
+    {
+        $excss = 0;
+        $lack  = 0;
+        if ($this->totalInspection > $this->expct) {
+            $excss = $this->totalInspection - $this->expct;
+        } elseif ($this->totalInspection < $this->expct) {
+            $lack = $this->expct - $this->totalInspection;
+        }
+
+        $this->dispatch('rejectQty',[
+            'excssqty' => $excss ?? 0,
+            'lackqty' => $lack ?? 0
+        ]);
+        $this->dispatch('IsAdd');
+    }
+
     #[On('errorExisting')]
     public function hasError(string|null $data)
     {
