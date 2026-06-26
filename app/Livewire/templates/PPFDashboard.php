@@ -41,17 +41,15 @@ class PPFDashboard extends Component
 
 
         $ppfNos = $results->getCollection()->pluck('PPFNo')->map(fn($v) => (int)$v);
-
         $hfMap = CheckHF::whereIn('流動NO', $ppfNos)
             ->get()
-            ->keyBy('流動NO');
+            ->keyBy(fn($item) => (int)$item->流動NO);
 
         $results->getCollection()->transform(function ($item) use ($hfMap) {
             $hf = $hfMap->get((int)$item->PPFNo);
             $item->expct = $hf ? round($hf->合格数) : 0;
             return $item;
         });
-
 
         return $results;
     }

@@ -4,6 +4,7 @@ namespace App\Livewire\Templates;
 
 use App\Models\AddDefect;
 use App\Models\AddRwk;
+use App\Models\RejectQty;
 use App\Models\SmallDef;
 use App\Models\ViCheck;
 use App\Models\WorkerName;
@@ -70,6 +71,7 @@ class Add extends Component
     public $record = [];
     public $rows = [];
     public string $inspection_group;
+    public array $rejectQty;
 
     public $listeners = [
         'FromCheckppf' => 'Checkppf',
@@ -420,6 +422,7 @@ class Add extends Component
         if ($deleted) {
             SmallDef::where('PPFNo', $ppf)->delete();
             AddRwk::where('PPFNo', $ppf)->delete();
+            RejectQty::where('ppfno', $ppf)->delete();
             ViCheck::where('PPFNO', $this->ppf)
                 ->update([
                     'QtyOut' => null,
@@ -458,6 +461,20 @@ class Add extends Component
             $this->AddtoDb();
         }
     }
+
+    #[On('rejectQty')]
+    public function RejectTotal(array $data){
+        $isExisting = RejectQty::where('ppfno', $this->ppf)->exists();
+        $this->rejectQty[] = [
+            'ppfno' => $this->ppf,
+            'lack' => $data['lackqty'],
+            'excss' => $data['excssqty'],
+            'updated_by' => $this->encoder,
+            'updated_at' => now(),
+             ...(!$isExisting ? ['created_at' => now()] : []),
+        ];
+    }
+
     public function AddtoDb()
     {
         if ($this->submitMethod == 'addToDb') {
@@ -559,9 +576,13 @@ class Add extends Component
             return;
         }
 
-
-        //dd($this->rework);
-        //dd($this->smalldefects);
+        if(isset($this->rejectQty)){
+            RejectQty::upsert(
+                $this->rejectQty,
+                ['ppfno','updated_by'],
+                ['updated_at', 'lack', 'excss']
+            );
+        }
 
         Db::table('DefectSMALL')->where('PPFNo', $this->ppf)->delete();
         Db::table('DefectRWK')->where('PPFNo', $this->ppf)->delete();

@@ -2,6 +2,9 @@ import "./bootstrap.js";
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.min.css";
 import "flatpickr/dist/themes/material_blue.css";
+import Swal from 'sweetalert2';
+
+window.Swal = Swal;
 
 document.addEventListener("DOMContentLoaded", () => {
     const codeReader = new ZXing.BrowserMultiFormatReader();
@@ -116,12 +119,22 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("Init-add").click;
     });
 
-    window.addEventListener("confirm-accept", () => {
-        if (confirm("Are you sure you want to accept this?")) {
+   window.addEventListener("confirm-accept", function () {
+    Swal.fire({
+        title: "Confirmation",
+        text: "Is this a real Excess Quantity or Lack Quantity?",
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "Accept",
+        cancelButtonText: "Reject"
+    }).then((result) => {
+        if (result.isConfirmed) {
             Livewire.dispatch("AcceptTotal");
+        } else {
+            Livewire.dispatch("RejectTotal");
         }
     });
-
+});
     window.addEventListener("redirect-to-login", (event) => {
         // Optional: you can also show a toast or alert here
         alert("Data inserted successfully!");
@@ -336,7 +349,7 @@ document.addEventListener("DOMContentLoaded", () => {
             );
     });
 
-     Livewire.on("process", () => {
+    Livewire.on("process", () => {
         lockFormFields();
         resetActionButtons();
         const submitBtn = document.getElementById("SubmitBtn");
@@ -383,7 +396,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Livewire event did not contain a message:", event);
         }
     });
-  
+
     function unlockFormFields() {
         if (window.hasError) {
             alert("Please fix the error before continuing.");
