@@ -1648,6 +1648,9 @@ input:where([type='file']):focus {
 .pl-9 {
   padding-left: 2.25rem;
 }
+.pr-1 {
+  padding-right: 0.25rem;
+}
 .pr-4 {
   padding-right: 1rem;
 }
@@ -2019,10 +2022,6 @@ input[type=number]::-webkit-outer-spin-button {
 .hover\:bg-gray-200:hover {
   --tw-bg-opacity: 1;
   background-color: rgb(229 231 235 / var(--tw-bg-opacity, 1));
-}
-.hover\:bg-gray-50:hover {
-  --tw-bg-opacity: 1;
-  background-color: rgb(249 250 251 / var(--tw-bg-opacity, 1));
 }
 .hover\:bg-green-700:hover {
   --tw-bg-opacity: 1;

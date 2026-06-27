@@ -1,4 +1,4 @@
-<div x-data="{ openAddRework: false }" class="bg-white rounded-lg w-full max-w-1xl mx-auto py-4 @if($locked) opacity-50 cursor-not-allowed @endif">
+<div x-data="{ openAddRework: false }" @close-add-rework.window="openAddRework = false" class="bg-white rounded-lg w-full max-w-1xl mx-auto py-4 @if($locked) opacity-50 cursor-not-allowed @endif">
     <div class="bg-gray-700 w-full">
         <p class="text-4xl font-extrabold  text-center text-white p-4 ">Rework</p>
     </div>
@@ -198,7 +198,7 @@
                     </p>
                 </div>
                 <button type="button"
-                    @click="openAddRework = false; $wire.resetReworkModal()"
+                    wire:click="resetReworkModal"
                     class="text-gray-400 hover:text-gray-700 rounded-lg w-8 h-8 flex justify-center items-center hover:bg-gray-100 transition">
                     <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
                         <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
@@ -303,11 +303,6 @@
 
             <!-- Footer -->
             <div class="px-6 py-4 border-t border-gray-100 shrink-0 flex justify-end gap-3">
-                <button type="button"
-                    @click="openAddRework = false; $wire.resetReworkModal()"
-                    class="px-5 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm font-medium hover:bg-gray-50 transition">
-                    Cancel
-                </button>
                 <button type="button"
                     wire:click="addRework"
                     @click="openAddRework = false"

@@ -218,10 +218,20 @@ class Rework extends Component
      */
     public function resetReworkModal(): void
     {
+
+        if (isset($this->stagedReworks)) {
+            $this->dispatch('disregardStaged');
+        }
+    }
+
+    #[On('confirmedDisregard')]
+    public function resetStaged()
+    {
         $this->stagedReworks = [];
         $this->newRework     = '';
         $this->newQuan       = '';
         $this->resetErrorBag();
+        $this->dispatch('close-add-rework');
     }
 
     /**
@@ -274,11 +284,7 @@ class Rework extends Component
         ]);
 
         $this->UpdatedNgRework($this->formId);
-
-        // Clear staging
-        $this->stagedReworks = [];
-        $this->newRework     = '';
-        $this->newQuan       = '';
+        $this->resetStaged();
     }
 
     public function CheckHf()

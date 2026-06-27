@@ -15331,6 +15331,20 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
   });
+  window.addEventListener("disregardStaged", function (event) {
+    sweetalert2__WEBPACK_IMPORTED_MODULE_4__.fire({
+      title: "Confirmation",
+      text: "There are Staged Input, Do you want to disregard this?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes",
+      cancelButtonText: "No"
+    }).then(function (result) {
+      if (result.isConfirmed) {
+        Livewire.dispatch("confirmedDisregard");
+      }
+    });
+  });
   window.addEventListener("redirect-to-login", function (event) {
     // Optional: you can also show a toast or alert here
     alert("Data inserted successfully!");

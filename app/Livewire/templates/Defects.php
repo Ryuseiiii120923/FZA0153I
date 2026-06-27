@@ -364,11 +364,20 @@ class Defects extends Component
      */
     public function resetModalState(): void
     {
+        if (isset($this->stagedDefects)) {
+            $this->dispatch('disregardStaged');
+        }
+    }
+
+    #[On('confirmedDisregard')]
+    public function resetStaged()
+    {
         $this->modalSelectedLargeDefect = null;
         $this->modalLargeQty            = '';
         $this->modalSmallDefects        = [];
         $this->stagedDefects            = [];
         $this->resetErrorBag();
+        $this->dispatch('close-add-defect');
     }
 
     /**
@@ -457,7 +466,7 @@ class Defects extends Component
         $this->dispatch('isDropdownUpdate', $this->formId);
 
         // Reset modal
-        $this->resetModalState();
+        $this->resetStaged();
     }
 
     // -------------------------------------------------------------------------
