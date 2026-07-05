@@ -2,19 +2,18 @@
 
 namespace App\Livewire\Pages\Operator;
 
-use App\Models\HF\Defect;
-use App\Models\HF\HF;
-use App\Models\HF\Rework;
-use App\Models\HF\SmallDefect;
-use App\Models\Operator\DefectInsp;
-use App\Models\Operator\PRInsp;
-use App\Models\Operator\ReworkInsp;
-use App\Models\Operator\SmallInsp;
+use App\Models\Forms\Defect;
+use App\Models\Forms\HF;
+use App\Models\Forms\Rework;
+use App\Models\Forms\SmallDefect;
+use App\Models\Inspector\DefectInsp;
+use App\Models\Inspector\PRInsp;
+use App\Models\Inspector\ReworkInsp;
+use App\Models\Inspector\SmallInsp;
 use App\Models\Worker;
 use App\Models\WorkerName;
 use App\Services\PR\SubmitPrencodeService;
 use App\Services\PrencodeService;
-use Carbon\Carbon;
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth as UserAuth;
 use Illuminate\Support\Facades\DB;
@@ -229,14 +228,14 @@ class Prencode extends Component
     #[On('deletePrencode')]
     public function deletePrencode()
     {
-        DefectInsp::where('InspectorID', $this->inspectorID)->where('PPFNo', $this->ppf)->delete();
-        ReworkInsp::where('InspectorID', $this->inspectorID)->where('PPFNo', $this->ppf)->delete();
-        SmallInsp::where('InspectorID', $this->inspectorID)->where('PPFNo', $this->ppf)->delete();
-        PRInsp::where('InspectorID', $this->inspectorID)->where('PPFNo', $this->ppf)->delete();
-        Defect::where('ppfno', $this->ppf)->where('updated_by', $this->inspectorID)->delete();
-        Rework::where('ppfno', $this->ppf)->where('updated_by', $this->inspectorID)->delete();
-        SmallDefect::where('ppfno', $this->ppf)->where('updated_by', $this->inspectorID)->delete();
-        HF::where('ppfno', $this->ppf)->where('updated_by', $this->inspectorID)->delete();
+        DefectInsp::where('inspectorId', $this->inspectorID)->where('operation', 'VI')->where('ppfno', $this->ppf)->delete();
+        ReworkInsp::where('inspectorId', $this->inspectorID)->where('operation', 'VI')->where('ppfno', $this->ppf)->delete();
+        SmallInsp::where('inspectorId', $this->inspectorID)->where('operation', 'VI')->where('ppfno', $this->ppf)->delete();
+        PRInsp::where('inspectorId', $this->inspectorID)->where('operation', 'VI')->where('ppfno', $this->ppf)->delete();
+        Defect::where('ppfno', $this->ppf)->where('inspId', $this->inspectorID)->delete();
+        Rework::where('ppfno', $this->ppf)->where('inspId', $this->inspectorID)->delete();
+        SmallDefect::where('ppfno', $this->ppf)->where('inspId', $this->inspectorID)->delete();
+        HF::where('ppfno', $this->ppf)->where('inspId', $this->inspectorID)->delete();
         session()->flash('success', 'Delete successfully!');
     }
 
@@ -304,28 +303,24 @@ class Prencode extends Component
                 foreach ($this->needToDeleteForm as $form) {
                     $hf_id = $this->needToDeleteForm['hf_id'] ?? null;
                     if ($hf_id) {
-                        DB::table('hf_forms')
-                            ->where('hf_id', $hf_id)
+                        HF::where('hfid', $hf_id)
                             ->where('ppfno', $ppfno)
-                            ->where('updated_by', $this->inspectorID)
+                            ->where('inspId', $this->inspectorID)
                             ->delete();
 
-                        DB::table('hf_defect')
-                            ->where('hf_id', $hf_id)
+                        Defect::where('hfid', $hf_id)
                             ->where('ppfno', $ppfno)
-                            ->where('updated_by', $this->inspectorID)
+                            ->where('inspId', $this->inspectorID)
                             ->delete();
 
-                        DB::table('hf_rework')
-                            ->where('hf_id', $hf_id)
+                        Rework::where('hfid', $hf_id)
                             ->where('ppfno', $ppfno)
-                            ->where('updated_by', $this->inspectorID)
+                            ->where('inspId', $this->inspectorID)
                             ->delete();
 
-                        DB::table('hf_small')
-                            ->where('hf_id', $hf_id)
+                        SmallDefect::where('hfid', $hf_id)
                             ->where('ppfno', $ppfno)
-                            ->where('updated_by', $this->inspectorID)
+                            ->where('inspId', $this->inspectorID)
                             ->delete();
                     }
                 }
@@ -336,18 +331,16 @@ class Prencode extends Component
                     if (isset($this->needToDeleteDefect[$formId])) {
                         $types = $this->needToDeleteDefect[$formId];
                         foreach ($types as $type) {
-                            DB::table('hf_defect')
-                                ->where('hf_id', $form['hf_id'])
+                            Defect::where('hfid', $form['hf_id'])
                                 ->where('defect', $type)
                                 ->where('ppfno', $ppfno)
-                                ->where('updated_by', $this->inspectorID)
+                                ->where('inspId', $this->inspectorID)
                                 ->delete();
 
-                            DB::table('hf_small')
-                                ->where('hf_id', $form['hf_id'])
+                            SmallDefect::where('hfid', $form['hf_id'])
                                 ->where('large_defect', $type)
                                 ->where('ppfno', $ppfno)
-                                ->where('updated_by', $this->inspectorID)
+                                ->where('inspId', $this->inspectorID)
                                 ->delete();
                         }
                     }
@@ -358,11 +351,10 @@ class Prencode extends Component
                     if (isset($this->needToDeleteDefectSmall[$formId])) {
                         $types = $this->needToDeleteDefectSmall[$formId];
                         foreach ($types as $type) {
-                            DB::table('hf_small')
-                                ->where('hf_id', $form['hf_id'])
+                            SmallDefect::where('hfid', $form['hf_id'])
                                 ->where('large_defect', $type['largeDefect'])
                                 ->where('small_defect', $type['type'])
-                                ->where('updated_by', $this->inspectorID)
+                                ->where('inspId', $this->inspectorID)
                                 ->delete();
                         }
                     }
@@ -374,35 +366,34 @@ class Prencode extends Component
                     if (isset($this->needToDeleteRework[$formId])) {
                         $items = $this->needToDeleteRework[$formId];
                         foreach ($items as $item) {
-                            DB::table('hf_rework')
-                                ->where('hf_id', $form['hf_id'])
+                            Rework::where('hfid', $form['hf_id'])
                                 ->where('rework_type', $item['type'])
-                                ->where('HFNo', $item['hfno'])
-                                ->where('updated_by', $this->inspectorID)
+                                ->where('hfid', $item['hfno'])
+                                ->where('inspId', $this->inspectorID)
                                 ->delete();
                         }
                     }
                 }
             }
 
-            DB::table('Inspector_Defect')
-                ->where('InspectorID', $this->inspectorID)
-                ->where('PPFNo', $this->ppf)
+            DefectInsp::where('inspectorId', $this->inspectorID)
+                ->where('operation', 'VI')
+                ->where('ppfno', $this->ppf)
                 ->delete();
 
-            DB::table('Inspector_Rework')
-                ->where('InspectorID', $this->inspectorID)
-                ->where('PPFNo', $this->ppf)
+            ReworkInsp::where('inspectorId', $this->inspectorID)
+                ->where('operation', 'VI')
+                ->where('ppfno', $this->ppf)
                 ->delete();
 
-            DB::table('Inspector_Small')
-                ->where('InspectorID', $this->inspectorID)
-                ->where('PPFNo', $this->ppf)
+            SmallInsp::where('inspectorId', $this->inspectorID)
+                ->where('operation', 'VI')
+                ->where('ppfno', $this->ppf)
                 ->delete();
 
-            DB::table('Inspector_PR')
-                ->where('InspectorID', $this->inspectorID)
-                ->where('PPFNo', $this->ppf)
+            PRInsp::where('inspectorId', $this->inspectorID)
+                ->where('operation', 'VI')
+                ->where('ppfno', $this->ppf)
                 ->delete();
 
             // 🔵 RE-SAVE USING OPTIMIZED METHOD
@@ -465,8 +456,8 @@ class Prencode extends Component
             $this->submitPrencodeService()->submit(
                 [
                     'ppfno' => $this->ppf,
-                    'username' => $this->username,
-                    'updated_by' => $this->inspectorID,
+                    'updated_by' => $this->encoder,
+                    'inspectorId' => $this->inspectorID,
                     'total_inspect' => $this->totalInspection,
                     'form' => $this->dropdownForms,
                     'needToDeleteForm' => $this->needToDeleteForm,

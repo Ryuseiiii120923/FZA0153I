@@ -2,61 +2,44 @@
 
 namespace App\Repositories;
 
+use App\Models\Forms\Rework;
+use App\Models\Forms\Defect;
+use App\Models\Forms\HF;
+use App\Models\Forms\SmallDefect;
 use Illuminate\Support\Facades\DB;
 
 class DropDownRepository{
     public function getGroupedDefects($ppf, $inspectorId, $inspectRec)
     {
-        return DB::table('hf_defect')->where('ppfno', $ppf)
-            ->where('updated_by', $inspectorId)
-            ->where('inspect_REC', $inspectRec)
-            ->get();
-    }
-      public function getGroupedDefectsforFinishing($ppf, $inspectorId, $inspectRec)
-    {
-        return DB::table('dr_defect')->where('ppfno', $ppf)
-            ->where('updated_by', $inspectorId)
-            ->where('inspect_REC', $inspectRec)
+        return Defect::where('ppfno', $ppf)
+            ->where('inspId', $inspectorId)
+            ->where('formId', $inspectRec)
             ->get();
     }
 
     public function getByPpfAndInspector($ppf, $inspectorId)
     {
-        return DB::table('hf_forms')->where('ppfno', $ppf)
-            ->where('updated_by', $inspectorId)
+        return HF::where('ppfno', $ppf)
+            ->where('inspId', $inspectorId)
             ->get();
     }
 
      public function getReworks($ppf, $inspectorId, $inspectRec)
     {
-        return DB::table('hf_rework')->where('ppfno', $ppf)
-            ->where('updated_by', $inspectorId)
-            ->where('inspect_REC', $inspectRec)
+        return Rework::where('ppfno', $ppf)
+            ->where('inspId', $inspectorId)
+            ->where('formId', $inspectRec)
             ->get();
     }
 
      public function getSmallDefects($ppf, $inspectorId, $inspectRec)
     {
-        return DB::table('hf_small')->where('ppfno', $ppf)
-            ->where('updated_by', $inspectorId)
-            ->where('inspect_REC', $inspectRec)
-            ->whereNotNull('large_defect')
+        return SmallDefect::where('ppfno', $ppf)
+            ->where('inspId', $inspectorId)
+            ->where('formId', $inspectRec)
+            ->whereNotNull('largeDefect')
             ->get();
     }
-     public function getSmallDefectsforFinishing($ppf, $inspectorId, $inspectRec)
-    {
-        return DB::table('dr_small')->where('ppfno', $ppf)
-            ->where('updated_by', $inspectorId)
-            ->where('inspect_REC', $inspectRec)
-            ->whereNotNull('large_defect')
-            ->get();
-    }
-      public function getByPpfAndInspectorInFinishing($ppf, $inspectorId,$reworkNo)
-    {
-        return DB::table('dr_forms')->where('ppfno', $ppf)
-            ->where('updated_by', $inspectorId)
-            ->where('ReworkNo', $reworkNo)
-            ->get();
-    }
+
 
 }

@@ -18,11 +18,11 @@
         <tbody class="bg-gray-700">
             @forelse($ppfdata as $data)
             <tr>
-                <td class="px-4 py-2 text-center">{{ (int)$data->PPFNo }}</td>
+                <td class="px-4 py-2 text-center">{{ (int)$data->ppfno }}</td>
                 <td class="px-4 py-2 text-center">{{ $data->total_inspect }} / {{ $data->expct }}</td>
                 <td class="px-4 py-2 text-center">{{ $data->DateEncode }}</td>
                 <td class="px-4 py-2 flex justify-center gap-2">
-                    <button class="text-white bg-green-700 px-4 py-2 rounded" wire:loading.attr="disabled" wire:click.throttle.10000ms="confirm_ppf('{{ $data->PPFNo }}')">Confirm</button>
+                    <button class="text-white bg-green-700 px-4 py-2 rounded" wire:loading.attr="disabled" wire:click.throttle.10000ms="confirm_ppf('{{ $data->ppfno }}')">Confirm</button>
                 </td>
             </tr>
             @empty

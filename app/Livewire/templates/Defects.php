@@ -58,7 +58,6 @@ class Defects extends Component
 
     public $listeners = [
         'FetchDefect'          => 'fetchDefect',
-        'FetchDefectDashboard' => 'FetchDefectDashboard',
         'locked'               => 'locked',
         'ClearForm'            => 'ClearForm',
         'PPFFromOp'            => 'PPFFromOp',

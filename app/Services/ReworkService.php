@@ -24,13 +24,13 @@ class ReworkService
 
     $reworks = $rows->map(function ($item) {
         return [
-            'operatorid'   => $item->InspectorID,
-            'hfno'         => $item->HFNo,
-            'operatorname' => $item->insp_name,
-            'totalinsp'    => $item->TotalInspQty,
-            'type'         => $item->Defect,
-            'quan'         => (int) $item->Quantity,
-            'dateEncode'   => $item->DateEncode
+            'operatorid'   => $item->inspectorId,
+            'hfno'         => $item->hfno,
+            'operatorname' => $item->inspName,
+            'totalinsp'    => $item->total_inspect,
+            'type'         => $item->rework,
+            'quan'         => (int) $item->qty,
+            'dateEncode'   => $item->created_at
         ];
     })->values();
 

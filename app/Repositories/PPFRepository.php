@@ -2,12 +2,12 @@
 
 namespace App\Repositories;
 
-use App\Models\AddDefect;
 use App\Models\CheckHF;
 use App\Models\CheckPPF as ModelsCheckPPF;
-use App\Models\Operator\DefectInsp;
-use App\Models\Operator\PRInsp;
-use App\Models\Operator\ReworkInsp;
+use App\Models\Forms\HF;
+use App\Models\Inspector\DefectInsp;
+use App\Models\Inspector\PRInsp;
+use App\Models\Inspector\ReworkInsp;
 use Illuminate\Support\Facades\DB;
 
 class PPFRepository
@@ -24,18 +24,18 @@ class PPFRepository
 
     public function getTotalInspectionPerInspector($ppf, $inspectorID)
     {
-        return PRInsp::where('PPFNo', $ppf)->where('InspectorID', $inspectorID)->value('total_inspect') ?? 0;
+        return PRInsp::where('ppfno', $ppf)->where('InspectorID', $inspectorID)->value('total_inspect') ?? 0;
     }
     public function getTotalInspected($ppf)
     {
-        return PRInsp::where('PPFNo', $ppf)->sum('total_inspect');
+        return PRInsp::where('ppfno', $ppf)->sum('total_inspect');
     }
 
     public function checkPPFExistForInspector($ppf, $inspectorID)
     {
-        return DefectInsp::where('InspectorID', $inspectorID)->where('PPFNo', $ppf)->exists() ||
-            ReworkInsp::where('InspectorId', $inspectorID)->where('PPFNo', $ppf)->exists() ||
-            PRInsp::where('InspectorId', $inspectorID)->where('PPFNo', $ppf)->exists();
+        return DefectInsp::where('InspectorID', $inspectorID)->where('operation','VI')->where('ppfno', $ppf)->exists() ||
+            ReworkInsp::where('InspectorId', $inspectorID)->where('operation','VI')->where('ppfno', $ppf)->exists() ||
+            PRInsp::where('InspectorId', $inspectorID)->where('operation','VI')->where('ppfno', $ppf)->exists();
     }
 
     public function getPosture($ppf)
@@ -59,9 +59,8 @@ class PPFRepository
     }
 
     public function FetchGoodQty($ppf){
-        $sum1 = DB::table('hf_forms')
-        ->where('ppfno', $ppf)
-        ->sum('GoodQty');
+        $sum1 = HF::where('ppfno', $ppf)
+            ->sum('goodQty');
 
 
         return $sum1;

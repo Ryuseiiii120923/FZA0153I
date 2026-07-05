@@ -209,9 +209,8 @@ class DropdownService
         }
 
         foreach ($hfRecords as $h) {
-
             // DEFECTS
-            $defectsRaw = $this->dropdownRepo->getGroupedDefects($ppf, $inspectorId, $h->inspect_REC);
+            $defectsRaw = $this->dropdownRepo->getGroupedDefects($ppf, $inspectorId, $h->formId);
 
             $operatorDefects = $defectsRaw
                 ->groupBy(fn($d) => strtolower(trim($d->defect)))
@@ -229,12 +228,11 @@ class DropdownService
             $defectNg[$h->hf_id] = collect($operatorDefects)->sum('qty');
 
             // REWORK
-            $reworksRaw = $this->dropdownRepo->getReworks($ppf, $inspectorId, $h->inspect_REC);
+            $reworksRaw = $this->dropdownRepo->getReworks($ppf, $inspectorId, $h->formId);
 
             $operatorRework = $reworksRaw->map(fn($r) => [
-                'id' => $r->RECNO,
-                'hfno' => $r->hfno,
-                'totalinsp' => $r->totalinsp ?? 0,
+                'hfno' => $r->hfid,
+                'totalinsp' => $r->total_inspect ?? 0,
                 'type' => $r->rework_type,
                 'quan' => $r->qty ?? 1,
             ])->toArray();
@@ -242,115 +240,41 @@ class DropdownService
             $reworkNg[$h->hf_id] = collect($operatorRework)->sum('quan');
 
             // SMALL DEFECTS
-            $smallDefectsRaw = $this->dropdownRepo->getSmallDefects($ppf, $inspectorId, $h->inspect_REC);
+            $smallDefectsRaw = $this->dropdownRepo->getSmallDefects($ppf, $inspectorId, $h->formId);
 
             $operatorSmallDefects = $smallDefectsRaw
-                ->groupBy('large_defect')
+                ->groupBy('largeDefect')
                 ->mapWithKeys(function ($group, $largeDefect) {
                     return [
                         $largeDefect => collect($group)->map(fn($s) => [
                             'id' => $s->RECNO,
-                            'type' => $s->small_defect,
+                            'type' => $s->smallDefect,
                             'qty' => $s->qty ?? 0,
                         ])->toArray()
                     ];
                 })
                 ->toArray();
-
-            $uniqueId = uniqid();
             $selectedLarge = array_key_first($operatorSmallDefects);
 
-            $forms[$uniqueId] = [
-                'id' => $h->RECNO,
-                'inspect_REC' => $h->inspect_REC,
-                'hf_id' => $h->hf_id,
+            $forms[$h->formId] = [
+                'hf_id' => $h->hfid,
                 'ppfno' => $h->ppfno,
                 'total_inspect' => $h->total_inspect,
                 'finishingProcedure' => $h->finishingProcedure ?? '',
                 'open' => true,
                 'defects' => $operatorDefects,
                 'created_at' => $h->created_at ?? null,
-                'updated_date' => $h->updated_date ?? null,
+                'updated_date' => $h->updated_at ?? null,
                 'smallDefects' => $operatorSmallDefects,
                 'selectedLargeDefect' => $selectedLarge,
                 'ForRework' => (bool) $h->ForRework ?? null,
                 'rework' => $operatorRework,
                 'formId' => $h->formId ?? null,
                 'Remarks' => $h->remarks ?? null,
-                'Operation' => $h->Operation ?? null,
-                'Process' => $h->Process ?? null,
+                'Operation' => $h->operation ?? null,
+                'Process' => $h->process ?? null,
             ];
         }
-        return compact('forms', 'defectNg', 'reworkNg');
-    }
-
-    public function editFormsforFinishing($ppf, $inspectorId, $reworkNo)
-    {
-        $forms = [];
-        $defectNg = [];
-        $reworkNg = [];
-
-        $hfRecords = $this->dropdownRepo->getByPpfAndInspectorInFinishing($ppf, $inspectorId,$reworkNo);
-
-        if ($hfRecords->isEmpty()) {
-            return compact('forms', 'defectNg', 'reworkNg');
-        }
-
-        foreach ($hfRecords as $h) {
-
-            // DEFECTS
-            $defectsRaw = $this->dropdownRepo->getGroupedDefectsforFinishing($ppf, $inspectorId, $h->inspect_REC);
-
-            $operatorDefects = $defectsRaw
-                ->groupBy(fn($d) => strtolower(trim($d->defect)))
-                ->map(function ($group) {
-                    $first = $group->first();
-                    return [
-                        'id' => $first->RECNO,
-                        'type' => $first->defect,
-                        'qty' => $group->sum(fn($d) => $d->qty ?? 1),
-                    ];
-                })
-                ->values()
-                ->toArray();
-
-            $defectNg[$h->hf_id] = collect($operatorDefects)->sum('qty');
-
-            // REWORK
-            // SMALL DEFECTS
-            $smallDefectsRaw = $this->dropdownRepo->getSmallDefectsforFinishing($ppf, $inspectorId, $h->inspect_REC);
-
-            $operatorSmallDefects = $smallDefectsRaw
-                ->groupBy('large_defect')
-                ->mapWithKeys(function ($group, $largeDefect) {
-                    return [
-                        $largeDefect => collect($group)->map(fn($s) => [
-                            'id' => $s->RECNO,
-                            'type' => $s->small_defect,
-                            'qty' => $s->qty ?? 0,
-                        ])->toArray()
-                    ];
-                })
-                ->toArray();
-
-            $uniqueId = uniqid();
-            $selectedLarge = array_key_first($operatorSmallDefects);
-
-            $forms[$uniqueId] = [
-                'id' => $h->RECNO,
-                'inspect_REC' => $h->inspect_REC,
-                'hf_id' => $h->hf_id,
-                'ppfno' => $h->ppfno,
-                'total_inspect' => $h->total_inspect,
-                'open' => true,
-                'defects' => $operatorDefects,
-                'created_at' => $h->created_at ?? null,
-                'updated_date' => $h->updated_date ?? null,
-                'smallDefects' => $operatorSmallDefects,
-                'selectedLargeDefect' => $selectedLarge,
-            ];
-        }
-
         return compact('forms', 'defectNg', 'reworkNg');
     }
 }

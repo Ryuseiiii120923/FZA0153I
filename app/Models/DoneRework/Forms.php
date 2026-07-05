@@ -8,14 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Forms extends Model
 {
-    protected $table = "dr_forms";
-    public $incrementing = false;
-    public $timestamps = false;
-    protected $primaryKey = 'RECNO';
+    protected $connection = 'PRecord';
+    protected $table = "hfrw_forms";
 
     public function worker()
     {
-        return $this->belongsTo(Worker::class, 'hf_id', '作業員CD');
+        return $this->belongsTo(Worker::class, 'hfid', '作業員CD');
     }
 
     public function updatedByWorker()

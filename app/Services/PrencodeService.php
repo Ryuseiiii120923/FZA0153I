@@ -5,9 +5,9 @@ namespace App\Services;
 use App\Models\AddDefect;
 use App\Models\CheckHF;
 use App\Models\CheckPPF;
-use App\Models\Operator\DefectInsp;
-use App\Models\Operator\PRInsp;
-use App\Models\Operator\ReworkInsp;
+use App\Models\Inspector\DefectInsp;
+use App\Models\Inspector\PRInsp;
+use App\Models\Inspector\ReworkInsp;
 use App\Repositories\PrencodeRepository;
 use Illuminate\Support\Facades\DB;
 

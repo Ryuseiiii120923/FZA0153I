@@ -42,16 +42,16 @@
                 <tbody>
                     @forelse($ppfrecord as $record)
                     <tr class="border-b border-gray-700">
-                        <td class="px-4 py-2">{{ (int) $record->PPFNo }}</td>
-                        <td class="px-4 py-2">{{ $record->DateEncode }}</td>
+                        <td class="px-4 py-2">{{ (int) $record->ppfno }}</td>
+                        <td class="px-4 py-2">{{ $record->created_at }}</td>
                         <td class="px-4 py-2 flex gap-2">
-                            <button wire:click="editPPF('{{ $record->PPFNo }}')" class="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded">
+                            <button wire:click="editPPF('{{ $record->ppfno }}')" class="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded">
                                 Edit
                             </button>
-                            <button wire:click="deletePPF('{{ $record->PPFNo }}')" class="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded">
+                            <button wire:click="deletePPF('{{ $record->ppfno }}')" class="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded">
                                 Delete
                             </button>
-                            <button wire:click="viewPPF('{{ $record->PPFNo }}')" class="bg-yellow-500 hover:bg-yellow-700 text-white px-4 py-2 rounded">
+                            <button wire:click="viewPPF('{{ $record->ppfno }}')" class="bg-yellow-500 hover:bg-yellow-700 text-white px-4 py-2 rounded">
                                 View
                             </button>
                         </td>

@@ -3,6 +3,8 @@
 namespace App\Repositories;
 
 use App\Models\AddDefect;
+use App\Models\Inspector\DefectInsp;
+use App\Models\Inspector\SmallInsp;
 use Illuminate\Support\Facades\DB;
 
 class DefectRepository
@@ -10,92 +12,84 @@ class DefectRepository
     public function fetchAddDefect($ppf)
     {
         return Db::table('Defect')
-            ->where('PPFNo', $ppf)
+            ->where('ppfno', $ppf)
             ->first();
     }
 
     public function getEncoders($ppf)
     {
-        return DB::table('Inspector_Defect')
-            ->where('PPFNo', $ppf)
-            ->whereNotNull('InspectorID')
+        return DefectInsp::where('ppfno', $ppf)
+            ->whereNotNull('inspectorId')
             ->distinct()
-            ->pluck('InspectorID');
+            ->pluck('inspectorId');
     }
 
     public function getDefectsPerEncoder($ppf, $encoder)
     {
-        return DB::table('Inspector_Defect')
-            ->select('Defect')
-            ->where('PPFNo', $ppf)
-            ->where('InspectorID', $encoder)
+        return DefectInsp::select('defect')
+            ->where('ppfno', $ppf)
+            ->where('inspectorId', $encoder)
             ->distinct()
-            ->pluck('Defect');
+            ->pluck('defect');
     }
 
     public function getTotalQty($ppf, $encoder, $defectName)
     {
-        return DB::table('Inspector_Defect')
-            ->where('PPFNo', $ppf)
-            ->where('InspectorID', $encoder)
-            ->where('Defect', $defectName)
-            ->sum('Quantity');
+        return DefectInsp::where('ppfno', $ppf)
+            ->where('inspectorId', $encoder)
+            ->where('defect', $defectName)
+            ->sum('qty');
     }
 
     public function getLatestDate($ppf, $encoder, $defectName)
     {
-        return DB::table('Inspector_Defect')
-            ->where('PPFNo', $ppf)
-            ->where('InspectorID', $encoder)
-            ->where('Defect', $defectName)
-            ->max('DateEncode');
+        return DefectInsp::where('ppfno', $ppf)
+            ->where('inspectorId', $encoder)
+            ->where('defect', $defectName)
+            ->max('created_at');
     }
 
-    public function getOperatorName($encoder)
+    public function getInspectorName($encoder)
     {
-        return DB::table('Inspector_Defect')
-            ->where('InspectorID', $encoder)
-            ->value('insp_name');
+        return DefectInsp::where('inspectorId', $encoder)
+            ->value('inspName');
     }
 
     public function getSmallDefects($ppf, $encoder, $defectName, $Process)
     {
-        return DB::table('Inspector_Small')
-            ->selectRaw('SmallDefect, SUM(Qty) as total_qty')
-            ->where('PPFNo', $ppf)
-            ->where('InspectorID', $encoder)
-            ->where('LargeDefect', $defectName)
-            ->where('Process', $Process) // ✅ NEW
-            ->groupBy('SmallDefect')
+        return SmallInsp::selectRaw('small_defect, SUM(qty) as total_qty')
+            ->where('ppfno', $ppf)
+            ->where('inspectorId', $encoder)
+            ->where('large_defect', $defectName)
+            ->where('process', $Process) // ✅ NEW
+            ->groupBy('small_defect')
             ->get();
     }
 
     public function getSmallDefectsForPpf($ppf)
 {
-    return DB::table('Inspector_Small')
-        ->selectRaw('LargeDefect, Process, InspectorID, SmallDefect, SUM(Qty) as total_qty')
-        ->where('PPFNo', $ppf)
-        ->groupBy('LargeDefect', 'Process', 'InspectorID', 'SmallDefect')
+    return SmallInsp::selectRaw('large_defect, process, inspectorId, small_defect, SUM(qty) as total_qty')
+        ->where('ppfno', $ppf)
+        ->groupBy('large_defect', 'process', 'inspectorId', 'small_defect')
         ->get()
-        ->groupBy(fn($r) => $r->LargeDefect . '||' . $r->Process . '||' . $r->InspectorID);
+        ->groupBy(fn($r) => $r->LargeDefect . '||' . $r->Process . '||' . $r->inspectorId);
 }
 
     public function getDefectsGrouped($ppf)
     {
-        return DB::table('Inspector_Defect')
-            ->select(
-                'InspectorID',
-                'insp_name',
-                'Defect',
-                'Process', // ✅ NEW
-                DB::raw('SUM(Quantity) as total_qty'),
-                DB::raw('MAX(DateEncode) as latest_date')
+        return DefectInsp::select(
+                'inspectorId',
+                'inspName',
+                'defect',
+                'process', // ✅ NEW
+                DB::raw('SUM(qty) as total_qty'),
+                DB::raw('MAX(created_at) as latest_date')
             )
-            ->where('PPFNo', $ppf)
+            ->where('ppfno', $ppf)
             ->where('process','!=','HF')
-            ->whereNotNull('InspectorID')
-            ->groupBy('InspectorID', 'insp_name', 'Defect', 'Process') // ✅ NEW
-            ->orderBy('InspectorID')
+            ->whereNotNull('inspectorId')
+            ->groupBy('inspectorId', 'inspName', 'defect', 'process') // ✅ NEW
+            ->orderBy('inspectorId')
             ->get();
     }
 

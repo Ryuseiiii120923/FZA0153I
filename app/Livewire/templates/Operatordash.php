@@ -3,10 +3,7 @@
 namespace App\Livewire\Templates;
 
 use App\Models\GL\EnrollOperator;
-use App\Models\Operator\DefectInsp;
-use App\Models\Operator\PRInsp;
-use App\Models\Operator\ReworkInsp;
-use App\Models\Operator\SmallInsp;
+use App\Models\Inspector\PRInsp;
 use App\Models\Worker;
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth as UserAuth;
@@ -54,8 +51,9 @@ class Operatordash extends Component
     #[On('LoadDash')]
     public function LoadPPF()
     {
-        $ppfrecord = PRInsp::where('InspectorID', $this->inspectorID)
-            ->orderBy('DateEncode', 'desc')
+        $ppfrecord = PRInsp::where('inspectorId', $this->inspectorID)
+            ->orderBy('created_at', 'desc')
+            ->where('operation', 'VI')
             ->get();
         $this->ppfrecord = $ppfrecord->isNotEmpty() ? $ppfrecord : [];
     }

@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class Worker extends Authenticatable
 {
+    protected $connection = 'sqlsrv';
     protected $table = "作業員";
     protected $primaryKey = '社員CD';
     public $incrementing = false;

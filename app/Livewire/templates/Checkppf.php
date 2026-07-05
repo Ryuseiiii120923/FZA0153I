@@ -2,12 +2,8 @@
 
 namespace App\Livewire\Templates;
 
-use App\Models\AddDefect;
-use App\Models\CheckHF;
-use App\Models\CheckPPF as ModelsCheckPPF;
-use App\Models\Operator\DefectInsp;
-use App\Models\Operator\PRInsp;
-use App\Models\Operator\ReworkInsp;
+
+use App\Models\Inspector\PRInsp;
 use App\Models\Worker;
 use App\Services\PrencodeService;
 use App\Traits\ClearErrors;
@@ -141,7 +137,7 @@ class Checkppf extends Component
 
     public function totalInspectedProgress()
     {
-        $totalInspected = PRInsp::where('PPFNo', $this->ppf)->where('Operation', 'VI')
+        $totalInspected = PRInsp::where('ppfno', $this->ppf)->where('operation', 'VI')
             ->sum('total_inspect');
         if ($totalInspected === $this->totalInspection) {
             return;
@@ -166,7 +162,7 @@ class Checkppf extends Component
 
     public function totalInspectedProgressFetch()
     {
-        $totalInspected = PRInsp::where('PPFNo', $this->ppf)
+        $totalInspected = PRInsp::where('ppfno', $this->ppf)
             ->sum('total_inspect');
 
         $this->totalInspection = $totalInspected;
@@ -407,7 +403,7 @@ class Checkppf extends Component
         }
 
         if ($this->isLockedByFinalInspection($ppf)) {
-            $this->errorexisting = 'Updating Denied! PPFNo was already encoded to Final Inspection Process.';
+            $this->errorexisting = 'Updating Denied! ppfno was already encoded to Final Inspection Process.';
             return;
         }
 
@@ -419,7 +415,7 @@ class Checkppf extends Component
     public function handleGlDelete(string $ppf)
     {
         if ($this->isLockedByFinalInspection($ppf)) {
-            $this->errorexisting = 'Updating Denied! PPFNo was already encoded to Final Inspection Process.';
+            $this->errorexisting = 'Updating Denied! ppfno was already encoded to Final Inspection Process.';
             return;
         }
         $this->errorexisting = null;

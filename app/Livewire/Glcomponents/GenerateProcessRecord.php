@@ -47,23 +47,16 @@ class GenerateProcessRecord extends Component
 
             $records = AddDefect::query()
                 ->select([
-                    DB::raw('CAST(CAST(PPFNo AS BIGINT) AS VARCHAR(50)) AS PPFNo_str'),
+                    'PPFNo_str AS PPFNo',
                     'PartNo',
                     DB::raw('MAX(DateEncode) as DateEncode'),
                 ])
                 ->when(
                     $search !== '',
-                    fn($q) => $q->where(
-                        DB::raw("CAST(CAST(PPFNo AS BIGINT) AS VARCHAR(50))"),
-                        'like',
-                        '%' . $search . '%'
-                    )
+                    fn($q) => $q->where('PPFNo_str', 'like', '%' . $search . '%')
                 )
-                ->groupBy(
-                    DB::raw('CAST(CAST(PPFNo AS BIGINT) AS VARCHAR(50))'),
-                    'PartNo'
-                )
-                ->orderBy(DB::raw('CAST(CAST(PPFNo AS BIGINT) AS VARCHAR(50))'))
+                ->groupBy('PPFNo_str', 'PartNo')
+                ->orderBy('PPFNo_str')
                 ->paginate($this->perPage);
         }
 
