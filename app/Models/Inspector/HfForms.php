@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\Operator;
+namespace App\Models\Inspector;
 
 use App\Models\Worker;
 use App\Models\WorkerName;
@@ -9,14 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 class HfForms extends Model
 {
     protected $table = "hf_forms";
-    public $incrementing = false;
-    public $timestamps = false;
-    protected $primaryKey = 'RecNo';
     protected $keyType = 'string';
-
-     protected $fillable = [
-        'updated_by'
-    ];
 
     public function worker()
     {

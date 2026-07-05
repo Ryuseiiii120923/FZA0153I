@@ -2,7 +2,7 @@ import "./bootstrap.js";
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.min.css";
 import "flatpickr/dist/themes/material_blue.css";
-import Swal from 'sweetalert2';
+import Swal from "sweetalert2";
 
 window.Swal = Swal;
 
@@ -119,22 +119,38 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("Init-add").click;
     });
 
-   window.addEventListener("confirm-accept", function () {
-    Swal.fire({
-        title: "Confirmation",
-        text: "Is this a real Excess Quantity or Lack Quantity?",
-        icon: "question",
-        showCancelButton: true,
-        confirmButtonText: "Accept",
-        cancelButtonText: "Reject"
-    }).then((result) => {
-        if (result.isConfirmed) {
-            Livewire.dispatch("AcceptTotal");
-        } else {
-            Livewire.dispatch("RejectTotal");
-        }
+    window.addEventListener("confirm-accept", function () {
+        Swal.fire({
+            title: "Confirmation",
+            text: "Is this a real Excess Quantity or Lack Quantity?",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Accept",
+            cancelButtonText: "Reject",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Livewire.dispatch("AcceptTotal");
+            } else {
+                Livewire.dispatch("RejectTotal");
+            }
+        });
     });
-});
+
+    window.addEventListener("disregardStaged", function (event) {
+        Swal.fire({
+            title: "Confirmation",
+            text: "There are Staged Input, Do you want to disregard this?",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Yes",
+            cancelButtonText: "No",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Livewire.dispatch("confirmedDisregard");
+            }
+        });
+    });
+
     window.addEventListener("redirect-to-login", (event) => {
         // Optional: you can also show a toast or alert here
         alert("Data inserted successfully!");

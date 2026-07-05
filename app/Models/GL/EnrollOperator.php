@@ -7,11 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class EnrollOperator extends Model
 {
-    protected $table = "OperatorEnroll";
+    protected $connection = 'PRecord';
+    protected $table = "operator_enroll";
     protected $primaryKey = 'OperatorID';
-    protected $keyType = 'string';
-    public $incrementing = false;
-
 
     protected $fillable = [
         'OperatorID',

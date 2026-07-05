@@ -4,8 +4,10 @@ namespace App\Livewire\Templates;
 
 use App\Models\AddDefect;
 use App\Models\CheckHF;
-use App\Models\Operator\PRInsp;
+use App\Models\GL\EnrollOperator;
+use App\Models\Inspector\PRInsp;
 use App\Traits\InitializesInspector;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -21,39 +23,54 @@ class PPFDashboard extends Component
     public function mount()
     {
         $this->initializeInspector();
+        $this->ppfdata();
     }
 
-    #[Computed(cache: false)]
-    public function ppfdata()
-    {
-        $results = PRInsp::query()
-            ->join('OperatorEnroll as oe', 'oe.OperatorID', '=', 'Inspector_PR.InspectorID')
-            ->select('Inspector_PR.PPFNo')
-            ->selectRaw('SUM(Inspector_PR.total_inspect) as total_inspect')
-            ->selectRaw('MAX(Inspector_PR.DateEncode) as DateEncode')
-            ->where('oe.GLID', $this->encoder)
-            ->whereNotIn('Inspector_PR.PPFNo', function ($query) {
-                $query->select('PPFNo')->from('Defect');
-            })
-            ->when($this->search, fn($q) => $q->whereRaw("CAST(Inspector_PR.PPFNo AS NVARCHAR) LIKE ?", ["%{$this->search}%"]))
-            ->groupBy('Inspector_PR.PPFNo')
-            ->paginate($this->perPage);
+    #[Computed]
+public function ppfdata()
+{
+    $encoder = Auth::user()->社員CD;
+    $enrolledIds = app(EnrollOperator::class) 
+        ->query() 
+        ->where('GLID', $encoder)
+        ->pluck('OperatorID'); 
 
+    $baseQuery = PRInsp::query()
+        ->select('ppfno')
+        ->selectRaw('SUM(total_inspect) as total_inspect')
+        ->selectRaw('MAX(created_at) as DateEncode')
+        ->where('operation', 'VI')
+        ->whereIn('inspectorId', $enrolledIds) // replaces whereHas
+        ->when($this->search, fn($q) => $q->whereRaw(
+            "CAST(CAST(ppfno AS BIGINT) AS NVARCHAR(50)) LIKE ?",
+            ["%{$this->search}%"]
+        ))
+        ->groupBy('ppfno');
 
-        $ppfNos = $results->getCollection()->pluck('PPFNo')->map(fn($v) => (int)$v);
-        $hfMap = CheckHF::whereIn('流動NO', $ppfNos)
-            ->get()
-            ->keyBy(fn($item) => (int)$item->流動NO);
+    $candidatePPFNos = (clone $baseQuery)->pluck('ppfno');
 
-        $results->getCollection()->transform(function ($item) use ($hfMap) {
-            $hf = $hfMap->get((int)$item->PPFNo);
-            $item->expct = $hf ? round($hf->合格数) : 0;
-            return $item;
-        });
+    $defectedPPFNos = AddDefect::query()
+        ->select('PPFNo')
+        ->whereIn('PPFNo', $candidatePPFNos)
+        ->pluck('PPFNo');
 
-        return $results;
-    }
+    $results = $baseQuery
+        ->whereNotIn('ppfno', $defectedPPFNos)
+        ->paginate($this->perPage);
 
+    $ppfNos = $results->getCollection()->pluck('ppfno')->map(fn($v) => (int) $v);
+    $hfMap = CheckHF::whereIn('流動NO', $ppfNos)
+        ->get()
+        ->keyBy(fn($item) => (int) $item->流動NO);
+
+    $results->getCollection()->transform(function ($item) use ($hfMap) {
+        $hf = $hfMap->get((int) $item->ppfno);
+        $item->expct = $hf ? round($hf->合格数) : 0;
+        return $item;
+    });
+
+    return $results;
+}
     public function confirm_ppf($ppf)
     {
         $this->dispatch('actionTable', ['actiondash' => 'Add', 'ppf' => $ppf]);
@@ -62,11 +79,9 @@ class PPFDashboard extends Component
     public function updatingSearch(): void
     {
         $this->resetPage();
-        logger('search updated to: ' . $this->search);
     }
     public function render()
     {
-        logger('render called, search: ' . $this->search);
         return view('livewire.templates.ppfdashboard', [
             'ppfdata' => $this->ppfdata,
         ]);

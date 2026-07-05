@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class WorkerName extends Model
 {
+    protected $connection = 'sqlsrv';
     protected $table = "社員";
     protected $primaryKey = '社員CD';
      public $incrementing = false;

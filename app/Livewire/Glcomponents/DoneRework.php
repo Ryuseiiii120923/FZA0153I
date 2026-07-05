@@ -3,8 +3,7 @@
 namespace App\Livewire\Glcomponents;
 
 use App\Models\DoneRework\Forms;
-use App\Models\HF\HF;
-use App\Models\Worker;
+use App\Models\WorkerName;
 use App\Services\PPFService;
 use App\Services\WorkerService;
 use App\Traits\CalculatesGoodQty;
@@ -279,14 +278,12 @@ class DoneRework extends Component
     public function FetchDoneRework($ppf)
     {
         $this->doneReworks = Forms::with(['worker', 'updatedByWorker', 'updatedByEncoder'])
-            ->select('hf_id', 'total_inspect', 'updated_by', 'ppfno', 'GoodQty', 'created_at')
+            ->select('hfid', 'total_inspect', 'updated_by', 'ppfno', 'GoodQty', 'created_at')
             ->where('ppfno', $ppf)
             ->get();
 
         foreach ($this->doneReworks as $rework) {
-            $this->workerNames[$rework->updated_by] = DB::table('社員')
-                ->where('社員CD', $rework->updated_by)
-                ->value('名前');
+            $this->workerNames[$rework->updated_by] = WorkerName::where('社員CD', $rework->updated_by)->value('名前');
         }
     }
 }

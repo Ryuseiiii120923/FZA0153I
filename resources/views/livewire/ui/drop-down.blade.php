@@ -2,14 +2,35 @@
     showFixed: false,
     activeTab: @entangle('activeTab')
 }"
-    x-init="
-     if (!activeTab) {
+  x-init="
+    if (!activeTab) {
         activeTab = 'worker';
     }
     const container = document.getElementById('prencode-scroll-container');
     const target = container ?? window;
     target.addEventListener('scroll', () => {
         showFixed = (container ? container.scrollTop : window.scrollY) > 260;
+    });
+
+    $wire.on('scroll-to-form', ({ formId }) => {
+        $nextTick(() => {
+            setTimeout(() => {
+                const el = document.querySelector('[wire\\:key=\worker-form-' + formId + '\]');
+                if (!el) return;
+
+                const container = document.getElementById('prencode-scroll-container');
+                if (container) {
+                    const containerRect = container.getBoundingClientRect();
+                    const elRect = el.getBoundingClientRect();
+                    container.scrollTo({
+                        top: container.scrollTop + elRect.top - containerRect.top - 20,
+                        behavior: 'smooth'
+                    });
+                } else {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 150);
+        });
     });
 ">
     {{-- TAB HEADERS --}}
@@ -31,6 +52,7 @@
             Auto Inspection
         </button>
     </div>
+
 
     {{-- WORKER TAB BUTTONS --}}
     <div x-show="activeTab === 'worker'" class="px-5 py-4 flex gap-3 bg-white shadow-sm">
@@ -88,6 +110,7 @@
             </div>
         </template>
     </div>
+
     @php
     $autoMethods = ['AUTO_DIM','AUTO_SF','AUTO_PLSF','AUTO_NG','AUTO_DIM_NG','AUTO_SF_NG'];
     @endphp
@@ -103,7 +126,8 @@
             wire:key="worker-form-{{ $formId }}"
             class="border rounded shadow p-3 relative"
             x-show="{{ $isAutoJs }} === (activeTab === 'auto')"
-            x-data="{ open: {{ $form['open'] ? 'true' : 'false' }} }">
+            x-data="{ open: {{ $form['open'] ? 'true' : 'false' }} }"
+            {{ $form['scroll_target'] ?? false ? 'data-scroll-target' : '' }}>
 
             @php
             $method = $form['method'] ?? '';
@@ -277,7 +301,7 @@
                                 </button>
 
                                 <button
-                                    wire:click="CloseModal('{{ $formId }}')"
+                                    wire:click="exitHF('{{ $formId }}')"
                                     class="bg-green-600 text-white px-4 py-2 rounded mt-2 w-full">
                                     Exit
                                 </button>

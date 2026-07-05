@@ -4,6 +4,7 @@ namespace App\Livewire\Templates;
 
 use App\Services\ForReworkService;
 use App\Services\PPFService;
+use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 use Livewire\Attributes\On;
 
@@ -112,7 +113,8 @@ class Goodng extends Component
     #[On('fetchGoodQty')]
     public function fetchGoodQty($ppf)
     {
-        $this->initialGoodQty = (float) $this->ForReworkService()->fetchGoodQty($ppf);
+        // $this->initialGoodQty = (float) $this->ForReworkService()->fetchGoodQty($ppf);
+        $this->initialGoodQty = $this->expct - $this->TotalNg;
         $this->goodqty = $this->initialGoodQty;
         $this->GoodNg();
     }

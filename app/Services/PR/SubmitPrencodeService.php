@@ -2,8 +2,15 @@
 
 namespace App\Services\PR;
 
-use App\Models\HF\HF;
-use App\Models\HF\Rework;
+use App\Models\Forms\Defect;
+use App\Models\Forms\HF;
+use App\Models\Forms\Rework;
+use App\Models\Forms\SmallDefect;
+use App\Models\Inspector\DefectInsp;
+use App\Models\Inspector\PRInsp;
+use App\Models\Inspector\ReworkInsp;
+use App\Models\Inspector\SmallInsp;
+use App\Models\Worker;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -15,11 +22,13 @@ class SubmitPrencodeService
     public string $operation = '';
     public int $totalGoodQty = 0, $totalNg = 0, $totalRework = 0;
     public string $ppfno = '', $updatedBy = '', $username = '';
+    public string $inspName = '';
+    public string $inspectorID = '';
+    public int $updated_by = 0;
 
 
     public function submit(array $data): void
     {
-        // dd($data);
         $this->prepareDataForSubmission($data);
         $this->saveHF();
         $this->saveInspectorRecord();
@@ -28,38 +37,41 @@ class SubmitPrencodeService
 
     public function saveHF(): void
     {
-        DB::table('hf_forms')->upsert(
+        HF::upsert(
             $this->hfRows,
-            ['hf_id', 'ppfno', 'updated_by', 'formId'],
-            ['total_inspect', 'GoodQty', 'TotalNg', 'remarks', 'updated_date', 'finishingProcedure', 'ForRework']
+            ['hfid', 'ppfno', 'updated_by', 'inspId', 'formId'],
+            ['total_inspect', 'goodQty', 'totalNg', 'remarks', 'finishingProcedure', 'ForRework', 'updated_at']
         );
 
-        DB::table('hf_defect')->upsert(
+        Defect::upsert(
             $this->defectRows,
-            ['hf_id', 'defect', 'ppfno', 'updated_by', 'formId'],
+            ['hfid', 'defect', 'ppfno', 'updated_by', 'inspId', 'formId'],
             ['qty']
         );
 
-        DB::table('hf_small')->upsert(
+        SmallDefect::upsert(
             $this->smallRows,
-            ['hf_id', 'large_defect', 'small_defect', 'ppfno', 'updated_by', 'formId'],
+            ['hfid', 'largeDefect', 'smallDefect', 'ppfno', 'updated_by', 'inspId', 'formId'],
             ['qty']
         );
 
-        DB::table('hf_rework')->upsert(
+        Rework::upsert(
             $this->reworkRows,
-            ['hfno', 'ppfno', 'updated_by', 'inspect_REC', 'rework_type', 'formId'],
-            ['qty', 'totalinsp']
+            ['hfid', 'ppfno', 'updated_by', 'inspId', 'rework_type', 'formId'],
+            ['qty', 'total_inspect', 'updated_at']
         );
     }
 
 
     public function saveInspectorRecord(): void
     {
+        $worker = Worker::with('employeeName')
+            ->where('作業員CD', $this->inspectorID)
+            ->first();
         $totalInspect = array_sum(
             array_column(
                 array_filter($this->hfRows, function ($row) {
-                    return ($row['ForRework'] ?? 1) == 0
+                    return ($row['forRework'] ?? 1) == 0
                         && (($row['methodProcess'] ?? $row['method'] ?? '') != 'PL')
                         && (($row['method'] ?? $row['methodProcess'] ?? '') != 'SF');
                 }),
@@ -67,125 +79,125 @@ class SubmitPrencodeService
             )
         );
 
-        DB::table('Inspector_PR')->insert([
-            'InspectorID'   => $this->updatedBy,
-            'PPFNo'         => $this->ppfno,
+        $inspRow  = [
+            'inspectorId'   => $this->inspectorID,
+            'ppfno'         => $this->ppfno,
             'total_inspect' => $totalInspect,
-            'DateEncode'    => now(),
-            'Operation'       => $this->operation,
-            'TotalNg'       => $this->totalNg,
-            'TotalRework'   => $this->totalRework,
-            'TotalGood'     => $this->totalGoodQty,
-        ]);
+            'operation'     => 'VI',
+            'totalNg'       => $this->totalNg,
+            'totalRework'   => $this->totalRework,
+            'totalGood'     => $this->totalGoodQty,
+            'updated_by'     => $this->updatedBy,
+            'updated_at'      => now(),
+            'created_at'      => now(),
+        ];
 
+        PRInsp::upsert(
+            $inspRow,
+            ['inspectorId', 'ppfno','operation'],
+            ['total_inspect', 'totalNg', 'totalRework', 'totalGood', 'updated_at']
+        );
         // 🔵 MERGED DEFECTS
         $defectInspRows = [];
         foreach ($this->mergedDefects as $def) {
 
             $defectInspRows[] = [
-                'insp_name'     => $this->username,
-                'PPFNo'         => $this->ppfno,
-                'Defect'        => $def['type'],
-                'Quantity'      => $def['qty'],
-                'DateEncode'    => now(),
-                'InspectorID'   => $this->updatedBy,
-                'Process'       => $def['process'],
-                'Operation'     => $this->operation,
+                'inspName'     => $worker ? $worker->employeeName->名前 : '',
+                'ppfno'         => $this->ppfno,
+                'defect'        => $def['type'],
+                'qty'      => $def['qty'],
+                'inspectorId'   => $this->inspectorID,
+                'process'       => $def['process'],
+                'operation'     => 'VI',
+                'updated_by' => $this->updatedBy
+
             ];
         }
-        DB::table('Inspector_Defect')->insert($defectInspRows);
+        DefectInsp::upsert($defectInspRows, ['ppfno', 'defect', 'inspectorId', 'process', 'operation'], ['qty']);
 
         // 🔵 MERGED SMALL DEFECTS
         $smallInspRows = [];
         foreach ($this->mergedSmallDefects as $s) {
 
             $smallInspRows[] = [
-                'InspectorID'   => $this->updatedBy,
-                'PPFNo'         => $this->ppfno,
-                'LargeDefect'   => $s['large'],
-                'SmallDefect'   => $s['type'],
-                'Qty'           => $s['qty'],
-                'Process'       => $s['process'],
-                'Operation'     => $this->operation,
+                'inspectorId'   => $this->inspectorID,
+                'ppfno'         => $this->ppfno,
+                'large_defect'   => $s['large'],
+                'small_defect'   => $s['type'],
+                'qty'           => $s['qty'],
+                'process'       => $s['process'],
+                'operation'     => $this->operation,
+                'updated_by' => $this->updatedBy
             ];
         }
-        DB::table('Inspector_Small')->insert($smallInspRows);
+        SmallInsp::upsert($smallInspRows, ['ppfno', 'large_defect', 'small_defect', 'inspectorId', 'process', 'operation'], ['qty']);
 
         // 🔵 MERGED REWORKS
         $reworkInspRows = [];
         foreach ($this->mergedReworks as $r) {
             $reworkInspRows[] = [
-                'HFNo'          => $r['hfno'],
-                'InspectorID'   => $this->updatedBy,
-                'insp_name'     => $this->username,
-                'PPFNo'         => $this->ppfno,
-                'Defect'        => $r['type'],
-                'Quantity'      => $r['qty'],
-                'DateEncode'    => now(),
-                'TotalInspQty'  => $r['totalinsp'],
-                'Process'       => $r['process'],
-                'Operation'     => $this->operation,
+                'hfno' => $r['hfno'],
+                'inspectorId'   => $this->inspectorID,
+                'inspName'     => $worker ? $worker->employeeName->名前 : '',
+                'ppfno'         => $this->ppfno,
+                'rework'        => $r['type'],
+                'qty'      => $r['qty'],
+                'total_inspect'  => $r['totalinsp'],
+                'process'       => $r['process'],
+                'operation'     => $this->operation,
+                'updated_by' => $this->updatedBy
             ];
         }
-        DB::table('Inspector_Rework')->insert($reworkInspRows);
+        ReworkInsp::upsert($reworkInspRows, ['ppfno', 'rework', 'inspectorId', 'process', 'operation'], ['qty', 'total_inspect']);
     }
-
 
     public function prepareDataForSubmission(array $data): void
     {
         $now = now();
         $this->updatedBy = $data['updated_by'] ?? "";
+        $this->inspectorID = $data['inspectorId'] ?? "";
         $this->ppfno     = $data['ppfno'] ?? null;
-        $this->username  = $data['username'] ?? '';
+        $this->inspName  = $data['username'] ?? '';
         foreach ($data['form'] as $formId => $formData) {
             $hf_id    = $formData['hf_id'] ?? null;
             $goodQty  = $goodQty = (int) ($formData['GoodQty'] ?? 0);
-            $method   = $formData['method'] ?? null;
-            $inspectREC = $formData['inspect_REC'] ?? null;
             $operation = $formData['Operation'] ?? null;
             $process   = $formData['Process'] ?? null;
             $totalng = 0;
             foreach ($formData['defects'] as $defects) {
                 $totalng += $defects['qty'];
             }
-            $dateupdated = null;
-            $isUpdated = $data['isDropdownUpdate'][$formId] ?? false;
-            if (!$isUpdated) {
-                $dateupdated = HF::select('updated_date')
-                    ->where('inspect_REC', $formData['inspect_REC'])
-                    ->first();
-            }
             $this->totalGoodQty += $goodQty;
             $this->operation = $operation;
             $this->hfRows[] = [
-                'hf_id'              => $hf_id,
+                'hfid'              => $hf_id,
+                'inspId'           => $this->inspectorID,
                 'total_inspect'      => $formData['total_inspect'] ?? null,
                 'updated_by'         => $this->updatedBy,
                 'ppfno'              => $this->ppfno,
-                'inspect_REC'        => $inspectREC,
                 'formId'             => $formData['formId'] ?? null, // ← from formData, like original
-                'created_at'         => $now,
-                'updated_date'       => $dateupdated->updated_date ?? $now,
                 'finishingProcedure' => $formData['finishingProcedure'] ?? null,
-                'ForRework'          => array_key_exists('ForRework', $formData)
+                'forRework'          => array_key_exists('ForRework', $formData)
                     ? ($formData['ForRework'] ? 1 : 0)
                     : null,
-                'GoodQty'            => $goodQty,
-                'TotalNg'            => $totalng,
-                'Process' => $process ?? null,
-                'Operation' => $operation ?? null,
-                'remarks' => $formData['Remarks'] ?? null
+                'goodQty'            => $goodQty,
+                'totalNg'            => $totalng,
+                'process' => $process ?? null,
+                'operation' => $operation ?? null,
+                'remarks' => $formData['Remarks'] ?? null,
+                'created_at' => $now,
+                'updated_at' => $now,
             ];
             // Inject process per-form (falls back to top-level $process if not set on formData)
             $formData['process'] = $formData['process'] ?? $process;
-            $this->prepareDefect($formData, $hf_id, $inspectREC);
-            $this->prepareSmallDefect($formData, $formId, $hf_id, $inspectREC, $data['needToDeleteDefect'] ?? [], $data['needToDeleteDefectSmall'] ?? []);
-            $this->prepareRework($formData, $formId, $hf_id, $inspectREC);
+            $this->prepareDefect($formData, $hf_id);
+            $this->prepareSmallDefect($formData, $formId, $hf_id, $data['needToDeleteDefect'] ?? [], $data['needToDeleteDefectSmall'] ?? []);
+            $this->prepareRework($formData, $hf_id);
         }
     }
 
 
-    public function prepareDefect(array $formData, ?string $hf_id, ?string $inspectREC): void
+    public function prepareDefect(array $formData, ?string $hf_id): void
     {
         $process = $formData['process'] ?? null;
 
@@ -202,12 +214,12 @@ class SubmitPrencodeService
                 : ($formData['ForRework'] ? 1 : 0);
 
             $this->defectRows[] = [
-                'hf_id'       => $hf_id,
+                'hfid'       => $hf_id,
+                'inspId'     => $this->inspectorID,
                 'defect'      => $type,
                 'qty'         => $qty,
                 'updated_by'  => $this->updatedBy,
                 'ppfno'       => $this->ppfno,
-                'inspect_REC' => $inspectREC,
                 'formId'      => $formData['formId'] ?? null,
             ];
 
@@ -233,7 +245,6 @@ class SubmitPrencodeService
         array $formData,
         string $formId,
         ?string $hf_id,
-        ?string $inspectREC,
         array $needDeleteDefect = [],
         array $needDeleteDefectSmall = []
     ): void {
@@ -263,13 +274,13 @@ class SubmitPrencodeService
                     : ($formData['ForRework'] ? 1 : 0);
 
                 $this->smallRows[] = [
-                    'hf_id'        => $hf_id,
-                    'large_defect' => $large,
-                    'small_defect' => $type,
+                    'hfid'        => $hf_id,
+                    'largeDefect' => $large,
+                    'smallDefect' => $type,
                     'qty'          => $qty,
                     'updated_by'   => $this->updatedBy,
                     'ppfno'        => $this->ppfno,
-                    'inspect_REC'  => $inspectREC,
+                    'inspId' => $this->inspectorID,
                     'formId'       => $formData['formId'] ?? null,
                 ];
 
@@ -293,7 +304,7 @@ class SubmitPrencodeService
     }
 
 
-    public function prepareRework(array $formData, string $formId, ?string $hf_id, ?string $inspectREC): void
+    public function prepareRework(array $formData, ?string $hf_id): void
     {
         $process = $formData['process'] ?? null;
 
@@ -309,15 +320,16 @@ class SubmitPrencodeService
             if (!$type || $qty <= 0) continue;
 
             $this->reworkRows[] = [
-                'hf_id'       => $hf_id,
-                'hfno'        => $hfno,
+                'hfid'       => $hf_id,
                 'rework_type' => $type,
                 'qty'         => $qty,
-                'totalinsp'   => $totalInsp,
+                'total_inspect'   => $totalInsp,
                 'updated_by'  => $this->updatedBy,
                 'ppfno'       => $this->ppfno,
-                'inspect_REC' => $inspectREC,
-                'formId'      => $formData['formId'] ?? null
+                'formId'      => $formData['formId'] ?? null,
+                'inspId'      => $this->inspectorID,
+                'created_at' => now(),
+                'updated_at' => now(),
             ];
 
             $key = $hfno . '_' . $type;

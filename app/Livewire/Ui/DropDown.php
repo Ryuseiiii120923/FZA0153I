@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Livewire\Ui;
+
 use App\Services\DropdownService;
 use App\Services\ForReworkService;
 use App\Services\PPFService;
@@ -18,6 +19,7 @@ class DropDown extends Component
     public $hasErrorForm = [];
     public $isSaved = false;
 
+    public $activeTab = 'worker';
     public $hf_id = '', $ppf;
     public $total_inspect = '';
     public $finishingProcedure = '';
@@ -53,7 +55,7 @@ class DropDown extends Component
             'hf_name' => '',
             'finishingProcedure' => '',
             'total_inspect' => '',
-            'open' => false, // start expanded by default
+            'open' => true, // start expanded by default
             'defects' => [],
             'smallDefects' => [],
             'rework' => [],
@@ -63,9 +65,11 @@ class DropDown extends Component
             'TotalRework' => [],
             'Remarks' => '',
             'Operation' => 'VI',
-            'Process' => '100% VI'
+            'Process' => '100% VI',
+            'scroll_target' => true,
         ];
         $this->modalOpen[$formId] = true;
+        $this->dispatch('scroll-to-form', formId: $formId);
     }
 
     public function addNewHF()
@@ -79,7 +83,7 @@ class DropDown extends Component
             'hf_name' => '',
             'finishingProcedure' => '',
             'total_inspect' => '',
-            'open' => false, // start expanded by default
+            'open' => true, // start expanded by default
             'defects' => [],
             'smallDefects' => [],
             'rework' => [],
@@ -89,9 +93,11 @@ class DropDown extends Component
             'TotalRework' => [],
             'Remarks' => '',
             'Operation' => 'HF',
-            'Process' => 'HF'
+            'Process' => 'HF',
+            'scroll_target' => true,
         ];
         $this->modalOpen[$formId] = true;
+        $this->dispatch('scroll-to-form', formId: $formId);
     }
 
     public function saveRemarks($formId)
@@ -115,7 +121,7 @@ class DropDown extends Component
             'hf_name' => '',
             'finishingProcedure' => '',
             'total_inspect' => '',
-            'open' => false, // start expanded by default
+            'open' => true, // start expanded by default
             'defects' => [],
             'smallDefects' => [],
             'rework' => [],
@@ -125,8 +131,10 @@ class DropDown extends Component
             'TotalRework' => [],
             'method' => 'PL',
             'Remarks' => [],
+            'scroll_target' => true,
         ];
         $this->modalOpen[$formId] = true;
+        $this->dispatch('scroll-to-form', formId: $formId);
     }
     public function addNewSF()
     {
@@ -139,7 +147,7 @@ class DropDown extends Component
             'hf_name' => '',
             'finishingProcedure' => '',
             'total_inspect' => '',
-            'open' => false, // start expanded by default
+            'open' => true, // start expanded by default
             'defects' => [],
             'ForRework' => null,
             'smallDefects' => [],
@@ -149,8 +157,10 @@ class DropDown extends Component
             'TotalRework' => [],
             'method' => 'SF',
             'Remarks' => [],
+            'scroll_target' => true,
         ];
         $this->modalOpen[$formId] = true;
+        $this->dispatch('scroll-to-form', formId: $formId);
     }
 
 
@@ -171,16 +181,18 @@ class DropDown extends Component
                 'inspect_REC' => uniqid(),
                 'hf_name' => '',
                 'total_inspect' => '',
-                'open' => false, // start expanded by default
+                'open' => true, // start expanded by default
                 'defects' => [],
                 'smallDefects' => [],
                 'rework' => [],
                 'ForRework' => true,
                 'Remarks' => '',
                 'Operation' => 'VI',
-                'Process' => 'SRW'
+                'Process' => 'SRW',
+                'scroll_target' => true,
             ];
             $this->modalOpen[$formId] = true;
+            $this->dispatch('scroll-to-form', formId: $formId);
         } elseif (!$ProceedToRework) {
             $this->dispatch('errorExisting', 'Please confirm first in For Rework Table in Dashboard.');
             return;
@@ -201,7 +213,7 @@ class DropDown extends Component
             'hf_name' => '',
             'finishingProcedure' => '',
             'total_inspect' => '',
-            'open' => false,
+            'open' => true,
             'defects' => [],
             'smallDefects' => [],
             'rework' => [],
@@ -213,8 +225,10 @@ class DropDown extends Component
             'Operation' => 'AUTO',
             'Process' => 'Auto Dimension Checking',
             'method' => 'AUTO_DIM',
+            'scroll_target' => true,
         ];
         $this->modalOpen[$formId] = true;
+        $this->dispatch('scroll-to-form', formId: $formId);
     }
 
     public function addNewAutoSF()
@@ -228,7 +242,7 @@ class DropDown extends Component
             'hf_name' => '',
             'finishingProcedure' => '',
             'total_inspect' => '',
-            'open' => false,
+            'open' => true,
             'defects' => [],
             'smallDefects' => [],
             'rework' => [],
@@ -240,8 +254,10 @@ class DropDown extends Component
             'Operation' => 'AUTO',
             'Process' => 'Auto SF Inspection',
             'method' => 'AUTO_SF',
+            'scroll_target' => true,
         ];
         $this->modalOpen[$formId] = true;
+        $this->dispatch('scroll-to-form', formId: $formId);
     }
 
     public function addNewAutoPLSF()
@@ -255,7 +271,7 @@ class DropDown extends Component
             'hf_name' => '',
             'finishingProcedure' => '',
             'total_inspect' => '',
-            'open' => false,
+            'open' => true,
             'defects' => [],
             'smallDefects' => [],
             'rework' => [],
@@ -267,8 +283,10 @@ class DropDown extends Component
             'Operation' => 'AUTO',
             'Process' => 'Auto PL/SF Inspection',
             'method' => 'AUTO_PLSF',
+            'scroll_target' => true,
         ];
         $this->modalOpen[$formId] = true;
+        $this->dispatch('scroll-to-form', formId: $formId);
     }
 
     public function addNewAutoNG()
@@ -282,7 +300,7 @@ class DropDown extends Component
             'hf_name' => '',
             'finishingProcedure' => '',
             'total_inspect' => '',
-            'open' => false,
+            'open' => true,
             'defects' => [],
             'smallDefects' => [],
             'rework' => [],
@@ -294,8 +312,10 @@ class DropDown extends Component
             'Operation' => 'AUTO',
             'Process' => 'Auto NG Checking',
             'method' => 'AUTO_NG',
+            'scroll_target' => true,
         ];
         $this->modalOpen[$formId] = true;
+        $this->dispatch('scroll-to-form', formId: $formId);
     }
 
     public function addNewAutoDimNG()
@@ -309,7 +329,7 @@ class DropDown extends Component
             'hf_name' => '',
             'finishingProcedure' => '',
             'total_inspect' => '',
-            'open' => false,
+            'open' => true,
             'defects' => [],
             'smallDefects' => [],
             'rework' => [],
@@ -321,8 +341,10 @@ class DropDown extends Component
             'Operation' => 'AUTO',
             'Process' => 'Auto Dimension of VI Good from NG',
             'method' => 'AUTO_DIM_NG',
+            'scroll_target' => true,
         ];
         $this->modalOpen[$formId] = true;
+        $this->dispatch('scroll-to-form', formId: $formId);
     }
 
     public function addNewAutoSFNG()
@@ -336,7 +358,7 @@ class DropDown extends Component
             'hf_name' => '',
             'finishingProcedure' => '',
             'total_inspect' => '',
-            'open' => false,
+            'open' => true,
             'defects' => [],
             'smallDefects' => [],
             'rework' => [],
@@ -348,8 +370,10 @@ class DropDown extends Component
             'Operation' => 'AUTO',
             'Process' => 'Auto SF Dimension of VI Good from NG',
             'method' => 'AUTO_SF_NG',
+            'scroll_target' => true,
         ];
         $this->modalOpen[$formId] = true;
+        $this->dispatch('scroll-to-form', formId: $formId);
     }
 
 
@@ -370,6 +394,13 @@ class DropDown extends Component
     public function IsCheckPPF($data)
     {
         $this->isCheckPPF = $data;
+    }
+
+    public function clearScrollTarget(string $formId): void
+    {
+        if (isset($this->forms[$formId])) {
+            $this->forms[$formId]['scroll_target'] = false;
+        }
     }
 
     #[On('expected')]
@@ -419,6 +450,10 @@ class DropDown extends Component
     public function exitHF($formId)
     {
         // Close modal without saving
+        if (!empty($this->forms[$formId]['hf_id'])) {
+            $this->modalOpen[$formId] = false;
+            return;
+        }
         $this->modalOpen[$formId] = false;
 
         if (isset($this->forms[$formId])) {

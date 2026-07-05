@@ -27,12 +27,12 @@ class DefectService
             if ((int)$row->total_qty <= 0) continue;
 
             $defects[] = [
-                'operatorid'   => $row->InspectorID,
-                'operatorname' => $row->insp_name,
-                'type'         => $row->Defect,
+                'operatorid'   => $row->inspectorId,
+                'operatorname' => $row->inspName,
+                'type'         => $row->defect,
                 'qty'          => (int)$row->total_qty,
                 'dateEncode'   => $row->latest_date,
-                'Process'      => $row->Process,
+                'Process'      => $row->process,
             ];
 
             // ✅ Lookup from in-memory map — no query fired

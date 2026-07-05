@@ -2,8 +2,7 @@
 
 namespace App\Livewire\GlComponents;
 
-use App\Models\Operator\HfForms;
-use App\Models\Operator\PRInsp;
+use App\Models\Forms\HF;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -25,12 +24,11 @@ class TotalInspection extends Component
     public function FetchTotalInspection($ppf)
     {
 
-        $this->inspections = HfForms::with('worker')
-            ->select('updated_by', 'updated_date')
+        $this->inspections = HF::with('worker')
+            ->select('updated_at','inspId')
             ->selectRaw('SUM(total_inspect) as total_inspect')
-            ->where('PPFNo', $ppf)
-            ->where('Operation', 'VI')
-            ->groupBy('updated_by','updated_date')
+            ->where('ppfno', $ppf)
+            ->groupBy('inspId','updated_at')
             ->get();
     }
     public function locked($data)

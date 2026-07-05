@@ -2,16 +2,18 @@
 
 namespace App\Repositories;
 
+use App\Models\Forms\Rework;
+use App\Models\Inspector\ReworkInsp;
 use Illuminate\Support\Facades\DB;
 
 class ReworkRepository
 {
     public function fetchForRework($ppf)
     {
-        return DB::table('hf_rework as r')
+        return DB::connection('PRecord')->table('vi_rework as r')
             ->select('r.PPFNo', DB::raw('SUM(r.qty) as total_rework'))
             ->where('r.FlgDone', 0)
-            ->where('r.ProceedToRework', 0)
+            ->where('r.proceedToWork', 0)
             ->where('r.ppfno', $ppf)
             ->whereExists(function ($query) {
                 $query->select(DB::raw(1))
@@ -25,32 +27,28 @@ class ReworkRepository
 
     public function fetchForAllRework()
     {
-        return DB::table('hf_rework')
-            ->select('PPFNo', DB::raw('SUM(qty) as total_rework'))
+        return Rework::select('PPFNo', DB::raw('SUM(qty) as total_rework'))
             ->where('FlgDone', 0)
-            ->where('ProceedToRework', 1)
+            ->where('proceedToWork', 1)
             ->groupBy('PPFNo')
             ->get();
     }
 
     public function ProceedRework($ppf)
     {
-        $lastReworkNo = DB::table('hf_rework')
-            ->where('ppfno', $ppf)
+        $lastReworkNo = Rework::where('ppfno', $ppf)
             ->max('ReworkNo');
 
         $newReworkNo = ($lastReworkNo ?? 0) + 1;
 
-        DB::table('hf_rework')
-            ->where('PPFNo', $ppf)
+        return Rework::where('PPFNo', $ppf)
             ->where('ReworkNo', NULL)
-            ->update(['ProceedToRework' => 1, 'ReworkNo' => $newReworkNo]);
+            ->update(['proceedToWork' => 1, 'ReworkNo' => $newReworkNo]);
     }
 
     public function fetchReworksGl($ppf)
     {
-        return DB::table('Inspector_Rework')
-            ->where('PPFNo', $ppf)
+        return ReworkInsp::where('PPFNo', $ppf)->where('operation','VI')
             ->get();
     }
 }
