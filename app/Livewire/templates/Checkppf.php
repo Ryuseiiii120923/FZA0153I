@@ -47,6 +47,10 @@ class Checkppf extends Component
     public string $authUsername = '';
     public string $authPassword = '';
     public string|null $authError = null;
+    public string $authRemark = '';
+     public bool $fifoAdvance = false;
+    public string|null $fifoConfirmUserCode = null;
+    public string|null $fifoConfirmRemark = null;
 
     public $rules = ['ppf' => 'required|numeric'];
     public  $messages = [
@@ -428,18 +432,20 @@ class Checkppf extends Component
         $this->dispatch('fetchForRework', $ppf);
     }
 
-    public function authorizeFifoOverride()
+   public function authorizeFifoOverride()
     {
         $this->authError = null;
-
+ 
         $this->validate([
             'authUsername' => 'required|string',
             'authPassword' => 'required|string',
+            'authRemark'   => 'required|string',
         ], [], [
             'authUsername' => 'username',
             'authPassword' => 'password',
+            'authRemark'   => 'remark',
         ]);
-
+ 
         // TODO: confirm 'FZA0153I4' is the correct ProgramID for the
         // FIFO-override action on this module — swap it if not.
         $result = app(AutorizationService::class)->authorize(
@@ -447,19 +453,35 @@ class Checkppf extends Component
             $this->authPassword,
             'FZA0153I4'
         );
-
+ 
         if (!$result['success']) {
             $this->authError = $result['message'];
             $this->authPassword = '';
             return;
         }
-
+ 
+        // Persist who authorized the override and why — this is the
+        // equivalent of blnAdvance / strConfirmUser / strConfirmRemark in
+        // the VB flow, carried forward for the "FIFO Problem" email that
+        // gets sent later when the quantity is confirmed.
+        $this->fifoAdvance = true;
+        $this->fifoConfirmUserCode = $result['employee']->社員CD;
+        $this->fifoConfirmRemark = $this->authRemark;
+ 
+        $this->dispatch('FifoOverrideConfirmed', [
+            'ppf' => $this->ppf,
+            'advance' => $this->fifoAdvance,
+            'confirmUserCode' => $this->fifoConfirmUserCode,
+            'confirmRemark' => $this->fifoConfirmRemark,
+        ]);
+ 
         $this->showFifoAuthModal = false;
         $this->authUsername = '';
         $this->authPassword = '';
+        $this->authRemark = '';
         $this->authError = null;
         $this->fifoAuthMessage = null;
-
+ 
         $this->proceedWithAdd($this->ppf);
     }
 

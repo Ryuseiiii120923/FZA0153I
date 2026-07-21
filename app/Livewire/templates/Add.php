@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Templates;
 
+use App\Actions\Notifications\SendViConfirmationEmailsAction;
 use App\Models\AddDefect;
 use App\Models\AddRwk;
 use App\Models\Forms\HF;
@@ -31,6 +32,7 @@ class Add extends Component
     use InitializesInspector;
 
     public $ppf;
+    public $pro;
     public $lotno;
     public $partno;
     public $matno;
@@ -75,6 +77,9 @@ class Add extends Component
     public $rows = [];
     public string $inspection_group;
     public array $rejectQty;
+    public bool $fifoAdvance = false;
+    public string|null $fifoConfirmUserCode = null;
+    public string|null $fifoConfirmRemark = null;
 
     public $listeners = [
         'FromCheckppf' => 'Checkppf',
@@ -448,6 +453,7 @@ class Add extends Component
 
     public function EditoDb()
     {
+        $this->pro = "1";
         if (empty($this->ppf)) {
             session()->flash('failed', 'Please Enter PPF!');
             return;
@@ -479,10 +485,19 @@ class Add extends Component
         ];
     }
 
+    #[On('FifoOverrideConfirmed')]
+    public function fetchConfirmFifo($data)
+    {
+        $this->fifoAdvance = $data['advance'];
+        $this->fifoConfirmUserCode = $data['confirmUserCode'];
+        $this->fifoConfirmRemark = $data['confirmRemark'];
+    }
+
     public function AddtoDb()
     {
+        $this->pro = "0";
         try {
-
+            DB::beginTransaction();
             if ($this->submitMethod == 'addToDb') {
                 $this->loadingAdd = true;
             } elseif ($this->submitMethod == 'editToDb') {
@@ -766,6 +781,24 @@ class Add extends Component
             ]);
 
             DB::commit();
+            app(SendViConfirmationEmailsAction::class)->execute([
+                'pro' => $this->pro,
+                'ppf' => $this->ppf,
+                'part' => $this->partno,
+                'lot' => $this->lotno,
+                'material' => $this->matno,
+                'hf' => $this->expct,
+                'good' => $this->goodqty,
+                'ng' => $this->Ng,
+                'excess' => $this->excssqty,
+                'lacking' => $this->lackqty,
+                'rework' => $this->reworkqty,
+                'sample' => $this->sampleqty,
+                'confirmedByCode' => $this->encoder,
+                'blnAdvance' => $this->fifoAdvance,
+                'confirmUserCode' => $this->fifoConfirmUserCode,
+                'confirmRemark' => $this->fifoConfirmRemark,
+            ]);
         } catch (Throwable $e) {
 
             DB::rollBack();

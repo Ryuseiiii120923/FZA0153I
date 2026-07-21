@@ -130,7 +130,7 @@
                 x-show="show"
                 x-transition
                 @click.stop
-                class="relative bg-white rounded-lg shadow-xl w-6/12 sm:w-96 p-6">
+                class="relative bg-white rounded-lg shadow-xl w-6/10 sm:w-96 p-6">
 
                 <h2 class="text-lg font-semibold text-black mb-2">Supervisor Authorization Required</h2>
 
@@ -161,6 +161,19 @@
                             wire:model="authPassword"
                             class="mt-1 block w-full border border-black rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         @error('authPassword')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="authRemark" class="block text-sm font-medium text-black">Remark</label>
+                        <textarea
+                            id="authRemark"
+                            rows="2"
+                            wire:model="authRemark"
+                            placeholder="Reason for overriding FIFO order"
+                            class="mt-1 block w-full border border-black rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                        @error('authRemark')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </div>
