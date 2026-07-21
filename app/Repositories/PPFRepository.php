@@ -33,9 +33,9 @@ class PPFRepository
 
     public function checkPPFExistForInspector($ppf, $inspectorID)
     {
-        return DefectInsp::where('InspectorID', $inspectorID)->where('operation','VI')->where('ppfno', $ppf)->exists() ||
-            ReworkInsp::where('InspectorId', $inspectorID)->where('operation','VI')->where('ppfno', $ppf)->exists() ||
-            PRInsp::where('InspectorId', $inspectorID)->where('operation','VI')->where('ppfno', $ppf)->exists();
+        return DefectInsp::where('inspectorId', $inspectorID)->where('operation','VI')->where('ppfno', $ppf)->exists() ||
+            ReworkInsp::where('inspectorId', $inspectorID)->where('operation','VI')->where('ppfno', $ppf)->exists() ||
+            PRInsp::where('inspectorId', $inspectorID)->where('operation','VI')->where('ppfno', $ppf)->exists();
     }
 
     public function getPosture($ppf)

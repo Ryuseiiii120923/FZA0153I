@@ -1,0 +1,1 @@
+{"message":"Failed to build process record","debug":{"exception":"Error","error":"Class \"App\\Models\\HF\\Defect\" not found","file":"C:\\xampp\\htdocs\\ProcessRecord\\app\\Services\\PDF\\DefectColumnService.php","line":31}}

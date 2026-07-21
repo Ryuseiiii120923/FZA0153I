@@ -5,7 +5,7 @@ namespace App\Actions;
 use App\DTOs\GeneralProcessRecordData;
 use App\Models\CheckPPF;
 use App\Models\GL\InspectionGroups;
-use App\Models\HF\HF;
+use App\Models\Forms\HF;
 use App\Models\HFRW\HFRWForms;
 use App\Models\LotNo;
 use App\Models\MoldingDailyReport;

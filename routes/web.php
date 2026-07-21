@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HomeController;
-use App\Http\Controllers\PdfController;
+use App\Http\Controllers\SomeController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -25,7 +25,8 @@ Route::middleware(['auth', 'nocache'])->group(function () {
     Route::get('/dashboard', [HomeController::class, 'operatordash'])->name('operator.dashboard');
     Route::get('/gldash', [HomeController::class, 'gldash'])->name('gl.dashboard');
     Route::get('/ppfdash', [HomeController::class, 'ppfdash'])->name('gl.ppfdashboard');
-    Route::get('/generate-pdf/{ppf}', [PdfController::class, 'generate'])->name('generate-pdf');
+    Route::get('/download-process-record/{ppf}', [SomeController::class, 'download'])
+    ->name('download-process-record');
 });
 
 Route::middleware(['auth:worker', 'nocache'])->group(function () {

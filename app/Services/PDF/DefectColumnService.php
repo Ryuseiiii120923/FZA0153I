@@ -2,9 +2,9 @@
 
 namespace App\Services\PDF;
 
-use App\Models\HF\Defect;
+use App\Models\Forms\Defect;
 use App\Models\HFRW\HFRWDefect;
-use App\Models\HF\Rework;
+use App\Models\Forms\Rework;
 use Illuminate\Support\Collection;
 
 /**

@@ -34,5 +34,9 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    'process_record_api' => [
+        'base_url' => env('PROCESS_RECORD_API_URL', 'http://192.168.3.11:8989/api/v1'),
+        'key' => env('PROCESS_RECORD_API_KEY'),
+    ],
 
 ];

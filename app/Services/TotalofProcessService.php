@@ -3,10 +3,10 @@
 namespace App\Services;
 
 use App\Models\AddDefect;
-use App\Models\HF\Defect;
-use App\Models\HF\HF;
-use App\Models\HF\Rework;
-use App\Models\HF\SmallDefect;
+use App\Models\Forms\Defect;
+use App\Models\Forms\HF;
+use App\Models\Forms\Rework;
+use App\Models\Forms\SmallDefect;
 use App\Models\TotalForPR\TotalOfProcessLargeDefect;
 use App\Models\TotalForPR\TotalOfProcessRework;
 use App\Models\TotalForPR\TotalOfProcessSmallDefect;

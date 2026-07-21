@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Models\Forms\Rework;
 use Illuminate\Support\Facades\DB;
 
 class DoneReworkRepository
@@ -185,8 +186,7 @@ class DoneReworkRepository
     public function updateFlag($ppf,$reworkNo)
     {
         try {
-            Db::table('hf_rework')
-                ->where('ppfno', $ppf)
+            Rework::where('ppfno', $ppf)
                 ->where('ReworkNo', $reworkNo)
                 ->update([
                     'FlgDone' => 1
@@ -199,13 +199,11 @@ class DoneReworkRepository
     public function fetchFlag($ppf)
     {
         try {
-            $flgDone =  DB::table('hf_rework')
-                ->where('PPFNo', $ppf)
-                ->value('FlgDone');
+            $flgDone =  Rework::where('PPFNo', $ppf)
+                ->value('flgDone');
 
-            $proceedToRework = DB::table('hf_rework')
-                ->where('PPFNo', $ppf)
-                ->value('ProceedToRework');
+            $proceedToRework = Rework::where('PPFNo', $ppf)
+                ->value('proceedToWork');
 
             return [
                 'FlgDone' => (bool) $flgDone,

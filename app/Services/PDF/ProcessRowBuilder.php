@@ -2,8 +2,8 @@
 
 namespace App\Services\PDF;
 
-use App\Models\HF\Defect;
-use App\Models\HF\Rework;
+use App\Models\Forms\Defect;
+use App\Models\Forms\Rework;
 use App\Models\HFRW\HFRWDefect;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;

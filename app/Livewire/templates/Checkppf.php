@@ -5,6 +5,8 @@ namespace App\Livewire\Templates;
 
 use App\Models\Inspector\PRInsp;
 use App\Models\Worker;
+use App\Services\Authorization\AutorizationService;
+use App\Services\PPFService;
 use App\Services\PrencodeService;
 use App\Traits\ClearErrors;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +40,13 @@ class Checkppf extends Component
     public bool $showInspectionModal = false; // controls the modal
     public bool $isPPF = false;
     public $OperatedinspectorID;
+
+    // FIFO override authorization dialog
+    public bool $showFifoAuthModal = false;
+    public string|null $fifoAuthMessage = null;
+    public string $authUsername = '';
+    public string $authPassword = '';
+    public string|null $authError = null;
 
     public $rules = ['ppf' => 'required|numeric'];
     public  $messages = [
@@ -122,7 +131,7 @@ class Checkppf extends Component
             $lack = $this->expct - $this->totalInspection;
         }
 
-        $this->dispatch('rejectQty',[
+        $this->dispatch('rejectQty', [
             'excssqty' => $excss ?? 0,
             'lackqty' => $lack ?? 0
         ]);
@@ -387,11 +396,80 @@ class Checkppf extends Component
 
     private function handleGlAdd(string $ppf)
     {
+        $excludedParts = [
+            '166753-0011',
+            '1293450010',
+            'M256C09101D',
+            '166997-0011',
+        ];
+
+        if (!in_array($this->partno, $excludedParts, true)) {
+            $result = app(PPFService::class)->checkFifo($this->partno, $this->lotno);
+
+            if (!$result['fifo']) {
+                $this->fifoAuthMessage = "Lot {$result['oldestLot']} should be encoded first. Supervisor authorization is required to proceed.";
+                $this->authUsername = '';
+                $this->authPassword = '';
+                $this->authError = null;
+                $this->showFifoAuthModal = true;
+                return;
+            }
+        }
+
+        $this->proceedWithAdd($ppf);
+    }
+
+    private function proceedWithAdd(string $ppf)
+    {
         $this->isPPF = true; //enable the inspection Progress
         $this->dispatch('LoadDefectsGL', $ppf);
         $this->dispatch('LoadReworksGL', $ppf);
         $this->dispatch('FetchDoneRework', $ppf);
         $this->dispatch('fetchForRework', $ppf);
+    }
+
+    public function authorizeFifoOverride()
+    {
+        $this->authError = null;
+
+        $this->validate([
+            'authUsername' => 'required|string',
+            'authPassword' => 'required|string',
+        ], [], [
+            'authUsername' => 'username',
+            'authPassword' => 'password',
+        ]);
+
+        // TODO: confirm 'FZA0153I4' is the correct ProgramID for the
+        // FIFO-override action on this module — swap it if not.
+        $result = app(AutorizationService::class)->authorize(
+            $this->authUsername,
+            $this->authPassword,
+            'FZA0153I4'
+        );
+
+        if (!$result['success']) {
+            $this->authError = $result['message'];
+            $this->authPassword = '';
+            return;
+        }
+
+        $this->showFifoAuthModal = false;
+        $this->authUsername = '';
+        $this->authPassword = '';
+        $this->authError = null;
+        $this->fifoAuthMessage = null;
+
+        $this->proceedWithAdd($this->ppf);
+    }
+
+    public function cancelFifoAuth()
+    {
+        $this->showFifoAuthModal = false;
+        $this->authUsername = '';
+        $this->authPassword = '';
+        $this->authError = null;
+        $this->fifoAuthMessage = null;
     }
 
     private function handleGlEdit(string $ppf)

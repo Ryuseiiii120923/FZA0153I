@@ -4,6 +4,7 @@ namespace App\Models\Forms;
 
 use App\Models\Worker;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class HF extends Model
 {
@@ -24,4 +25,9 @@ class HF extends Model
     {
         return $this->hasMany(Defect::class, 'updated_by', 'updated_by');
     }
+
+    public function reworks(): HasMany
+{
+    return $this->hasMany(Rework::class, 'ppfno', 'ppfno');
+}
 }

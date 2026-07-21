@@ -35,7 +35,7 @@ class GenerateProcessRecord extends Component
 
     public function exportPdf(string $ppf): void
     {
-        $this->dispatch('open-pdf', url: route('generate-pdf', ['ppf' => $ppf]));
+        $this->dispatch('open-pdf', url: route('download-process-record', ['ppf' => $ppf]));
     }
 
     public function render()

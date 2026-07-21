@@ -4,6 +4,10 @@ namespace App\Livewire\Templates;
 
 use App\Models\AddDefect;
 use App\Models\AddRwk;
+use App\Models\Forms\HF;
+use App\Models\Forms\Rework;
+use App\Models\HFRW\HFRWForms;
+use App\Models\Inspector\PRInsp;
 use App\Models\RejectQty;
 use App\Models\SmallDef;
 use App\Models\ViCheck;
@@ -15,8 +19,10 @@ use Livewire\Component;
 use App\Traits\NormalizeSmallDefects;
 use Carbon\Carbon;
 use Livewire\Attributes\On;
-use Illuminate\Support\Facades\DB;
 use App\Traits\NormalizeDefects;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class Add extends Component
 {
@@ -330,7 +336,7 @@ class Add extends Component
     public function loadMainRecord($ppf)
     {
         $data = $this->ppfService()->loadMainRecord($ppf);
-       
+
         if (!$data) {
             session()->flash('failed', 'Record not found');
             return false;
@@ -460,7 +466,8 @@ class Add extends Component
     }
 
     #[On('rejectQty')]
-    public function RejectTotal(array $data){
+    public function RejectTotal(array $data)
+    {
         $isExisting = RejectQty::where('ppfno', $this->ppf)->exists();
         $this->rejectQty[] = [
             'ppfno' => $this->ppf,
@@ -468,199 +475,159 @@ class Add extends Component
             'excss' => $data['excssqty'],
             'updated_by' => $this->encoder,
             'updated_at' => now(),
-             ...(!$isExisting ? ['created_at' => now()] : []),
+            ...(!$isExisting ? ['created_at' => now()] : []),
         ];
     }
 
     public function AddtoDb()
     {
-        if ($this->submitMethod == 'addToDb') {
-            $this->loadingAdd = true;
-        } elseif ($this->submitMethod == 'editToDb') {
-            $this->loadingSave = true;
-        }
-        $totalInspected = DB::table('Inspector_PR')->where('PPFNo', $this->ppf)
-            ->sum('total_inspect');
+        try {
 
-        $hasRework = DB::table('hf_rework as r')
-            ->join('hf_forms as f', 'r.ppfno', '=', 'f.ppfno')
-            ->where('r.PPFNo', $this->ppf)
-            ->Where('r.ProceedToRework', 0)
-            ->Where('f.finishingProcedure', 'Hand Finishing')
-            ->exists();
-        $hasReworkHf = DB::table('dr_forms')
-            ->where('PPFNo', $this->ppf)
-            ->exists();
-        $isDone = DB::table('hf_rework')
-            ->where('PPFNo', $this->ppf)
-            ->where('FlgDone', 1)
-            ->exists();
-        $isEncoded = DB::table('hf_forms')
-            ->where('PPFNo', $this->ppf)
-            ->Where('ForRework', 1)
-            ->exists();
+            if ($this->submitMethod == 'addToDb') {
+                $this->loadingAdd = true;
+            } elseif ($this->submitMethod == 'editToDb') {
+                $this->loadingSave = true;
+            }
+            $totalInspected = PRInsp::where('PPFNo', $this->ppf)
+                ->where('operation', 'VI')
+                ->sum('total_inspect');
 
-        if ((int)$totalInspected === (int)$this->expct) {
-            $this->isAdd = false;
-        }
+            $hasRework = HF::where('ppfno', $this->ppf)
+                ->where('finishingProcedure', 'Hand Finishing')
+                ->whereHas('reworks', function ($query) {
+                    $query->where('proceedToWork', 0);
+                })
+                ->exists();
+            $hasReworkHf = HFRWForms::where('ppfno', $this->ppf)
+                ->exists();
+            $isDone = Rework::where('ppfno', $this->ppf)
+                ->where('flgDone', 1)
+                ->exists();
+            $isEncoded = HF::where('ppfno', $this->ppf)
+                ->Where('forRework', 1)
+                ->exists();
 
-        if ($this->haserror) {
-            $this->dispatch('haserror', ['message' => 'Please fix the error!']);
-            $this->loadingAdd = false;
-            $this->loadingSave = false;
-            return;
-        }
-        if (empty($this->insp1)) {
-            $this->dispatch('haserror', ['message' => 'Please enter inspector!']);
-            $this->loadingAdd = false;
-            $this->loadingSave = false;
-            return;
-        }
-        if (empty($this->plant)) {
-            $this->dispatch('haserror', ['message' => 'Please enter plant']);
-            $this->loadingAdd = false;
-            $this->loadingSave = false;
-            return;
-        }
-        if (empty($this->ppf)) {
-            session()->flash('failed', 'Please Enter PPF!');
-            $this->loadingAdd = false;
-            $this->loadingSave = false;
-            return;
-        }
-        if ($this->ppf === "0") {
-            session()->flash('failed', 'Please Enter PPF!');
-            $this->loadingAdd = false;
-            $this->loadingSave = false;
-            return;
-        }
-        if ($this->isAdd) {
-            $this->dispatch('haserror', ['message' => 'Please accept first the quantity']);
-            $this->loadingAdd = false;
-            $this->loadingSave = false;
-            return;
-        }
-        if ($hasRework) {
-            $this->dispatch('haserror', ['message' => 'There are pending reworks for this PPF. Please resolve them before Saving.']);
-            $this->loadingAdd = false;
-            $this->loadingSave = false;
-            return;
-        }
-        if ($hasRework) {
-            if (!$hasReworkHf) {
-                $this->dispatch('haserror', ['message' => 'There are pending reworks in HF for this PPF. Please resolve them before Saving.']);
+            if ((int)$totalInspected === (int)$this->expct) {
+                $this->isAdd = false;
+            }
+
+            if ($this->haserror) {
+                $this->dispatch('haserror', ['message' => 'Please fix the error!']);
                 $this->loadingAdd = false;
                 $this->loadingSave = false;
                 return;
             }
-        }
-
-
-        if ($hasRework) {
-            if (!$isDone) {
-                $this->dispatch('haserror', ['message' => 'This PPF rework is not yet marked as done. Please resolve them before Saving.']);
+            if (empty($this->insp1)) {
+                $this->dispatch('haserror', ['message' => 'Please enter inspector!']);
                 $this->loadingAdd = false;
                 $this->loadingSave = false;
                 return;
             }
-        }
-
-
-        if ($isDone && !$isEncoded) {
-            $this->dispatch('haserror', ['message' => 'This PPF rework is not yet encode in Operator. Please resolve them before Saving.']);
-            $this->loadingAdd = false;
-            $this->loadingSave = false;
-            return;
-        }
-
-        if(isset($this->rejectQty)){
-            RejectQty::upsert(
-                $this->rejectQty,
-                ['ppfno','updated_by'],
-                ['updated_at', 'lack', 'excss']
-            );
-        }
-
-        Db::table('DefectSMALL')->where('PPFNo', $this->ppf)->delete();
-        Db::table('DefectRWK')->where('PPFNo', $this->ppf)->delete();
-        if (!empty($this->rework)) {
-            foreach ($this->rework as $hfno => $types) {
-                foreach ($types as $rework) {
-                    $type  = $rework['type'] ?? null;
-                    $qty   = $rework['quan'] ?? 0;
-                    $total = $rework['totalinsp'] ?? 0;
-
-                    Db::table('DefectRWK')->insert([
-                        'PPFNo'        => $this->ppf,
-                        'HFNo'         => $hfno,   // now HFNO comes from the key
-                        'Defect'       => $type ?? '',
-                        'Quantity'     => $qty,
-                        'TotalInspQty' => $total,
-                    ]);
+            if (empty($this->plant)) {
+                $this->dispatch('haserror', ['message' => 'Please enter plant']);
+                $this->loadingAdd = false;
+                $this->loadingSave = false;
+                return;
+            }
+            if (empty($this->ppf)) {
+                session()->flash('failed', 'Please Enter PPF!');
+                $this->loadingAdd = false;
+                $this->loadingSave = false;
+                return;
+            }
+            if ($this->ppf === "0") {
+                session()->flash('failed', 'Please Enter PPF!');
+                $this->loadingAdd = false;
+                $this->loadingSave = false;
+                return;
+            }
+            if ($this->isAdd) {
+                $this->dispatch('haserror', ['message' => 'Please accept first the quantity']);
+                $this->loadingAdd = false;
+                $this->loadingSave = false;
+                return;
+            }
+            if ($hasRework) {
+                $this->dispatch('haserror', ['message' => 'There are pending reworks for this PPF. Please resolve them before Saving.']);
+                $this->loadingAdd = false;
+                $this->loadingSave = false;
+                return;
+            }
+            if ($hasRework) {
+                if (!$hasReworkHf) {
+                    $this->dispatch('haserror', ['message' => 'There are pending reworks in HF for this PPF. Please resolve them before Saving.']);
+                    $this->loadingAdd = false;
+                    $this->loadingSave = false;
+                    return;
                 }
             }
-        }
 
-        $ViCheck = Db::table('VICHECK')->select('QtyOut', 'NGQty', 'Excess', 'Lacking', 'Rework', 'Sample', 'EncoderOut', 'Plant', 'InspectionDate', 'DateOut')->where('PPFNO', $this->ppf)->first();
-        if ($ViCheck) {
-            Db::table('VICHECK')->where('PPFNO', $this->ppf)
-                ->update([
-                    'QtyOut' => $this->goodqty ?? 0,
-                    'NGQty' => $this->ngratioqty ?? 0,
-                    'Excess' => $this->excssqty ?? 0,
-                    'Lacking' => $this->lackqty ?? 0,
-                    'Rework' => $this->reworkqty ?? 0,
-                    'Sample' => $this->sampleqty ?? 0,
-                    'EncoderOut' => $this->encoder,
-                    'Plant' => $this->plant,
-                    'InspectionDate' => $this->InspectDates,
-                    'Dateout' => Carbon::now()->format('Y-m-d h:i:s A'),
-                ]);
-        }
-        if (empty($this->defects) || count($this->defects) === 0) {
 
-            Db::table('Defect')->insert([
+            if ($hasRework) {
+                if (!$isDone) {
+                    $this->dispatch('haserror', ['message' => 'This PPF rework is not yet marked as done. Please resolve them before Saving.']);
+                    $this->loadingAdd = false;
+                    $this->loadingSave = false;
+                    return;
+                }
+            }
 
-                'PPFNo' => (float) $this->ppf,
-                'PartNo' => $this->partno,
-                'Lotno' => $this->lotno,
-                'MatNo' => $this->matno,
-                'MDNo' => $this->moldno,
-                'PressNo' => $this->pressno,
-                'Shift' => $this->shift,
-                'Operator' => $this->opt,
-                'Total' => $this->expct,
-                'Good' => $this->goodqty,
-                'HFNo1' => $this->hfno1,
-                'HFNo2' => $this->hfno2,
-                'HFNo3' => $this->hfno3,
-                'HFNo4' => $this->hfno4,
-                'HFNo5' => $this->hfno5,
-                'InspNo1' => $this->insp1 ?? '',
-                'InspNo2' => $this->insp2 ?? '',
-                'InspNo3' => $this->insp3 ?? '',
-                'InspNo4' => $this->insp4 ?? '',
-                'InspNo5' => $this->insp5 ?? '',
-                'Defect' => '',
-                'Quantity' => null,
-                'Details' => $this->details,
-                'InspectionDate' => $this->InspectDates ?? '',
-                'DateEncode' => Carbon::now()->format('Y-m-d h:i:s A'),
-                'Encoder' => (int)$this->encoder,
-                'ExcessQty' => $this->excssqty,
-                'LackingQty' => $this->lackqty,
-                'ReworkQty' => $this->reworkqty,
-                'SampleQty' => $this->sampleqty,
-                'MDate' => '',
-                'AutoMachine' => $this->auto ?? '',
-            ]);
-        } else {
-            foreach ($this->defects as  $defect) {
-                //dd($this->defects);
-                $type = $defect['type'] ?? $defect['newDefect'] ?? null;
-                $qty  = isset($defect['qty']) ? (float)$defect['qty'] : (float)($defect['newQuan'] ?? '');
-                if (!$type || $qty <= 0) continue;
+
+            if ($isDone && !$isEncoded) {
+                $this->dispatch('haserror', ['message' => 'This PPF rework is not yet encode in Operator. Please resolve them before Saving.']);
+                $this->loadingAdd = false;
+                $this->loadingSave = false;
+                return;
+            }
+
+            if (isset($this->rejectQty)) {
+                RejectQty::upsert(
+                    $this->rejectQty,
+                    ['ppfno', 'updated_by'],
+                    ['updated_at', 'lack', 'excss']
+                );
+            }
+
+            Db::table('DefectSMALL')->where('PPFNo', $this->ppf)->delete();
+            Db::table('DefectRWK')->where('PPFNo', $this->ppf)->delete();
+            if (!empty($this->rework)) {
+                foreach ($this->rework as $hfno => $types) {
+                    foreach ($types as $rework) {
+                        $type  = $rework['type'] ?? null;
+                        $qty   = $rework['quan'] ?? 0;
+                        $total = $rework['totalinsp'] ?? 0;
+
+                        Db::table('DefectRWK')->insert([
+                            'PPFNo'        => $this->ppf,
+                            'HFNo'         => $hfno,   // now HFNO comes from the key
+                            'Defect'       => $type ?? '',
+                            'Quantity'     => $qty,
+                            'TotalInspQty' => $total,
+                        ]);
+                    }
+                }
+            }
+
+            $ViCheck = Db::table('VICheck')->select('QtyOut', 'NGQty', 'Excess', 'Lacking', 'Rework', 'Sample', 'EncoderOut', 'Plant', 'InspectionDate', 'DateOut')->where('PPFNO', $this->ppf)->first();
+            if ($ViCheck) {
+                Db::table('VICheck')->where('PPFNo', $this->ppf)
+                    ->update([
+                        'QtyOut' => $this->goodqty ?? 0,
+                        'NGQty' => $this->ngratioqty ?? 0,
+                        'Excess' => $this->excssqty ?? 0,
+                        'Lacking' => $this->lackqty ?? 0,
+                        'Rework' => $this->reworkqty ?? 0,
+                        'Sample' => $this->sampleqty ?? 0,
+                        'EncoderOut' => $this->encoder,
+                        'Plant' => $this->plant,
+                        'InspectionDate' => $this->InspectDates,
+                        'Dateout' => Carbon::now()->format('Y-m-d h:i:s A'),
+                    ]);
+            }
+            if (empty($this->defects) || count($this->defects) === 0) {
+
                 Db::table('Defect')->insert([
+
                     'PPFNo' => (float) $this->ppf,
                     'PartNo' => $this->partno,
                     'Lotno' => $this->lotno,
@@ -681,86 +648,144 @@ class Add extends Component
                     'InspNo3' => $this->insp3 ?? '',
                     'InspNo4' => $this->insp4 ?? '',
                     'InspNo5' => $this->insp5 ?? '',
-                    'Defect' => $type,
-                    'Quantity' => $qty,
-                    'Details' => $this->details ?? '',
-                    'InspectionDate' => $this->InspectDates
-                        ? Carbon::parse($this->InspectDates)->format('Y-m-d')
-                        : null,
+                    'Defect' => '',
+                    'Quantity' => null,
+                    'Details' => $this->details,
+                    'InspectionDate' => $this->InspectDates ?? '',
                     'DateEncode' => Carbon::now()->format('Y-m-d h:i:s A'),
                     'Encoder' => (int)$this->encoder,
                     'ExcessQty' => $this->excssqty,
                     'LackingQty' => $this->lackqty,
                     'ReworkQty' => $this->reworkqty,
                     'SampleQty' => $this->sampleqty,
-                    'MDate' => ' ',
+                    'MDate' => '',
                     'AutoMachine' => $this->auto ?? '',
-
                 ]);
+            } else {
+                foreach ($this->defects as  $defect) {
+                    //dd($this->defects);
+                    $type = $defect['type'] ?? $defect['newDefect'] ?? null;
+                    $qty  = isset($defect['qty']) ? (float)$defect['qty'] : (float)($defect['newQuan'] ?? '');
+                    if (!$type || $qty <= 0) continue;
+                    Db::table('Defect')->insert([
+                        'PPFNo' => (float) $this->ppf,
+                        'PartNo' => $this->partno,
+                        'Lotno' => $this->lotno,
+                        'MatNo' => $this->matno,
+                        'MDNo' => $this->moldno,
+                        'PressNo' => $this->pressno,
+                        'Shift' => $this->shift,
+                        'Operator' => $this->opt,
+                        'Total' => $this->expct,
+                        'Good' => $this->goodqty,
+                        'HFNo1' => $this->hfno1,
+                        'HFNo2' => $this->hfno2,
+                        'HFNo3' => $this->hfno3,
+                        'HFNo4' => $this->hfno4,
+                        'HFNo5' => $this->hfno5,
+                        'InspNo1' => $this->insp1 ?? '',
+                        'InspNo2' => $this->insp2 ?? '',
+                        'InspNo3' => $this->insp3 ?? '',
+                        'InspNo4' => $this->insp4 ?? '',
+                        'InspNo5' => $this->insp5 ?? '',
+                        'Defect' => $type,
+                        'Quantity' => $qty,
+                        'Details' => $this->details ?? '',
+                        'InspectionDate' => $this->InspectDates
+                            ? Carbon::parse($this->InspectDates)->format('Y-m-d')
+                            : null,
+                        'DateEncode' => Carbon::now()->format('Y-m-d h:i:s A'),
+                        'Encoder' => (int)$this->encoder,
+                        'ExcessQty' => $this->excssqty,
+                        'LackingQty' => $this->lackqty,
+                        'ReworkQty' => $this->reworkqty,
+                        'SampleQty' => $this->sampleqty,
+                        'MDate' => ' ',
+                        'AutoMachine' => $this->auto ?? '',
+
+                    ]);
+                }
             }
-        }
 
-        DB::table('inspection_groups')->insert([
-            'ppfno' => $this->ppf,
-            'operation' => $this->operation ?? 'VI',
-            'group_name' => $this->inspection_group ?? '',
-        ]);
+            DB::table('inspection_groups')->insert([
+                'ppfno' => $this->ppf,
+                'operation' => $this->operation ?? 'VI',
+                'group_name' => $this->inspection_group ?? '',
+            ]);
 
 
-        if ($this->submitMethod === 'editToDb') {
+            if ($this->submitMethod === 'editToDb') {
 
-            if (empty($this->ppf)) {
-                session()->flash('failed', 'Please Enter PPF!');
-                return;
-            }
+                if (empty($this->ppf)) {
+                    session()->flash('failed', 'Please Enter PPF!');
+                    return;
+                }
 
-            if (!empty($this->smalldefects)) {
-                // SmallDef::where('PPFNo', $this->ppf)
-                //     ->where('dFlg', 'VI')
-                //     ->delete();
-                foreach ($this->smalldefects as $largeDefect => $smalls) {
-                    foreach ($smalls as $small) {
-                        DB::table('DefectSMALL')->insert([
-                            'PPFNo'       => $this->ppf,
-                            'LargeDefect' => $largeDefect, // <-- the name, not the array
-                            'SmallDefect' => $small['newSmallDefect'] ?? $small['type'],
-                            'Qty'         => $small['newSmallQuan'] ?? $small['qty']
-                        ]);
+                if (!empty($this->smalldefects)) {
+                    // SmallDef::where('PPFNo', $this->ppf)
+                    //     ->where('dFlg', 'VI')
+                    //     ->delete();
+                    foreach ($this->smalldefects as $largeDefect => $smalls) {
+                        foreach ($smalls as $small) {
+                            DB::table('DefectSMALL')->insert([
+                                'PPFNo'       => $this->ppf,
+                                'LargeDefect' => $largeDefect, // <-- the name, not the array
+                                'SmallDefect' => $small['newSmallDefect'] ?? $small['type'],
+                                'Qty'         => $small['newSmallQuan'] ?? $small['qty']
+                            ]);
+                        }
+                    }
+                }
+            } elseif ($this->submitMethod === 'addToDb') {
+                if (!empty($this->smalldefects)) {
+                    DB::table('DefectSMALL')->select('PPFNo', 'LargeDefect', 'SmallDefect', 'Qty')->where('PPFNo', $this->ppf)
+                        ->where('dFlg', 'VI')
+                        ->delete();
+
+                    foreach ($this->smalldefects as $largeDefect => $smalls) {
+                        foreach ($smalls as $small) {
+                            DB::table('DefectSMALL')->insert([
+                                'PPFNo'       => $this->ppf,
+                                'LargeDefect' => $largeDefect, // <-- the name, not the array
+                                'SmallDefect' => $small['newSmallDefect'] ?? $small['type'],
+                                'Qty'         => $small['newSmallQuan'] ?? $small['qty']
+                            ]);
+                        }
                     }
                 }
             }
-        } elseif ($this->submitMethod === 'addToDb') {
-            if (!empty($this->smalldefects)) {
-                DB::table('DefectSMALL')->select('PPFNo', 'LargeDefect', 'SmallDefect', 'Qty')->where('PPFNo', $this->ppf)
-                    ->where('dFlg', 'VI')
-                    ->delete();
 
-                foreach ($this->smalldefects as $largeDefect => $smalls) {
-                    foreach ($smalls as $small) {
-                        DB::table('DefectSMALL')->insert([
-                            'PPFNo'       => $this->ppf,
-                            'LargeDefect' => $largeDefect, // <-- the name, not the array
-                            'SmallDefect' => $small['newSmallDefect'] ?? $small['type'],
-                            'Qty'         => $small['newSmallQuan'] ?? $small['qty']
-                        ]);
-                    }
-                }
+            if ($this->submitMethod === 'editToDb') {
+                session()->flash('success', 'Data updated successfully!');
+            } else {
+                session()->flash('success', 'Data inserted successfully!');
             }
-        }
 
-        if ($this->submitMethod === 'editToDb') {
-            session()->flash('success', 'Data updated successfully!');
-        } else {
-            session()->flash('success', 'Data inserted successfully!');
-        }
+            DB::statement('EXEC FZA153I_DEFECT_ADD_RTN ?', [
+                $this->ppf
+            ]);
 
-        DB::statement('EXEC FZA153I_DEFECT_ADD_RTN ?', [
-            $this->ppf
-        ]);
+            DB::commit();
+        } catch (Throwable $e) {
 
-        if ($this->submitMethod == 'addToDb') {
+            DB::rollBack();
+
+            Log::error('AddtoDb Error', [
+                'message' => $e->getMessage(),
+                'line'    => $e->getLine(),
+                'file'    => $e->getFile(),
+                'ppf'     => $this->ppf,
+                'trace'   => $e->getTraceAsString(),
+            ]);
+
+            $this->dispatch('haserror', [
+                'message' => 'An unexpected error occurred while saving. Please contact the administrator.'
+            ]);
+
+            session()->flash('failed', $e->getMessage()); // Optional: remove in production
+        } finally {
+
             $this->loadingAdd = false;
-        } elseif ($this->submitMethod == 'editToDb') {
             $this->loadingSave = false;
         }
     }

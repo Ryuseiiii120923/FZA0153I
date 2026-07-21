@@ -8,6 +8,7 @@ use App\Models\CheckPPF;
 use App\Models\Inspector\DefectInsp;
 use App\Models\Inspector\PRInsp;
 use App\Models\Inspector\ReworkInsp;
+use App\Repositories\PPFRepository;
 use App\Repositories\PrencodeRepository;
 use Illuminate\Support\Facades\DB;
 
@@ -92,16 +93,7 @@ class PrencodeService
     public function loadData(string $ppf, string $inspectorID, string $systemName, string $actiondash)
     {
         $isExistMain = AddDefect::where('PPFNo', $ppf)->exists();
-        $ppfrecord = DefectInsp::where('InspectorID', $inspectorID)
-            ->where('PPFNo', $ppf)
-            ->exists()
-            ||
-            ReworkInsp::where('InspectorID', $inspectorID)
-            ->where('PPFNo', $ppf)
-            ->exists()
-            || PRInsp::where('InspectorID', $inspectorID)
-            ->where('PPFNo', $ppf)
-            ->exists();
+        $ppfrecord = app(PPFRepository::class)->checkPPFExistForInspector($ppf, $inspectorID);
         $check = CheckPPF::where('流動NO', $ppf)->first();
         $hf = CheckHF::where('流動NO', $ppf)->first();
         $totalinsp = PRInsp::where('PPFNo', $ppf)->where('InspectorID', $inspectorID)->first();

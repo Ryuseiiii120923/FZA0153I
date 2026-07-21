@@ -194,4 +194,41 @@ class PPFService
 
         return $data;
     }
+
+    public function checkFifo(string $partNo, string $currentLot): array
+    {
+
+        $oldestLot = DB::table('成形実績')
+            ->leftJoin('VICheck', '成形実績.流動NO', '=', 'VICheck.PPFNo')
+            ->where('品番', $partNo)
+            ->whereNull('QtyOut')
+            ->where(function ($query) {
+                $query->whereNull('完納検査')
+                    ->orWhere('完納検査', '');
+            })
+            ->orderByRaw('SUBSTRING(成形ﾛｯﾄ, 3, 6)')
+            ->value('成形ﾛｯﾄ');
+        if (empty($oldestLot)) {
+            return [
+                'fifo' => true,
+                'advance' => false,
+                'oldestLot' => null,
+            ];
+        }
+
+        if (substr($oldestLot, 2, 6) < substr($currentLot, 2, 6)) {
+
+            return [
+                'fifo' => false,
+                'openDialog' => true,
+                'advance' => true,
+                'oldestLot' => $oldestLot,
+            ];
+        }
+        return [
+            'fifo' => true,
+            'advance' => false,
+            'oldestLot' => $oldestLot,
+        ];
+    }
 }

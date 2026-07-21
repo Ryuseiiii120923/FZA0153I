@@ -96,7 +96,7 @@
                             {{ ($records->currentPage() - 1) * $records->perPage() + $loop->iteration }}
                         </td>
                         <td class="px-5 py-3 font-semibold text-gray-800">
-                            {{ $row->PPFNo_str }}
+                            {{ $row->PPFNo }}
                         </td>
                         <td class="px-5 py-3 text-gray-500">
                             {{ $row->DateEncode ?? '—' }}
@@ -104,14 +104,14 @@
                         <td class="px-5 py-3 text-center">
                             <button
                                 type="button"
-                                wire:click="exportPdf('{{ $row->PPFNo_str }}')"
+                                wire:click="exportPdf('{{ $row->PPFNo }}')"
                                 wire:loading.attr="disabled"
-                                wire:target="exportPdf('{{ $row->PPFNo_str }}')"
+                                wire:target="exportPdf('{{ $row->PPFNo }}')"
                                 class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold
                                        bg-[#0F3C89] text-white hover:bg-blue-800
                                        disabled:opacity-50 disabled:cursor-not-allowed
                                        transition-colors duration-150 shadow-sm">
-                                <span wire:loading wire:target="exportPdf('{{ $row->PPFNo_str }}')">
+                                <span wire:loading wire:target="exportPdf('{{ $row->PPFNo }}')">
                                     <svg class="animate-spin w-3.5 h-3.5 text-white"
                                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                         <circle class="opacity-25" cx="12" cy="12" r="10"
@@ -119,7 +119,7 @@
                                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                                     </svg>
                                 </span>
-                                <span wire:loading.remove wire:target="exportPdf('{{ $row->PPFNo_str }}')">
+                                <span wire:loading.remove wire:target="exportPdf('{{ $row->PPFNo }}')">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none"
                                         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round"

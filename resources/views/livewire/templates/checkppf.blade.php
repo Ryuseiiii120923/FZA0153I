@@ -1,4 +1,4 @@
-    <div class="bg-white shadow-lg px-3 py-4">
+<div class="bg-white shadow-lg px-3 py-4">
         <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
 
             <!-- PPF Input (smaller width) -->
@@ -108,6 +108,84 @@
                hover:bg-blue-700 hover:shadow-md transition duration-200">
                     Accept
                 </button>
+            </div>
+        </div>
+
+        <!-- FIFO Override Authorization Dialog -->
+        <div
+            x-data="{ show: false }"
+            x-init="$watch('$wire.showFifoAuthModal', value => show = value)"
+            x-show="show"
+            x-cloak
+            x-trap.inert.noscroll="show"
+            @keydown.escape.window="$wire.cancelFifoAuth()"
+            class="fixed inset-0 z-50 flex items-center justify-center"
+            style="display: none;">
+
+            <!-- Backdrop -->
+            <div class="absolute inset-0 bg-black/50" @click="$wire.cancelFifoAuth()"></div>
+
+            <!-- Dialog -->
+            <div
+                x-show="show"
+                x-transition
+                @click.stop
+                class="relative bg-white rounded-lg shadow-xl w-6/12 sm:w-96 p-6">
+
+                <h2 class="text-lg font-semibold text-black mb-2">Supervisor Authorization Required</h2>
+
+                @if($fifoAuthMessage)
+                <p class="text-sm text-gray-700 mb-4">{{ $fifoAuthMessage }}</p>
+                @endif
+
+                <form wire:submit.prevent="authorizeFifoOverride" class="space-y-3">
+                    <div>
+                        <label for="authUsername" class="block text-sm font-medium text-black">Username</label>
+                        <input
+                            type="text"
+                            id="authUsername"
+                            autocomplete="off"
+                            wire:model="authUsername"
+                            class="mt-1 block w-full border border-black rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        @error('authUsername')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="authPassword" class="block text-sm font-medium text-black">Password</label>
+                        <input
+                            type="password"
+                            id="authPassword"
+                            autocomplete="off"
+                            wire:model="authPassword"
+                            class="mt-1 block w-full border border-black rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        @error('authPassword')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    @if($authError)
+                    <p class="text-red-500 text-sm">{{ $authError }}</p>
+                    @endif
+
+                    <div class="flex justify-end gap-2 pt-2 mt-4">
+                        <button
+                            type="button"
+                            wire:click="cancelFifoAuth"
+                            class="px-4 py-1 rounded-md border border-gray-400 text-gray-700 hover:bg-gray-100 transition duration-200">
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            wire:loading.attr="disabled"
+                            wire:target="authorizeFifoOverride"
+                            class="px-4 py-1 bg-[#0F3C89] text-white rounded-md hover:bg-blue-800 transition duration-200">
+                            <span wire:loading.remove wire:target="authorizeFifoOverride">Authorize</span>
+                            <span wire:loading wire:target="authorizeFifoOverride">Checking...</span>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
