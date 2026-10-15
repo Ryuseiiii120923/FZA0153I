@@ -34,7 +34,9 @@ return [
         'pages' => resource_path('views/pages'),
         'auth' => resource_path('views/auth'),
         'partials' => resource_path('views/partials'),
-        'gl' => resource_path('views/gl')
+        'gl' => resource_path('views/gl'),
+        'operator' => resource_path('views/operator'),
+        'process-record' => resource_path('views/process-record')
     ],
 
     /*

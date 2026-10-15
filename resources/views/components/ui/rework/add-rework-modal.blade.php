@@ -1,4 +1,4 @@
-@props(['stagedReworks', 'formId', 'hfno', 'hfname', 'totalInsp', 'rework', 'reworkss', 'locked'])
+@props(['stagedReworks', 'formId', 'hfno', 'hfname', 'totalInsp', 'rework', 'reworkss', 'readOnly'])
 
 <div x-show="openAddRework" x-cloak x-trap.noscroll="openAddRework" x-transition
     class="fixed inset-0 flex items-center justify-center z-50 p-4">
@@ -107,7 +107,7 @@
         </div>
 
         <div class="px-6 py-4 border-t border-gray-100 shrink-0 flex justify-end gap-3">
-            <button type="button" wire:click="addRework" @click="openAddRework = false" @if($locked) disabled @endif
+            <button type="button" wire:click="addRework" @click="openAddRework = false" @if($readOnly) disabled @endif
                 class="px-5 py-2 rounded-lg bg-[#0F3C89] text-white text-sm font-medium hover:bg-blue-800 transition disabled:opacity-50">
                 Confirm &amp; Add{{ count($stagedReworks) > 0 ? ' (' . count($stagedReworks) . ')' : '' }}
             </button>

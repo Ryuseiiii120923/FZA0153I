@@ -1,8 +1,8 @@
-@props(['rework', 'formId', 'locked'])
+@props(['rework', 'formId', 'readOnly'])
 
 <div x-data="{ openSmall: false }" class="flex justify-center gap-2">
     <button
-        @if($locked) disabled @endif
+        @if($readOnly) disabled @endif
         @click="openSmall = true"
         wire:click="startEditRework('{{ $formId }}', '{{ $rework['type'] }}', '{{ $rework['hfno'] }}')"
         class="text-white bg-green-700 px-4 py-2 rounded">
@@ -10,7 +10,7 @@
     </button>
 
     <button
-        @if($locked) disabled @endif
+        @if($readOnly) disabled @endif
         class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded"
         @click.prevent="
             if (confirm('Are you sure you want to delete this record?')) {
@@ -32,7 +32,7 @@
                         <span class="font-bold text-red-600 text-xl">{{ $rework['type'] }} (HFNO {{ $rework['hfno'] }})</span>
                     </h3>
                     <button
-                        @if($locked) disabled @endif
+                        @if($readOnly) disabled @endif
                         type="button"
                         @click="openSmall = false"
                         wire:click="$set('newQuan', ''); $set('totalInsp.{{ $formId }}', '')"
@@ -61,7 +61,7 @@
 
                     <div class="w-full flex flex-col items-center mb-5">
                         <button
-                            @if($locked) disabled @endif
+                            @if($readOnly) disabled @endif
                             wire:click="updateRework"
                             @click="$nextTick(() => openSmall = false)"
                             type="button"

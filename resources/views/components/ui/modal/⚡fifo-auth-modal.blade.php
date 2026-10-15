@@ -1,6 +1,7 @@
 <?php // resources/views/components/fifo-auth-modal.blade.php
 
 use App\Services\Authorization\AutorizationService;
+use App\Services\Helpers\DraftService;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -58,11 +59,13 @@ new class extends Component
             return;
         }
 
-        $this->dispatch('FifoOverrideConfirmed', [
-            'ppf'             => $this->ppf,
-            'advance'         => true,
-            'confirmUserCode' => $result['employee']->社員CD,
-            'confirmRemark'   => $this->remark,
+         $draftKey = (string) $this->ppf;
+        if (!$draftKey) return;
+
+        app(DraftService::class)->syncComponent($draftKey, 'fifo-auth', [
+            'fifoAdvance' => true,
+            'fifoConfirmUserCode' => $result['employee']->社員CD,
+            'fifoConfirmRemark' => $this->remark
         ]);
 
         $this->close();

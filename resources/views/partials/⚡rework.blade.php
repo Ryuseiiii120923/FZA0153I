@@ -1,6 +1,7 @@
 <?php
 
 use App\Repositories\Rework\ReworkRepository;
+use App\Services\Helpers\DraftService;
 use App\Services\Rework\ReworkService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -17,7 +18,7 @@ new class extends Component
     public array $hfname = [];
     public $editingType;
     public $editinghfno;
-    public bool $locked = false;
+    public bool $readOnly = false;
     public $formId;
     public $dispatchPrefix;
     public string $systemname = 'GL';
@@ -37,20 +38,28 @@ new class extends Component
         'newQuan.required'   => 'Please enter a quantity.',
     ];
 
-    public function mount($systemname = 'GL', $dispatchPrefix = null, $formId = null, $loadedRework = [])
+    public function mount(int $ppf = 0, $systemname = 'GL', $dispatchPrefix = null, $formId = null, bool $readOnly = false, $loadedRework=[])
     {
         $this->systemname     = $systemname;
         $this->formId         = $formId ?? 'default';
         $this->dispatchPrefix = $dispatchPrefix;
         $this->reworkcheck    = app(ReworkRepository::class)->getReworkTypes();
+        $this->ppf            = $ppf;
+        $this->readOnly = $readOnly;
         $this->setReworks($loadedRework);
+        if ($ppf > 0) {
+            $this->Fetch($ppf);
+        }
     }
 
-    #[On('checked-ppf')]
-    public function checkedPpf($ppf){
-        $this->ppf = $ppf;
+    protected function syncToParent(): void
+    {
+        $draftKey = $this->systemname === 'operator' ? (string) $this->formId : (string) $this->ppf;
 
-        $this->Fetch($ppf);
+        app(DraftService::class)->syncComponent($draftKey, 'rework', [
+            'reworkss'      => $this->reworkss,
+            'totalngrework' => $this->totalngrework[$this->formId] ?? 0,
+        ]);
     }
 
     #[On('FetchHfNo')]
@@ -71,11 +80,6 @@ new class extends Component
         }
     }
 
-    public function locked($data)
-    {
-        $this->locked = $data;
-    }
-
     public function ClearForm($formId = null)
     {
         $formId ??= $this->formId;
@@ -88,23 +92,30 @@ new class extends Component
         $this->totalngrework[$formId] = 0;
     }
 
-    public function Fetch($ppf)
+    public function Fetch(int $ppf)
     {
-        $data = app(ReworkService::class)->getReworks($ppf);
-        $formId = $data['formId'] ?? $this->formId;
+        $service = app(ReworkService::class);
+        $data    = $service->getReworks($ppf);
+        $formId  = (string) (($data['formId'] ?? $this->formId) ?? '');
 
         $formReworks = collect($data['reworks'] ?? [])
-            ->filter(fn($r) => ($r['formId'] ?? $formId) === $formId)
+            ->filter(fn($r) => (string) ($r['formId'] ?? $formId) === $formId)
             ->values()
-            ->toArray();
+            ->all();
+
+
+        if ($formReworks === [] && $this->reworkss !== []) {
+            return;
+        }
 
         $this->reworkss = $formReworks;
-        $this->totalngrework[$formId] = app(ReworkService::class)->totalForForm($formReworks);
-
+        $this->totalngrework[$formId] = $service->totalForForm($formReworks);
         $this->dispatch($this->dispatchPrefix . '.FetchNgDropdown', [
             'formId'        => $formId,
             'totalReworkNg' => $this->totalngrework[$formId],
         ]);
+
+        $this->syncToParent();
     }
 
     public function stageRework()
@@ -197,6 +208,7 @@ new class extends Component
         ]);
 
         $this->UpdatedNgRework($this->formId);
+        $this->syncToParent();
         $this->resetStaged();
     }
 
@@ -232,6 +244,22 @@ new class extends Component
         }
     }
 
+    protected function trackDeletedRework(string $hfno, string $type): void
+    {
+        $draftKey = $this->systemname === 'operator' ? (string) $this->formId : (string) $this->ppf;
+        if (!$draftKey) return;
+
+        $draft = app(DraftService::class)->load($draftKey);
+        $needToDelete = $draft['needToDeleteRework'] ?? [];
+
+        $entry = ['hfno' => $hfno, 'type' => $type];
+        if (!in_array($entry, $needToDelete, true)) {
+            $needToDelete[] = $entry;
+        }
+
+        app(DraftService::class)->syncComponent($draftKey, 'needToDeleteRework', $needToDelete);
+    }
+
     public function deleteRework($hfno, $type)
     {
         $this->reworkss = app(ReworkService::class)
@@ -239,6 +267,8 @@ new class extends Component
 
         $cleanHfno = trim($hfno);
         $cleanType = trim(strtoupper($type));
+
+        $this->trackDeletedRework($cleanHfno, $cleanType);
 
         $this->dispatch('NeedToDeleteRework', [
             'hfno'   => $cleanHfno,
@@ -317,19 +347,27 @@ new class extends Component
         $this->stagedReworks = app(ReworkService::class)
             ->buildStagedListFromCommitted($this->reworkss);
     }
+
+    #[On('action-changed')]
+    public function actionChanged(string $action)
+    {
+        if ($action === 'delete' || $action === 'view') {
+            $this->readOnly = true;
+        }
+    }
 };
 ?>
 
-<div x-data="{ openAddRework: false }" @close-add-rework.window="openAddRework = false" class="bg-white rounded-lg w-full max-w-1xl mx-auto py-4 @if($locked) opacity-50 cursor-not-allowed @endif">
+<div x-data="{ openAddRework: false }" @close-add-rework.window="openAddRework = false" class="bg-white rounded-lg w-full max-w-1xl mx-auto py-4 @if($readOnly) opacity-50 cursor-not-allowed @endif">
     <div class="bg-gray-700 w-full">
         <p class="text-4xl font-extrabold text-center text-white p-4">Rework</p>
     </div>
 
-    @if($systemname !== 'operator')
+    @if($systemname === 'operator')
     <div class="w-full flex flex-col items-center mt-5">
         <button @click="$wire.loadExistingStagedRework().then(() => { openAddRework = true; $nextTick(() => $refs.firstInput?.focus()); })"
             class="text-white w-11/12 sm:w-2/3 bg-[#0F3C89] hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
-            type="button" id="add-rework" @if($locked) disabled @endif>
+            type="button" id="add-rework" @if($readOnly) disabled @endif>
             Add Rework / Edit Staged Rework
         </button>
     </div>
@@ -339,7 +377,7 @@ new class extends Component
         :reworkss="$reworkss"
         :system-name="$systemname"
         :form-id="$formId"
-        :locked="$locked" />
+        :locked="$readOnly" />
 
     <div class="flex-col w-11/12 sm:w-1/3 mx-5 sm:mx-2 mt-3">
         <label for="HfNo" class="block text-sm font-medium text-black">Total NG Rework</label>
@@ -352,7 +390,7 @@ new class extends Component
     @error('newRework') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
     @error('newQuan') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
 
-    @if($systemname !== 'operator')
+    @if($systemname === 'operator')
     <x-ui.rework.add-rework-modal
         :staged-reworks="$stagedReworks"
         :form-id="$formId"
@@ -361,6 +399,6 @@ new class extends Component
         :total-insp="$totalInsp"
         :rework="$reworkcheck"
         :reworkss="$reworkss"
-        :locked="$locked" />
+        :readOnly="$readOnly" />
     @endif
 </div>

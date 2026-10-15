@@ -1,4 +1,4 @@
-@props(['reworkss', 'systemName', 'formId', 'locked'])
+@props(['reworkss' => [], 'systemName' => null, 'formId' => 'default', 'readOnly'=> false])
 
 <div class="overflow-x-auto mt-3 mx-3">
     <table class="table-auto w-full text-sm text-white bg-gray-800 rounded-lg overflow-hidden">
@@ -38,7 +38,7 @@
                         <x-ui.rework.edit-rework-modal
                             :rework="$reworks"
                             :form-id="$formId"
-                            :locked="$locked" />
+                            :readOnly="$readOnly" />
                     </td>
                 @endif
             </tr>

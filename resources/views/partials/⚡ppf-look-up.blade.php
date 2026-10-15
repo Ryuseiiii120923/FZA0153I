@@ -4,15 +4,19 @@ use App\Models\Inspector\PRInsp;
 use App\Models\Worker;
 use App\Services\General\InitialDataService;
 use App\Services\General\PPFService;
+use App\Services\Helpers\DraftService;
 use App\Services\PrencodeService;
+use App\Traits\HasNotifications;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth as UserAuth;
 
 new class extends Component
 {
-    public string|null $ppf, $lotno, $partno, $matno, $moldno, $pressno, $shift, $opt, $expct;
-    public string|null $errorexisting;
+    use HasNotifications;
+    public string|null  $lotno, $partno, $matno, $moldno, $pressno, $shift, $opt, $expct;
+    public int|null $ppf;
+    public string|null $errorexisting = null;
     public array $defects = [];
     public array $smalldefects = [];
 
@@ -48,8 +52,8 @@ new class extends Component
         $this->systemname = $data['systemname'] ?? null;
     }
 
-    #[On('locked')]
-    public function locked(bool $data)
+    #[On('readOnly')]
+    public function readOnly(bool $data)
     {
         $this->readOnly = $data;
     }
@@ -70,8 +74,34 @@ new class extends Component
     }
 
     #[On('action-changed')]
-    public function actionChanged($action){
+    public function actionChanged(string $action)
+    {
+        if ($action === $this->action) {
+            return;
+        }
         $this->action = $action;
+        $this->resetForm();
+    }
+
+    private function resetForm(): void
+    {
+        $this->resetErrorBag();
+        $this->errorexisting = null;
+
+        $this->ppf = null;
+        $this->lotno = null;
+        $this->partno = null;
+        $this->matno = null;
+        $this->moldno = null;
+        $this->pressno = null;
+        $this->shift = null;
+        $this->opt = null;
+        $this->expct = null;
+        $this->progressInsp = null;
+        $this->totalInspection = '0';
+
+        $this->isAccept = false;
+        $this->showInspectionModal = false;
     }
 
     #[On('AcceptTotal')]
@@ -142,15 +172,12 @@ new class extends Component
     private function loadMainData()
     {
 
-        $data = app(InitialDataService::class)->loadPPfData($this->ppf, $this->actiondash);
+        $data = app(InitialDataService::class)->loadPPfData($this->ppf, $this->action);
         if (isset($data['error'])) {
             $this->errorexisting = $data['error'];
             return;
         }
 
-        if ($this->actiondash == 'view') {
-            $this->dispatch('readOnly');
-        }
         $this->showInspectionModal = $data['showModal'] ?? false;
 
         $this->lotno   = $data['lotno'] ?? "";
@@ -164,24 +191,40 @@ new class extends Component
         $this->totalInspection = $data['totalInspection'] ?? 0;
         $this->dispatch('fetchTotalInspection', $this->totalInspection);
         $this->dispatch('sendExcpt', $this->expct);
-        if ($this->actiondash != 'edit') {
-            if ($this->systemname === 'ProcessRecord') {
-                $this->showInspectionModal = true;
-            }
-        }
-        $this->totalInspectedProgress();
+        // $this->totalInspectedProgress();
+        $this->syncDraft();
         return true;
     }
 
-    public function mount(string|null $ppf = null, string|null $operatedID = null, string|null $actiondash = null)
+    protected function syncDraft()
+    {
+        $draftKey = (string) $this->ppf;
+        if (!$draftKey) return;
+
+        app(DraftService::class)->syncComponent($draftKey, 'ppfLookup', [
+            'lotno'           => $this->lotno,
+            'partno'          => $this->partno,
+            'matno'           => $this->matno,
+            'moldno'          => $this->moldno,
+            'pressno'         => $this->pressno,
+            'shift'           => $this->shift,
+            'opt'             => $this->opt,
+            'expct'           => $this->expct,
+            'totalInspection' => $this->totalInspection,
+        ]);
+    }
+
+
+
+    public function mount(string|null $ppf = null, string|null $operatedID = null, string $systemname = '')
     {
         $this->ppf = $ppf;
-        $this->actiondash = $actiondash ?? 'add';
         $userencoder = UserAuth::user()->社員CD;
         $this->encoder = (int)$userencoder;
         $this->inspectorID = Worker::where('社員CD', $this->encoder)
             ->value('作業員CD');
         $this->OperatedinspectorID = $operatedID;
+        $this->systemname = $systemname;
     }
 
     #[On('ClearForm')]
@@ -229,38 +272,44 @@ new class extends Component
         $this->proceedWithAdd($ppf);
     }
 
-    private function proceedWithAdd(string $ppf)
-    {
-        $this->isPPF = true; //enable the inspection Progress
-        $this->dispatch('LoadDefectsGL', $ppf);
-        $this->dispatch('LoadReworksGL', $ppf);
-        $this->dispatch('FetchDoneRework', $ppf);
-        $this->dispatch('fetchForRework', $ppf);
-    }
-
-    #[On('FifoOverrideConfirmed')]
-    public function onFifoOverrideConfirmed(array $data)
-    {
-        $this->proceedWithAdd($data['ppf']);
-    }
-
-    #[On('post-ppf')]
     public function checkPPF()
     {
+        $this->errorexisting = null;
+        if (empty($this->action)) {
+            $this->notifyFail('Action Required', 'Please Select Action');
+            return;
+        }
+
         $this->validate();
+
         if (empty($this->ppf)) {
             $this->dispatch('ppf-error');
             return;
         }
-        $this->loadMainData();
-        $this->dispatch('checked-ppf', $this->ppf);
+
+        // load first, notify children only if it worked
+        if (! $this->loadMainData()) {
+            return;
+        }
+
+         $this->dispatch('checked-ppf', ppf: (int) $this->ppf);
     }
 
+    #[On('confirm-ppf')]
+    public function confirmPPF(int $ppf)
+    {
+        if (empty($this->action)) {
+            $this->notifyFail('Action Required', 'Please Select Action');
+            return;
+        }
+        $this->ppf = $ppf;
+        $this->checkPPF();
+    }
 };
 ?>
 
 <div class="bg-white shadow-lg px-3 py-4 rounded-lg">
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 mx-3">
 
         <!-- PPF Input -->
         <div class="flex flex-col mx-5 sm:mx-2">
@@ -269,8 +318,10 @@ new class extends Component
                 type="number"
                 id="PPF"
                 class="w-full border border-black rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter PPF"
+                placeholder="Enter PPF (press Enter)"
                 wire:model="ppf"
+                wire:keydown.enter="checkPPF"
+                wire:loading.attr="disabled"
                 wire:blur="checkPPF">
 
             <!-- Error Messages -->
@@ -335,13 +386,10 @@ new class extends Component
                 placeholder=" " value="" required wire:model="expct" required readonly>
         </div>
     </div>
-    <div class="flex flex-col mt-3 w-full sm:w-1/3 mx-5 sm:mx-2 @if($systemname == 'ProcessRecord') hidden @endif">
+    <div class="flex flex-col sm:flex-row gap-4 mt-4 mx-3">
+        <div class="flex flex-col mx-5 sm:mx-2">
+            <label for="ProgressInsp" class="block text-sm font-medium text-black">Inspection Progress</label>
 
-        <!-- Label -->
-        <label for="ProgressInsp" class="block text-sm font-medium text-black">Inspection Progress</label>
-
-        <!-- Input + Accept/Reject choice on same line -->
-        <div class="flex items-center gap-2 mt-1">
             <input type="text"
                 id="ProgressInsp"
                 class="flex-1 border border-black rounded-md px-2 py-1 me-4"
@@ -349,39 +397,6 @@ new class extends Component
                 required
                 wire:model="progressInsp"
                 readonly>
-
-            @if(!$isAccept && $actiondash == 'add')
-            <div x-data="{ confirming: false }" class="ms-3">
-                <button type="button"
-                    @click="confirming = true"
-                    x-show="!confirming"
-                    class="px-4 py-1 bg-blue-600 text-white rounded-md
-                       hover:bg-blue-700 hover:shadow-md transition duration-200">
-                    Accept
-                </button>
-
-                <div x-show="confirming" x-cloak class="flex items-center gap-2">
-                    <span class="text-sm text-gray-700 me-1">Accept or reject this total?</span>
-                    <button type="button"
-                        wire:click="AcceptTotal"
-                        @click="confirming = false"
-                        class="px-4 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition duration-200">
-                        Accept
-                    </button>
-                    <button type="button"
-                        wire:click="RejectTotal"
-                        @click="confirming = false"
-                        class="px-4 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-200">
-                        Reject
-                    </button>
-                    <button type="button"
-                        @click="confirming = false"
-                        class="px-3 py-1 text-gray-600 hover:text-gray-800 text-sm">
-                        Cancel
-                    </button>
-                </div>
-            </div>
-            @endif
         </div>
     </div>
 

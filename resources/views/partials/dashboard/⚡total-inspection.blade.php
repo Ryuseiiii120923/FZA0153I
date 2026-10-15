@@ -8,6 +8,17 @@ new class extends Component
 {
     public array $inspections = [];
     public bool $readOnly = false;
+    public int $ppf = 0;
+
+    public function mount(int $ppf, bool $readOnly = false){
+        $this->readOnly = $readOnly;
+        $this->ppf = $ppf;
+
+        if($ppf > 0){
+            $this->FetchTotalInspection($ppf);
+        }
+
+    }
 
     public function FetchTotalInspection(int $ppf)
     {
@@ -21,12 +32,23 @@ new class extends Component
             ->toArray();
     }
 
-    #[On('checked-ppf')]
-    public function checkPPf(int $ppf)
+     #[On('action-changed')]
+    public function actionChanged(string $action)
     {
-        $this->FetchTotalInspection($ppf);
+        if($action === 'delete' || $action === 'view'){
+            $this->readOnly = true;
+        }
+        $this->inspections = [];
+        $this->readOnly = false;
     }
 
+    // #[On('checked-ppf')]
+    // public function checkPPf(int $ppf)
+    // {
+    //     $this->FetchTotalInspection($ppf);
+    // }
+
+    #[On('readOnly')]
     public function locked($data)
     {
         $this->readOnly = $data;

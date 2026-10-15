@@ -2,6 +2,7 @@
 
 namespace App\Services\General;
 
+use App\Models\AddDefect;
 use App\Models\CheckHF;
 use App\Models\MoldingResult;
 use App\Repositories\Defect\DefectRepository;
@@ -14,65 +15,9 @@ use Illuminate\Support\Facades\DB;
 class InitialDataService
 {
     public function __construct(protected DefectRepository $defectRepository, protected InitialDataRepository $initialDataRepository, protected WorkerRepository $workerRepository, protected PPFRepository $ppfrepository) {}
-    public function loadMainRecord(int $ppf)
+    public function loadComputedFieldQty(int $ppf)
     {
-        $record = $this->initialDataRepository->fetchMainTable($ppf);
-        if (!$record) {
-            return null;
-        }
-        $data = [];
-        $getexpct = $this->defectRepository->getExpected($ppf);
-        $largeDefects = $this->defectRepository->getDefectforMain();
-
-        $data['expct'] = $getexpct->合格数 ?? 0;
-        $data['largeDefect'] = $largeDefects;
-        $data['ppf'] = $record->PPFNo;
-        $data['partno'] = $record->PartNo;
-        $data['lotno'] = $record->Lotno;
-        $data['matno'] = $record->MatNo;
-        $data['moldno'] = $record->MDNo;
-        $data['pressno'] = $record->PressNo;
-        $data['shift'] = $record->Shift;
-        $data['opt'] = $record->Operator;
-
-        // Quantities
-        $data['goodqty'] = $record->Good;
-        $data['excssqty'] = $record->ExcessQty;
-        $data['lackqty'] = $record->LackingQty;
-        $data['reworkqty'] = $record->ReworkQty;
-        $data['sampleqty'] = $record->SampleQty;
-
-        // Inspection
-        $data['insp1'] = $record->InspNo1;
-        $data['insp2'] = $record->InspNo2;
-        $data['insp3'] = $record->InspNo3;
-        $data['insp4'] = $record->InspNo4;
-        $data['insp5'] = $record->InspNo5;
-
-        $data['hfno1'] = $record->HFNo1;
-        $data['hfno2'] = $record->HFNo2;
-        $data['hfno3'] = $record->HFNo3;
-        $data['hfno4'] = $record->HFNo4;
-        $data['hfno5'] = $record->HFNo5;
-
-        $data['inspection_date'] = Carbon::parse($record->InspectionDate)->format('Y-m-d');
-        $data['updated_at'] = Carbon::parse($record->DateEncode)->format('Y-m-d h:i:s A');
-        $defects = [];
-
-        if (!empty($record->Defect) && $record->Quantity > 0) {
-            $defects[] = [
-                'type' => $record->Defect,
-                'qty'  => $record->Quantity
-            ];
-        }
-
-        $data['defects'] = $defects;
-        $worker = $this->workerRepository->getWorkerName($record->Encoder);
-        $data['username'] = $worker->名前 ?? '';
-        $data['details'] = $record->Details;
-        $data['auto'] = $record->AutoMachine;
-
-        return $data;
+        return $this->initialDataRepository->fetchComputedFieldQty($ppf);
     }
 
     public function checkIfinFinal(int $ppf)
@@ -145,10 +90,10 @@ class InitialDataService
             return (['error' => 'PPF No does not encoded on Hand Finishing Result!']);
         }
 
-        if($this->initialDataRepository->isLockedByFinalInspection($ppf)){
-            return(['error' => 'PPFNo was already encoded to Final Inspection Process.']);
+        if ($this->initialDataRepository->isLockedByFinalInspection($ppf)) {
+            return (['error' => 'PPFNo was already encoded to Final Inspection Process.']);
         }
-        
+
         $pcValue = DB::table('Seihin')->where('', $moldResult['品番']);
         $pcValue = $pcValue ?? 0;
         if ($pcValue != "0" && trim($moldResult['金型NO']) != "") {
@@ -161,7 +106,7 @@ class InitialDataService
                 }
             }
         }
-         return ([
+        return ([
             'lotno'   => $moldResult ? preg_replace('/\s+/', '', $moldResult->成形ﾛｯﾄ) : '',
             'partno'  => $moldResult ? preg_replace('/\s+/', '', $moldResult->品番) : '',
             'matno'   => $moldResult ? preg_replace('/\s+/', '', $moldResult->材料名) : '',
@@ -173,5 +118,20 @@ class InitialDataService
         ]);
     }
 
-   
+    public function loadfooterDetails(int $ppf){
+        $repo = app(InitialDataRepository::class);
+        $plant = $repo->loadPlant($ppf);
+        $data = $repo->fetchFooterDetails($ppf);
+        $group = $repo->fetchGroup($ppf);
+
+        return[
+            'inspectionDate' => $data->InspectionDate ?? '',
+            'encoder' => $data->Encoder ?? '',
+            'dateEncode' => $data->DateEncode ?? '',
+            'autoMachine' => $data->AutoMachine ?? '',
+            'details' => $data->Details ?? '',
+            'plant' => $plant ?? '',
+            'inspectionGroup' => $group ?? ''
+        ];
+    }
 }

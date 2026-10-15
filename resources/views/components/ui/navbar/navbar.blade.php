@@ -19,8 +19,8 @@
     </x-ui.navbar.nav-button>
 
     <x-ui.navbar.nav-button
-        page="100-VI"
-        title="100% VI"
+        page="enroll-operator"
+        title="Enroll Operator"
         @click.stop="desktopExpanded = false; mobileOpen = false">
         <x-slot:icon>
             <svg xmlns="http://www.w3.org/2000/svg"

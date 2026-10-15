@@ -48,5 +48,15 @@ class AddDefect extends Model
      protected $casts = [
         'PPFNo' => 'integer', 
     ];
+
+    public function finalInspection()
+    {
+        return $this->hasMany(FinalInspection::class, 'PPFNo', 'PPFNo')
+            ->where(function ($q) {
+                $q->where('ReInspect', '0')
+                  ->orWhere('ReInspect', '')
+                  ->orWhere('ReInspect', NULL);
+            });
+    }
  
 }

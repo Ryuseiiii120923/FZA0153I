@@ -32,7 +32,7 @@ class ReworkRepository
         return WorkerName::where('社員CD', $employeeCode)->first();
     }
 
-    public function fetchForRework($ppf)
+    public function fetchForRework(int $ppf)
     {
         return DB::connection('PRecord')->table('vi_rework as r')
             ->select('r.PPFNo', DB::raw('SUM(r.qty) as total_rework'))
@@ -46,7 +46,8 @@ class ReworkRepository
                     ->where('f.finishingProcedure', 'Hand Finishing');
             })
             ->groupBy('r.PPFNo')
-            ->get();
+            ->get()
+            ->toArray();
     }
 
     public function fetchForAllRework()
@@ -58,7 +59,7 @@ class ReworkRepository
             ->get();
     }
 
-    public function ProceedRework($ppf)
+    public function ProceedRework(int $ppf)
     {
         $lastReworkNo = Rework::where('ppfno', $ppf)
             ->max('ReworkNo');
@@ -70,9 +71,27 @@ class ReworkRepository
             ->update(['proceedToWork' => 1, 'ReworkNo' => $newReworkNo]);
     }
 
-    public function fetchReworksGl($ppf)
+    public function fetchReworksGl(int $ppf)
     {
         return ReworkInsp::where('PPFNo', $ppf)->where('operation','VI')
             ->get();
+    }
+
+    public function fetchFlag(int $ppf)
+    {
+        try {
+            $flgDone =  Rework::where('PPFNo', $ppf)
+                ->value('flgDone');
+
+            $proceedToRework = Rework::where('PPFNo', $ppf)
+                ->value('proceedToWork');
+
+            return [
+                'FlgDone' => (bool) $flgDone,
+                'ProceedToRework' => (bool) $proceedToRework
+            ];
+        } catch (\Throwable $e) {
+            throw new \Exception("Failed to Fetch: " . $e->getMessage());
+        }
     }
 }

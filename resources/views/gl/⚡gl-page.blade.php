@@ -1,16 +1,58 @@
 <?php
 
+use App\Actions\Dashboard\AddSummary;
+use App\Actions\Dashboard\DeleteSummary;
+use App\Services\Helpers\DraftService;
+use App\Traits\HasNotifications;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 new class extends Component
 {
+    use HasNotifications;
     public string $action = '';
     public int $selectedPpf = 0;
+    public bool $readOnly = false;
 
     public function setAction(string $action)
     {
         $this->action = $action;
         $this->dispatch('action-changed', $action);
+        $this->selectedPpf = 0;
+        $this->readOnly = false;
+        if ($this->action === 'view' || $this->action === 'delete') {
+            $this->readOnly = true;
+            $this->dispatch('readOnly', true);
+        }
+    }
+
+    #[On('checked-ppf')]
+    public function checkPPF(int $ppf)
+    {
+        $this->selectedPpf = $ppf;
+    }
+
+    public function submit()
+    {
+        $result = match ($this->action) {
+            'add'   => app(AddSummary::class)->AddtoDB($this->selectedPpf, $this->action, '0'),
+            'edit'  => app(AddSummary::class)->AddtoDB($this->selectedPpf, $this->action, '1'),
+            'delete' => app(DeleteSummary::class)->execute($this->selectedPpf),
+        };
+
+        if (isset($result['error'])) {
+            $this->notifyFail('Cannot save', $result['error'], 6000);
+            return;
+        }
+
+        $this->notifyReload(
+            'success',
+            match ($this->action) {
+                'add'   => 'Saved',
+                'edit'  => 'Updated',
+                default => 'Deleted',
+            }
+        );
     }
 };
 ?>
@@ -38,16 +80,28 @@ new class extends Component
     </div>
 
     <div class="mt-3 w-full rounded-lg">
-        <livewire:partials::ppf-look-up />
-        <livewire:partials::dashboard.total-inspection />
-        <div class="flex flex-col lg:flex-row gap-6 mt-4 items-start justify-center w-full">
+
+        <livewire:notification.pop-up-notif :key="'pop-up-notif'" />
+        <livewire:notification.session-modal-notification :key="'session-modal-notif'" />
+
+        @if($action !== 'add' && !empty($action))
+        <livewire:partials::dashboard.dash-ppf-table :action="$action" :key="'dash-ppf-table'" />
+        @endif
+
+        <livewire:partials::ppf-look-up :key="'ppf-look-up'" />
+
+        <livewire:partials::dashboard.total-inspection :ppf="$selectedPpf" :key="'totalInspection-'.$selectedPpf" />
+        <div class="flex flex-col lg:flex-row gap-6 mt-4 itezms-start justify-center w-full">
             <div class="w-full lg:w-1/2 flex justify-center">
-                <livewire:partials::defects />
+                <livewire:partials::defects :ppf="$selectedPpf" :key="'defect-'.$selectedPpf" :readOnly="$readOnly" />
             </div>
             <div class="w-full lg:w-1/2 flex justify-center">
-                <livewire:partials::rework />
+                <livewire:partials::rework :ppf="$selectedPpf" :key="'rework-'.$selectedPpf" :readOnly="$readOnly" />
             </div>
         </div>
+        <livewire:partials::dashboard.done-rework :ppf="$selectedPpf" :key="'doneRework-'.$selectedPpf" :readOnly="$readOnly" />
+        <livewire:partials::dashboard.computed-fields :ppf="$selectedPpf" :key="'computed-'.$selectedPpf" :readOnly="$readOnly" />
+        <livewire:partials::dashboard.footer-details :ppf="$selectedPpf" :key="'footer-'.$selectedPpf" :readOnly="$readOnly" />
     </div>
 
     <div class="flex items-center justify-center mt-4 @if($this->selectedPpf === 0) opacity-50 cursor-not-allowed @endif">

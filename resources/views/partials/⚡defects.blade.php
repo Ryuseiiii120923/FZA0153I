@@ -2,6 +2,7 @@
 
 use App\Models\Defects as ModelsDefects;
 use App\Services\Defect\DefectService;
+use App\Services\Helpers\DraftService;
 use Illuminate\Support\Collection;
 use Livewire\Component;
 use Livewire\Attributes\On;
@@ -30,7 +31,6 @@ new class extends Component
     public $currentOperatorSmall;
 
     public bool $readOnly = false;
-    public bool $locked = false;
     public string $systemname = 'GL'; // 'GL' | 'ProcessRecord' | 'operator'
     public $formId;
     public $dispatchPrefix;
@@ -58,7 +58,7 @@ new class extends Component
         'newQuan.min'        => 'The quantity must be at least 1.',
     ];
 
-    public function mount($systemname = 'GL', $dispatchPrefix = null, $formId = null, $loadedDefects = [], $loadedSmallDefects = [])
+    public function mount($ppf = 0, $systemname = 'GL', $dispatchPrefix = null, $formId = null, $loadedDefects = [], $loadedSmallDefects = [], $readOnly = false)
     {
         $this->systemname      = $systemname;
         $this->formId          = $formId;
@@ -68,12 +68,14 @@ new class extends Component
         $this->SmallDefectsForModal = collect();
         $this->setDefects($loadedDefects);
         $this->setSmallDefects($loadedSmallDefects);
+        $this->ppf = $ppf;
+        $this->readOnly = $readOnly;
+
+        if ($ppf > 0) {
+            $this->fetchDefectByPpf($ppf);
+        }
     }
 
-    public function locked($data)
-    {
-        $this->locked = $data;
-    }
 
     public function ClearForm()
     {
@@ -81,6 +83,14 @@ new class extends Component
         $this->smallDefects   = [];
         $this->TotalNg        = 0;
         $this->TotalSmallQuan = 0;
+    }
+
+    #[On('action-changed')]
+    public function actionChanged(string $action = '')
+    {
+        if($action === 'delete' || $action === 'view'){
+            $this->readOnly = true;
+        }
     }
 
     public function setDefects($defects)
@@ -98,11 +108,17 @@ new class extends Component
     // GL / ProcessRecord path — staged multi-add, flat smallDefects[type]
     // =========================================================================
 
-    #[On('checked-ppf')]
-    public function checkedPPF($ppf)
+
+    protected function syncToParent(): void
     {
-        $this->ppf = $ppf;
-        $this->fetchDefectByPpf($ppf);
+        $draftKey = $this->systemname === 'operator' ? (string) $this->formId : (string) $this->ppf;
+        if (!$draftKey) return;
+
+        app(DraftService::class)->syncComponent($draftKey, 'defects', [
+            'defects'      => $this->defects,
+            'smallDefects' => $this->smallDefects,
+            'totalNg' => $this->TotalNg
+        ]);
     }
 
     public function fetchDefectByPpf($ppf)
@@ -130,6 +146,7 @@ new class extends Component
 
         $this->TotalNg        = collect($this->defects)->sum('qty');
         $this->TotalSmallQuan = collect($this->smallDefects)->flatten(1)->sum(fn($d) => (int)($d['qty'] ?? 0));
+        $this->syncToParent();
     }
 
     public function loadExistingDefectsToStage(): void
@@ -257,11 +274,13 @@ new class extends Component
         $this->TotalSmallQuan = collect($this->smallDefects)->flatten(1)->sum(fn($d) => (int)($d['qty'] ?? 0));
 
         $this->dispatch($this->dispatchPrefix . '.defects-updated', [
-            'defects' => $this->defects, 'smallDefects' => $this->smallDefects,
-            'formId' => $this->formId, 'action' => 'add',
+            'defects' => $this->defects,
+            'smallDefects' => $this->smallDefects,
+            'formId' => $this->formId,
+            'action' => 'add',
         ]);
 
-        $this->sendDefect();
+        $this->syncToParent();
         $this->resetStaged();
     }
 
@@ -277,7 +296,8 @@ new class extends Component
 
         $this->dispatch($this->dispatchPrefix . '.defects-updated', [
             'defects' => [['type' => $this->editingType, 'qty' => $this->newQuan]],
-            'formId' => $this->formId, 'action' => 'update',
+            'formId' => $this->formId,
+            'action' => 'update',
         ]);
 
         $this->sendDefect();
@@ -314,7 +334,9 @@ new class extends Component
         unset($small);
 
         $this->dispatch($this->dispatchPrefix . '.defects-updated', [
-            'smallDefects' => $this->smallDefects, 'formId' => $this->formId, 'action' => 'update',
+            'smallDefects' => $this->smallDefects,
+            'formId' => $this->formId,
+            'action' => 'update',
         ]);
 
         $this->editingTypeSmall = null;
@@ -328,10 +350,41 @@ new class extends Component
         $this->TotalNg = collect($this->defects)->sum('qty');
     }
 
+    protected function trackDeletedDefect(string $type): void
+    {
+        $draftKey = $this->systemname === 'operator' ? (string) $this->formId : (string) $this->ppf;
+        if (!$draftKey) return;
+
+        $draft = app(DraftService::class)->load($draftKey);
+        $needToDelete = $draft['needToDeleteDefect'] ?? [];
+
+        if (!in_array($type, $needToDelete, true)) {
+            $needToDelete[] = $type;
+        }
+
+        app(DraftService::class)->syncComponent($draftKey, 'needToDeleteDefect', $needToDelete);
+    }
+
     public function deleteDefectArray($type)
     {
         $this->deleteDefect($type);
+        $this->trackDeletedDefect($type);
         $this->sendDefect();
+    }
+    protected function trackDeletedSmallDefect(string $largeDefect, string $type): void
+    {
+        $draftKey = $this->systemname === 'operator' ? (string) $this->formId : (string) $this->ppf;
+        if (!$draftKey) return;
+
+        $draft = app(DraftService::class)->load($draftKey);
+        $needToDelete = $draft['needToDeleteDefectSmall'] ?? [];
+
+        $entry = ['type' => $type, 'largeDefect' => $largeDefect];
+        if (!in_array($entry, $needToDelete, true)) {
+            $needToDelete[] = $entry;
+        }
+
+        app(DraftService::class)->syncComponent($draftKey, 'needToDeleteDefectSmall', $needToDelete);
     }
 
     public function deleteDefectSmall($largeDefect, $type)
@@ -340,9 +393,12 @@ new class extends Component
         $this->smallDefects[$largeDefect] = collect($this->smallDefects[$largeDefect])
             ->reject(fn($d) => trim($d['type'] ?? '') === trim($type))->values()->toArray();
 
+        $this->trackDeletedSmallDefect($largeDefect, $type);
+
         $this->dispatch($this->dispatchPrefix . '.defects-updated', [
             'smallDefects' => [$largeDefect => [['type' => $type, 'qty' => 0]]],
-            'formId' => $this->formId, 'action' => 'delete',
+            'formId' => $this->formId,
+            'action' => 'delete',
         ]);
     }
 
@@ -414,6 +470,21 @@ new class extends Component
         $this->newQuan = $defect['qty'] ?? 0;
     }
 
+    public function onModalLargeQtyChange(): void
+    {
+        $this->validateOnly('modalLargeQty', [
+            'modalLargeQty' => 'required|numeric|min:1',
+        ]);
+
+        $smallsWithQty = app(DefectService::class)->computeSmallsWithQty($this->modalSmallDefects);
+
+        if (collect($smallsWithQty)->sum('qty') > (int) $this->modalLargeQty) {
+            $this->addError('modalSmallDefects', 'Total small qty cannot exceed large qty.');
+        } else {
+            $this->resetErrorBag('modalSmallDefects');
+        }
+    }
+
     /**
      * FIXED: was reading smallDefects[$large][$operator][$smallType] as an
      * associative lookup — but fetchDefectFromEvent() writes a LIST under
@@ -447,8 +518,11 @@ new class extends Component
         unset($small);
 
         $this->dispatch('FromSmallDefects', smalldefectData: [
-            'SelectedLargeDefect' => $large, 'Operator' => $operator,
-            'type' => $this->editingTypeSmall, 'qty' => $this->newSmallQuan, 'action' => 'update',
+            'SelectedLargeDefect' => $large,
+            'Operator' => $operator,
+            'type' => $this->editingTypeSmall,
+            'qty' => $this->newSmallQuan,
+            'action' => 'update',
         ]);
 
         $this->editingTypeSmall = null;
@@ -469,8 +543,10 @@ new class extends Component
         }
 
         $this->dispatch('FromSmallDefects', smalldefectData: [
-            'SelectedLargeDefect' => $large, 'Operator' => $operator,
-            'newSmallDefect' => $type, 'action' => 'delete',
+            'SelectedLargeDefect' => $large,
+            'Operator' => $operator,
+            'newSmallDefect' => $type,
+            'action' => 'delete',
         ]);
 
         $this->newSmallDefect = '';
@@ -486,21 +562,16 @@ new class extends Component
     {
         $this->validateOnly($propertyName);
     }
-
-    public function sendDefect()
-    {
-        $this->dispatch('sendNg', $this->TotalNg);
-    }
 };
 ?>
 
-<div x-data="{ openAddDefect: false }" @close-add-defect.window="openAddDefect = false" class="bg-white px-3 py-4 rounded-lg w-full max-w-1xl @if($locked) opacity-50 cursor-not-allowed @endif">
+<div x-data="{ openAddDefect: false }" @close-add-defect.window="openAddDefect = false" class="bg-white px-3 py-4 rounded-lg w-full max-w-1xl @if($readOnly) opacity-50 cursor-not-allowed @endif">
     <div class="bg-white shadow-md max-w-3xl mx-auto px-3 py-4 rounded-lg h-[500px] flex flex-col">
         <div class="bg-gray-700 w-full">
             <p class="text-4xl font-extrabold text-center text-white p-4">Defect</p>
         </div>
 
-        @if($systemname !== 'operator')
+        @if($systemname === 'operator')
         <div class="w-full flex justify-center mb-3 px-3 mt-5">
             <button
                 @click="$wire.loadExistingDefectsToStage().then(() => { openAddDefect = true })"
@@ -512,9 +583,9 @@ new class extends Component
         @endif
 
         @if($systemname !== 'operator')
-            <x-ui.defect.operator-table :defects="$defects" :small-defects="$smallDefects" :readOnly="$readOnly" />
+        <x-ui.defect.operator-table :defects="$defects" :small-defects="$smallDefects" :readOnly="$readOnly" />
         @else
-            <x-ui.defect.defects-table :defects="$defects" :small-defects="$smallDefects" :systemname="$systemname" :readOnly="$readOnly" />
+        <x-ui.defect.defects-table :defects="$defects" :small-defects="$smallDefects" :systemname="$systemname" :readOnly="$readOnly" />
         @endif
 
         <div class="flex-col w-11/12 sm:w-1/3 mt-3">
@@ -529,7 +600,7 @@ new class extends Component
         @error('newSmallDefect') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
     </div>
 
-    @if($systemname !== 'operator')
+    @if($systemname === 'operator')
     <x-ui.defect.add-defect-modal
         :staged-defects="$stagedDefects"
         :modal-selected-large-defect="$modalSelectedLargeDefect"
