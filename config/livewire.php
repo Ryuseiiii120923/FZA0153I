@@ -36,7 +36,8 @@ return [
         'partials' => resource_path('views/partials'),
         'gl' => resource_path('views/gl'),
         'operator' => resource_path('views/operator'),
-        'process-record' => resource_path('views/process-record')
+        'process-record' => resource_path('views/process-record'),
+        'encode-per-process' => resource_path('views/encode-per-process')
     ],
 
     /*

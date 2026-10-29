@@ -59,6 +59,7 @@ new class extends Component
         $this->username = WorkerName::select('名前')
             ->where('社員CD', $this->encoder)
             ->value('名前') ?? '';
+
     }
 
     public function rules(): array
@@ -255,7 +256,6 @@ new class extends Component
 
         $service    = app(PrencodeActions::class);
         $doneAction = $this->action;
-
         $result = match ($doneAction) {
             'add'    => $service->create($this->encoder, $this->activeOperatorID, $forms, $ppf),
             'edit'   => $service->update($this->encoder, $this->activeOperatorID, $forms, $ppf),
@@ -294,7 +294,7 @@ new class extends Component
 
         $existInForms = HF::where('ppfno', $ppf)->exists();
 
-        if ($existInForms) {
+        if ($existInForms && $this->action === 'add') {
             $this->notifyFail('Already Added', 'This PPF already exists. Please select **Update** to modify it.', 6000);
         }
     }
@@ -436,7 +436,7 @@ new class extends Component
                 </span>
             </div>
 
-            <div class="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+            <div class="flex flex-col gap-1">
                 {{-- Operate button --}}
                 <button
                     type="button"
@@ -579,7 +579,11 @@ new class extends Component
                 :key="'operatedId-' . $activeOperatorID"
                 :operatorID="$activeOperatorID"
                 :systemname="'operator'" />
+            @if(session('plant') === 2)
             <livewire:partials::operator.drop-down :operatorID="$activeOperatorID" />
+            @else
+            <livewire:partials::operator.drop-down-process :operatorID="$activeOperatorID" />
+            @endif
         </div>
         <div class="flex items-center justify-center mt-4">
             @if($action !== '' && $action !== 'view')

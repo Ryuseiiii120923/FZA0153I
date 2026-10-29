@@ -52,8 +52,16 @@
                 stroke-linecap="round"
                 stroke-linejoin="round">
 
-                <path d="M3 21h18" />
-                <path d="M5 21V7l8 5V7l6 4v10" />
+                <path d="M12 2v3" />
+                <path d="M12 19v3" />
+                <path d="M2 12h3" />
+                <path d="M19 12h3" />
+                <path d="M4.9 4.9l2.1 2.1" />
+                <path d="M17 17l2.1 2.1" />
+                <path d="M4.9 19.1L7 17" />
+                <path d="M17 7l2.1-2.1" />
+                <circle cx="12" cy="12" r="4" />
+                <path d="M10.5 12l1.2 1.2 2.3-2.4" />
             </svg>
         </x-slot:icon>
     </x-ui.navbar.nav-button>

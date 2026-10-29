@@ -74,8 +74,6 @@ class PrencodeActions
 
     protected function save(int $encoder, string $operatorID, array $forms, int $ppf): ?bool
     {
-
-
         $totalInspection = 0;
         foreach ($forms as $formData) {
             $totalInspection += (int) ($formData['total_inspect'] ?? 0);
