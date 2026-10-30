@@ -92,12 +92,12 @@ new class extends Component
 
     public function addNewPL()
     {
-        $this->addForm(['Operation' => null, 'Process' => null, 'method' => 'PL', 'Remarks' => '']);
+        $this->addForm(['Operation' => 'PL', 'Process' => 'PL', 'method' => 'PL', 'Remarks' => '']);
     }
 
     public function addNewSF()
     {
-        $this->addForm(['Operation' => null, 'Process' => null, 'method' => 'SF', 'ForRework' => null, 'Remarks' => '']);
+        $this->addForm(['Operation' => 'PL', 'Process' => 'PL', 'method' => 'SF', 'ForRework' => null, 'Remarks' => '']);
     }
 
     public function addNewDoneRework()

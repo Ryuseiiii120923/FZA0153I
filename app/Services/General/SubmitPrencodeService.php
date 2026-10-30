@@ -27,9 +27,11 @@ class SubmitPrencodeService
 
     public function submit(array $data): void
     {
+
         $this->prepareDataForSubmission($data);
         $this->saveHF();
         $this->saveInspectorRecord();
+       
     }
 
 
